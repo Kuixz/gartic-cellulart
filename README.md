@@ -8,7 +8,8 @@ Gartic Cellulart is a browser extension for Gartic Phone that adds several featu
 - A working autodrawer (more or less)
 - And more
 
-You're looking at the code for the BETA channel
+You're looking at the code for the BETA channel.
+
 Subscribe to the stable RELEASE channel:
 chrome.google.com/webstore/detail/pjeenahidnpjaajbiidagnackjdhnlam
 or
