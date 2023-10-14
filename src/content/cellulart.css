@@ -1,0 +1,411 @@
+/* Multi-module */
+
+form.upload-form {
+    max-width: 100%;
+    aspect-ratio: 1;
+}
+input.upload-bridge {
+    display: none;
+}
+div.upload-socket {
+    margin: 7%;
+    max-width: 100%;
+    aspect-ratio: 1;
+    border-radius: 8%;
+    background-size: cover;
+}
+div.upload-socket.highlight {
+    background-color: rgba(216, 216, 216, 0.3);
+}
+.hover-button:hover {
+    background-color: rgba(216, 216, 216, 0.3);
+    cursor: pointer;
+}
+.canvas-in-square {
+    /* padding: 8px; */
+    max-width: 100%;
+    aspect-ratio: 1.7877;
+    margin: 6% 6% 0%;
+}
+div.canvas-square-lower-tray {
+    margin: 6%;
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    justify-content: space-between;
+}
+
+/* Window-in-window */
+
+div.window-in-window {
+    position: absolute;
+    /*resize: both; */
+    background-color: #dddddd;
+    min-height: 140px;
+    height: 140px;
+    max-height: 340px;
+    width: 178px;
+    min-width: 178px;
+    max-width: 536px;
+    top: 0px;
+    border-radius: 9px 9px 4px 4px;
+    overflow: hidden;
+    /* pointer-events: none; */
+    font-family: black;
+    container-type: size;
+
+    & div.wiw-header {
+        height: 40px;
+        cursor: move;
+        background-color: rgb(72, 29, 146);
+        color: rgb(24, 2, 61);
+        text-align: center;
+        font-size: 36px;
+        /* pointer-events: initial; */
+    }
+    & div.wiw-close {
+        position: absolute;
+        right: 0px;
+        top: 0px;
+        height: 39px;
+        width: 39px;
+        background-color: #440044;
+        cursor: pointer;
+    }
+    & div.wiw-body {
+        height: calc(100% - 40px);
+        display: flex;
+        justify-content: center;
+    }
+    & img.wiw-img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+    & div.resizer-both {
+        width: 15px;
+        height: 15px;
+        /* background: #dddddd; */
+        z-index: 10;
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        cursor: nwse-resize;
+        /* pointer-events: initial; */
+    }
+}
+
+/* Timer */
+
+#clocksticles {
+    position: absolute;
+    width: 100px;
+    height: 120px;
+    top: 0px;
+    right: 0px
+}
+#timerHolder {
+    position: absolute;
+    bottom: 0px;
+    width: 100px
+}
+#timer {
+    font-size: 27px;
+    text-align: center;
+    margin: auto;
+    color: rgb(255, 255, 255);
+    font-family: black;
+}
+
+/* Refdrop */
+
+img#ref-img {
+    position: absolute;
+    max-width: 100%;
+    max-height: 100%;
+}
+/*div#ref-img {
+    position:absolute;
+    width: 100%;
+    height: 100%;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+    pointer-events: none;
+
+    opacity: 0.25;
+}*/
+div.ref-square {
+    position: absolute;
+    width: 122px;
+    height: 122px;
+    border-radius: 9px;
+    display: flex;
+    flex-direction: column;
+    border: 2px solid rgba(255, 142, 175, 0); /* Why is this here? */
+    background-color: rgba(94, 25, 51, 0.5);
+}
+.ref-border {
+    border: 2px solid rgba(255, 142, 175, 0.6);
+}
+.ref-border.highlight {
+    border-color: rgba(255, 142, 175, 1);
+}
+.ref-border:hover:not(#refo) {
+    border-color: rgba(255, 142, 175, 1);
+    cursor: pointer;
+}
+div#ref-se {
+    bottom: 15px;
+    right: 15px;
+}
+div#ref-sw {
+    bottom: 15px;
+    left: 15px;
+}
+.bounded {
+    position: relative;
+    
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+div#ref-dot {
+    width: 10px;
+    height: 10px; 
+    transform-origin: center;
+    border-width: 3px;
+    border-radius: 50%;
+    cursor: move;
+}
+div.ref-tray-button {
+    --ref-tray-button-width: 27px;
+    --ref-tray-button-height: 36px;
+    width: var(--ref-tray-button-width);
+    height: var(--ref-tray-button-height);
+    border-radius: 4px;
+    
+    display: flex;
+    flex-direction: row;
+    font-size: 30px;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    background-color: rgba(0,0,0,0);
+    color: rgba(255, 142, 175, 0.6)
+}
+input#refo {
+    position: absolute;
+    left: 0;
+    appearance: none;
+    background-color: transparent;
+    cursor: pointer;
+    overflow: hidden;
+  
+    width: var(--ref-tray-button-height);
+    height: var(--ref-tray-button-width);
+
+    transform-origin: left;
+    transform: rotate(-90deg) translateY(calc(var(--ref-tray-button-width) / 2)) translateX(calc(var(--ref-tray-button-height) / -2));
+}
+input#refo::-webkit-slider-runnable-track {
+    -webkit-appearance: none;
+    background: transparent;
+    height: 100%;
+}
+input#refo::-webkit-slider-thumb {
+    width: 0px;
+    appearance: none;
+    box-shadow: -150px 0 0 150px rgba(255, 142, 175, 0.6);
+}
+
+/* Underdraw */
+
+.ud-center {
+    position: absolute;
+    top: 0;
+    left: 0;
+    cursor: none;
+}
+
+/* Geometrize */
+.geom-carpet {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+}
+.geom-border {
+    border: 5px solid #301a6b;
+}
+.geom-border:hover {
+    border-color: #43278f;
+    cursor: pointer;
+}
+.geom-border.highlight {
+    border-color: #43278f;
+}
+div#geom-wiw {
+    background-color: rgba(0, 0, 0, 0.3);
+}
+div.geom-stack {
+    display: flex; 
+    width: 47%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-evenly;
+}
+div#geom-echo {
+    background-color: white;
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center;
+    border: 5px solid black;
+    position: relative;
+}
+div#geom-lower-tray {
+    margin: 0% 6% 6%;
+}
+svg.geom-svg {
+    display: flex;
+    width: 100%;
+    height: 100%;
+}
+label.geom-status {
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    height: 30%; 
+    font-size: 13cqw;
+    color: #43de99
+}
+label#geom-total {
+    color: grey; 
+}
+label#geom-total:hover {
+    color: rgb(180, 180, 180); 
+}
+button.geom-tray-button {
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
+}
+div#geom-reselect {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: -5px;
+    left: -5px;
+}
+div#geom-config {
+    background-color: rgba(0, 0, 0, 0.7); 
+    display: none; 
+    flex-direction: column; 
+    justify-content: space-evenly;
+    position: absolute; 
+    height: 30%;
+    width: 60%;
+    top: 25%; 
+    left: 40%;
+}
+div.geom-3-hstack {
+    display: flex; 
+    align-items: center;
+    height: 45%; 
+    width: 100%; 
+    gap: 5%;
+    padding: 0% 5%;
+}
+img.geom-3-icon {
+    height: 100%;
+    aspect-ratio: 1;
+}
+input.geom-3-input {
+    height: 80%;
+    color: grey;
+    font-size: 10cqw;
+    font-family: inherit;
+    background-color: rgba(0,0,0,0);
+    border: none;
+    outline: 0px;
+}
+input.geom-3-input:focus {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Menu */
+
+div#debug-body {
+    display: flex;
+    flex-direction: column; /* -reverse; */
+    background-color: rgb(30,30,30);
+    
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+div#debug-header {
+    height: 25%; 
+    overflow: auto; 
+    gap: 2%; 
+    white-space: nowrap; 
+    background-color: rgb(70,70,70);
+
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
+.debug-entry {
+    font-size: 5cqw;
+    color: rgb(180, 180, 180); /* rgb(210, 150, 90); */
+    display: block;
+    width: 100%;
+}
+#debug-input {
+    height: 20%;
+    font-size: 7cqw;
+    color: rgb(180, 180, 180);
+    background-color: rgb(50,50,50);
+    border: none;
+    border-top: 1.5cqh solid black;
+    outline: 0px;
+}
+#debug-log {
+    height: 75%; /* 80% of 75%; */
+    overflow: scroll;
+}
+div#cellulart-menu{
+    top: 80px; 
+    right: 50px;
+    width: 5%;
+    height: 80%;
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+div.cellulart-menu-item {
+    max-width: 100%;
+    aspect-ratio: 1;
+    opacity: 0.75;
+}
+div.cellulart-menu-item:hover {
+    opacity: 1;
+}
+div.cellulart-menu-item {
+    max-width: 100%;
+    aspect-ratio: 1;
+}
+img.cellulart-circular-icon {
+    height: 100%;
+    opacity: 0.5;
+}
+img.cellulart-circular-icon:hover {
+    opacity: 0.9;
+}
+img.cellulart-circular-icon.debug-selected {
+    opacity: 0.9;
+}
