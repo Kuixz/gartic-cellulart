@@ -1,8 +1,8 @@
 {
     "manifest_version": 3,
-    "name": "Gartic Cellulart SANDBOX",
-    "version": "0.8.2",
-    "description": "DO NOT APPROVE THIS PACKAGE, IT IS NOT FOR DISTRIBUTION, THE DEV MADE AN OOPSIE",
+    "name": "Gartic Cellulart BETA",
+    "version": "1.1.3",
+    "description": "Level up your Gart.",
     "icons":{
         "48": "assets/icons/ico48.png",
         "128": "assets/icons/ico128.png"

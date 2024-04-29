@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Gartic Cellulart BETA",
-    "version": "1.1.2",
+    "version": "1.1.3",
     "description": "Level up your Gart.",
     "icons":{
         "48": "assets/icons/ico48.png",
@@ -30,8 +30,12 @@
             "all_frames": true
         }
     ],
+    "host_permissions": [
+        "https://garticphone.com/*"
+    ],
     "permissions": [
-        "storage"
+        "storage",
+        "webRequest"
     ],
     "web_accessible_resources": [
         {

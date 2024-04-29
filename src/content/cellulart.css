@@ -348,7 +348,7 @@ div#debug-body {
     }
 }
 div#debug-header {
-    height: 25%; 
+    height: 100%; 
     overflow: auto; 
     gap: 2%; 
     white-space: nowrap; 

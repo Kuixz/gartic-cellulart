@@ -34,5 +34,10 @@ chrome.runtime.onMessage.addListener(
 //     postMessage(200)
 // };
   
-
-
+// chrome.webRequest.onBeforeRequest.addListener((details) => {
+//     console.log(details)
+// })
+// chrome.webRequest.onBeforeRequest.addListener(
+//     (details) => { console.log(details) },
+//     { urls:["https://garticphone.com/"] }
+// )

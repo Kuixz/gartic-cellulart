@@ -53,45 +53,49 @@ const Debug = {
     debugWIW : undefined,
 
     init(modules) {
-        const debugWIW = WIW.newWIW(false, false, 0.7)
+        const debugWIW = WIW.newWIW(false, false, 0.2)
         const body = setAttributes(debugWIW.querySelector(".wiw-body"), { id:"debug-body" });
         const iconSelect = setAttributes(document.createElement("div"), { id: 'debug-header', parent: body })
-        const logArea = setAttributes(document.createElement("div"), { id: "debug-log", parent: body })
+        // const logArea = setAttributes(document.createElement("div"), { id: "debug-log", parent: body })
         // const textArea = setAttributes(document.createElement("input"), {id: "debug-input", parent: body })
-        const backColor = new SettingsBelt(["rgb(30,30,30)", "rgb(50,50,50)"])
-        const modNames = new Set([...modules.map((mod) => mod.name), "Socket", "Worker", "Observer"])
-        const filter = new Set()
+        // const backColor = new SettingsBelt(["rgb(30,30,30)", "rgb(50,50,50)"])
+        // const modNames = new Set([...modules.map((mod) => mod.name), "Socket", "Worker", "Observer"])
+        // const filter = new Set()
 
         modules.concat([{ name:"Socket" }, { name:"Worker" }, Observer]).forEach((mod) => {
             const modIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/" + mod.name.toLowerCase() + "_on" + ".png"), parent: iconSelect })
             modIcon.addEventListener("click", () => { 
-                filter.has(mod.name) ? filter.delete(mod.name) : filter.add(mod.name) 
+                // filter.has(mod.name) ? filter.delete(mod.name) : filter.add(mod.name) 
                 modIcon.classList.toggle("debug-selected")
-                Debug.filter(logArea, modNames, filter)
+                // Debug.filter(logArea, modNames, filter)
+                Console.toggle(mod.name)
             })
         }) // TODO: none or all is all
 
-        Console.onprint = function(message, mod) {
-            // The below function is adapted from Jon Ege Ronnenberg at (https://jsfiddle.net/dotnetCarpenter/KpM5j)
-            // and is used to keep the user scrolled to the bottom of the messages.
-            const isScrolledToBottom = logArea.scrollHeight - logArea.clientHeight <= logArea.scrollTop + 1;
+        // Console.onprint = function(message, mod) {
+        //     if (Debug.setting.current == 'off') { return }
+        //     // The below function is adapted from Jon Ege Ronnenberg at (https://jsfiddle.net/dotnetCarpenter/KpM5j)
+        //     // and is used to keep the user scrolled to the bottom of the messages.
+        //     const isScrolledToBottom = logArea.scrollHeight - logArea.clientHeight <= logArea.scrollTop + 1;
 
-            const logEntry = setAttributes(document.createElement("label"), { style: "background-color:" + backColor.next(), class:"debug-entry", owner:mod.name });
-            logEntry.textContent = message;
-            logArea.appendChild(logEntry);
-            if (filter.size > 0 && !filter.has(mod.name)) { logEntry.style.display = 'none' }
+        //     const logEntry = setAttributes(document.createElement("label"), { style: "background-color:" + backColor.next(), class:"debug-entry", owner:mod.name });
+        //     logEntry.textContent = message;
+        //     logArea.appendChild(logEntry);
+        //     if (filter.size > 0 && !filter.has(mod.name)) { logEntry.style.display = 'none' }
             
-            if(isScrolledToBottom) {logArea.scrollTop = logArea.scrollHeight - logArea.clientHeight};
-        }
+        //     if(isScrolledToBottom) {logArea.scrollTop = logArea.scrollHeight - logArea.clientHeight};
+        // }
 
         Debug.debugWIW = debugWIW;
     },
     adjustSettings(previous, current) {
-        if (current == 'off') { Debug.debugWIW.style.visibility = 'hidden'; return }
-        Debug.debugWIW.style.visibility = 'initial'
+        if (current == 'on') { 
+            Debug.debugWIW.style.visibility = 'initial'; return 
+        }
+        Debug.debugWIW.style.visibility = 'hidden'
+        // Debug.debugWIW.querySelector('debug-log').childNodes.forEach((entry) => entry.remove())
     },
-
-    filter(logArea, all, selected) {
+    /* filter(logArea, all, selected) {
         const pass = selected.size == 0 ? all : selected
         var color = "rgb(30,30,30)"
         logArea.childNodes.forEach((entry) => {
@@ -103,7 +107,7 @@ const Debug = {
             }
             entry.style.display = 'none'
         })
-    }
+    } */
 }; 
 Object.setPrototypeOf(Debug, CellulartModule)
 
@@ -163,7 +167,7 @@ const Timer = {
     backToLobby(oldPhase) {},
     adjustSettings(previous, current) {
         if (Timer.display == undefined) { return }
-        if (current) { Timer.display.style.fontSize = "27px" } else { Timer.display.style.fontSize = "0px" }
+        if (current == "on") { Timer.display.style.visibility = "visible" } else { Timer.display.style.visibility = "hidden" }
     },
 
     placeTimer() {  // [T3]
@@ -178,7 +182,7 @@ const Timer = {
 
         const timerHolder = setAttributes(document.createElement("div"), { id: "timerHolder", parent: holder })
 
-        Timer.display = setAttributes(document.createElement("div"), { id: "timer", style: "font-size:" + Timer.setting.current() == 'off' ? "0px" : "27px", parent: timerHolder })
+        Timer.display = setAttributes(document.createElement("div"), { id: "timer", style: "visibility:" + Timer.setting.current() == 'off' ? "hidden" : "visible", parent: timerHolder })
     },
     restartTimer(newPhase) {
         const clock = document.querySelector(".time")
@@ -223,8 +227,8 @@ const Timer = {
         Timer.countdown = setTimeout(Timer.tick, 1000, seconds + direction, direction)
     },
     interpolate() {
-        Console.log("Interpolating regressive/progressive timer", Timer)
         if (game.decay != 0) {
+            Console.log("Interpolating regressive/progressive timer", Timer)
             game.write = (game.write - 8) * game.decay + 8
             game.draw = (game.draw - 30) * game.decay + 30
         } 
@@ -270,11 +274,12 @@ const Koss = { // [K1]
         Koss.kossImage.src = "";
     },
     adjustSettings(previous, current) {
+        // alert(current)
         switch (current) {
             case 'off':
                 Koss.kossImage.style.opacity = "1";
                 // Koss.kossImage.style.position = "static";
-
+                Koss.kossWIW.style.visibility = "hidden";
                 Koss.kossImage.style.display = "none"; // todo for some reason going from OVERLAY to OFF wipes your canvas unless you use display instead of visibility parameter, wtf?
                 
                 break;
@@ -364,6 +369,7 @@ const Refdrop = { // [R1]
         Refdrop.refImage.src = "";
     },
     adjustSettings(previous, current) {
+
         switch (current) {
             case 'off': 
                 document.querySelectorAll(".wiw-close").forEach(v => v.parentNode.parentNode.remove()) // This closes all references, forcing you to drag them in again.

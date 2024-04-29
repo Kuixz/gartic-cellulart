@@ -129,23 +129,73 @@ const WIW = {
 }
 
 // Submodule functionalities
-const Console = { // No filtering functionality
-    name: "Console",
+// const Console = { // No filtering functionality
+//     name: "Console",
     
-    log: function(message, optMod) {
-        const mod = optMod || { name:'?' }
-        const msg = `[${mod.name || '?'}] ${message}`
-        this.onprint(msg, mod)
+//     log: function(message, optMod) {
+//         const mod = optMod || { name:'?' }
+//         const msg = `[${mod.name || '?'}] ${message}`
+//         this.onprint(msg, mod)
+//         // console.log(msg)
+//     },
+//     alert: function(message, optMod) {
+//         const mod = optMod || { name:'?' }
+//         const msg = `[${mod.name || '?'}] ERROR: ${message}`
+//         this.onprint(msg, mod)
+//         console.log(msg)
+//     },
+//     onprint: function(message) {} // Dynamically set
+// }
+/* */
+const Console = { // Only block certain messages
+    name: "Console",
+    disabled: new Set(), //(["Console"]),
+
+    toggle: function(mod) {
+        this.set(mod, !this.disabled.has(mod))
+    },
+    set: function(mod, disabled) {
+        disabled ? this.disabled.add(mod) : this.disabled.delete(mod)
+        Console.log('Console', (disabled ? "Disabled " : "Enabled ") + "logging for " + mod.name)
+    },
+    log: function(mod, message) {
+        if (this.disabled.has(mod)) { return }
+        const msg = `[${mod.name}] ${message}`
+        this.onprint(msg)
         // console.log(msg)
     },
-    alert: function(message, optMod) {
-        const mod = optMod || { name:'?' }
-        const msg = `[${mod.name || '?'}] ERROR: ${message}`
-        this.onprint(msg, mod)
+    alert: function(mod, message) {
+        const msg = `[${mod.name}] ERROR: ${message}`
+        this.onprint(msg)
         console.log(msg)
     },
     onprint: function(message) {} // Dynamically set
 }
+/* */
+// const Console = { // Only print certain messages
+//     name: "Console",
+//     enabled: new Set(["Console"]),
+
+//     toggle: function(mod) {
+//         this.set(mod, !this.enabled.has(mod))
+//     },
+//     set: function(mod, enabled) {
+//         enabled ? this.enabled.add(mod) : this.enabled.delete(mod)
+//         Console.log('Console', (enabled ? "Enabled " : "Disabled ") + "logging for " + mod.name)
+//     },
+//     log: function(mod, message) {
+//         if (!this.enabled.has(mod)) { return }
+//         const msg = `[${mod.name}] ${message}`
+//         this.onprint(msg)
+//         // console.log(msg)
+//     },
+//     alert: function(mod, message) {
+//         const msg = `[${mod.name}] ERROR: ${message}`
+//         this.onprint(msg)
+//         // console.log(msg)
+//     },
+//     onprint: function(message) {} // Dynamically set
+// }
 const Shelf = {
     // init() {
     //     ;["session", "local"].forEach((zone) => {
@@ -271,8 +321,8 @@ const setAttributes = (node, attrs) => {
 // Constants
 const svgNS = "http://www.w3.org/2000/svg"
 const configChildTrunk = { childList: true };
-const echo = (v) => v
-const const0 = () => 0
+// const echo = (v) => v
+// const const0 = () => 0
 const modeParameters = 
 // {
 //     1:  { write: 40,  draw: 150, firstMultiplier: 1.25, fallback: 2,  turns: echo,       decay: const0 },
