@@ -231,6 +231,11 @@ const Shelf = { // FAKE SHELF - REMOVE THIS WHEN PUSHING BETA
     },
     async clear() {
         Shelf.dict = { }
+    },
+    async retrieveOrElse(key, defaultValue, write = false) {
+        if (key in Shelf.dict) { return data[key] }
+        if (write) { Shelf[key] = defaultValue }
+        return defaultValue
     }
 }
 // const Shelf = {
