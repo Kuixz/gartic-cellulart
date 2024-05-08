@@ -79,8 +79,8 @@ const Socket = {
     
         var pieces = data.split(',')
         if (pieces[3] == '"d":1') { 
-            Socket.bypassStrokes += 1 
-            const adjustedStroke = pieces[5] + Socket.bypassStrokes
+            // Socket.bypassStrokes += 1 
+            const adjustedStroke = Number(pieces[5]) + Socket.bypassStrokes
             pieces[5] = adjustedStroke
             Socket.strokes.push(adjustedStroke)
             return pieces.join(',')
@@ -89,7 +89,7 @@ const Socket = {
             pieces[4] = '"v":' + Socket.strokes.pop() + '}]'
             return pieces.join(',')
         } else if (pieces[3] == '"d":3') {
-            const adjustedStroke = pieces[5] + Socket.bypassStrokes
+            const adjustedStroke = Number(pieces[5]) + Socket.bypassStrokes
             pieces[5] = adjustedStroke
             return pieces.join(',')
         } else {
@@ -97,7 +97,7 @@ const Socket = {
         }
     },
     registerWS(ws) {
-        if (Socket.currentWS) { return }
+        if (Socket.currentWSOpen()) { return }
         Socket.currentWS = ws
         Socket.post("flag", true)
     },
