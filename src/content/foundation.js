@@ -147,44 +147,19 @@ const WIW = {
 //     onprint: function(message) {} // Dynamically set
 // }
 /* */
-const Console = { // Only block certain messages
-    name: "Console",
-    disabled: new Set(), //(["Console"]),
-
-    toggle: function(mod) {
-        this.set(mod, !this.disabled.has(mod))
-    },
-    set: function(mod, disabled) {
-        disabled ? this.disabled.add(mod) : this.disabled.delete(mod)
-        Console.log('Console', (disabled ? "Disabled " : "Enabled ") + "logging for " + mod.name)
-    },
-    log: function(mod, message) {
-        if (this.disabled.has(mod)) { return }
-        const msg = `[${mod.name}] ${message}`
-        this.onprint(msg)
-        // console.log(msg)
-    },
-    alert: function(mod, message) {
-        const msg = `[${mod.name}] ERROR: ${message}`
-        this.onprint(msg)
-        console.log(msg)
-    },
-    onprint: function(message) {} // Dynamically set
-}
-/* */
-// const Console = { // Only print certain messages
+// const Console = { // Only block certain messages
 //     name: "Console",
-//     enabled: new Set(["Console"]),
+//     disabled: new Set(), //(["Console"]),
 
 //     toggle: function(mod) {
-//         this.set(mod, !this.enabled.has(mod))
+//         this.set(mod, !this.disabled.has(mod))
 //     },
-//     set: function(mod, enabled) {
-//         enabled ? this.enabled.add(mod) : this.enabled.delete(mod)
-//         Console.log('Console', (enabled ? "Enabled " : "Disabled ") + "logging for " + mod.name)
+//     set: function(mod, disabled) {
+//         disabled ? this.disabled.add(mod) : this.disabled.delete(mod)
+//         Console.log('Console', (disabled ? "Disabled " : "Enabled ") + "logging for " + mod.name)
 //     },
 //     log: function(mod, message) {
-//         if (!this.enabled.has(mod)) { return }
+//         if (this.disabled.has(mod)) { return }
 //         const msg = `[${mod.name}] ${message}`
 //         this.onprint(msg)
 //         // console.log(msg)
@@ -192,13 +167,38 @@ const Console = { // Only block certain messages
 //     alert: function(mod, message) {
 //         const msg = `[${mod.name}] ERROR: ${message}`
 //         this.onprint(msg)
-//         // console.log(msg)
+//         console.log(msg)
 //     },
 //     onprint: function(message) {} // Dynamically set
 // }
+/* */
+const Console = { // Only print certain messages
+    name: "Console",
+    enabled: new Set(),
+
+    toggle: function(mod) {
+        this.set(mod, !this.enabled.has(mod))
+    },
+    set: function(mod, enabled) {
+        enabled ? this.enabled.add(mod) : this.enabled.delete(mod)
+        Console.log((enabled ? "Enabled " : "Disabled ") + "logging for " + mod, 'Console')
+    },
+    log: function(message, mod=null) {
+        if (mod && !this.enabled.has(mod)) { return }
+        const msg = `[${mod}] ${message}`
+        this.onprint(msg)
+        console.log(msg)
+    },
+    alert: function(message, mod) {
+        const msg = `[${mod}] ERROR: ${message}`
+        this.onprint(msg)
+        console.log(msg)
+    },
+    onprint: function(message) {} // Dynamically set
+}; Console.enabled.add('Console')
 const Shelf = { // FAKE SHELF - REMOVE THIS WHEN PUSHING BETA 
     dict: { 
-        auth: "dc4b4e203f9dddce4687f1d66989b838fe281ab4bb4b533bd34fd9b577bf1136",
+        auth: "ad1b033f4885a8bc3ae4f055f591a79c59ce73a6a7380b00c4fcb75ac3eefffb",
         p: "q",
     },
 
@@ -325,25 +325,25 @@ const Socket = {
     init() {
         window.addEventListener('message', (event) => {
             if (event.source !== window || event.data.direction !== 'messageFromSocket') { return; }
-            const func = event.data.function
+            const purp = event.data.purpose
             const data = event.data.data
-            Console.log(`incoming (${func}, ${data})`, Socket)
+            Console.log(`incoming (${purp}, ${data})`, Socket)
             Socket.handlers.forEach(handler => { 
-                if (handler.filter == func) { handler.handle(data) }
+                if (handler.filter == purp) { handler.handle(data) }
             })
         })
     },
-    post(func, data) {
-        Console.log(`outgoing (${func}, ${data})`, Socket)
+    post(purp, data) {
+        Console.log(`outgoing (${purp}, ${data})`, Socket)
         
         window.postMessage({
             direction: "messageToSocket",
-            function: func,
+            purpose: purp,
             data: data
         }, 'https://garticphone.com')
     },
-    addMessageListener(func, handler) {
-        Socket.handlers.push({ filter:func, handle:handler });
+    addMessageListener(purp, handler) {
+        Socket.handlers.push({ filter:purp, handle:handler });
     }
 }
 

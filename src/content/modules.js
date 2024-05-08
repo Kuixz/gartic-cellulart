@@ -29,7 +29,7 @@ const CellulartModule = { // [F2]
     adjustSettings(previous, current) {},
 
     // These functions receive messages from the in-window menu and are generally shared between modules.
-    menuStep() { const c = this.setting.current(); const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this); return n },
+    menuStep() { const c = this.setting.current(); const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this.name); return n },
     togglePlus(plus) { if (plus) { this.setting.extend() } else { this.setting.retract() } },
     current() { return this.setting.current() }
     // An unstated assumption is that the following is always equal to 0 or 1:
@@ -197,7 +197,7 @@ const Timer = {
         // }
     },
     getSecondsForPhase(newPhase) {
-        Console.log("I think this phase is " + newPhase, Timer);
+        Console.log("I think this phase is " + newPhase, 'Timer');
         var toReturn = 0;
         switch (newPhase) {
             case 'draw': case 'memory': 
@@ -211,7 +211,7 @@ const Timer = {
             case 'first': toReturn = game.write * game.firstMultiplier; break;
             case 'mod':   return 25 // 10 // [T2]
             default:
-                Console.alert(Timer, "Could not determine duration of phase " + newPhase)
+                Console.alert("Could not determine duration of phase " + newPhase, 'Timer')
                 return 0
         }
         return Math.floor(toReturn)
@@ -223,12 +223,12 @@ const Timer = {
         if (s.length < 2) { s = 0 + s }
         Timer.display.textContent = h == "0:" ? m + s : h + m + s
 
-        if (seconds <= 0 || !Timer.display) { Console.log("Countdown ended", Timer); return }
+        if (seconds <= 0 || !Timer.display) { Console.log("Countdown ended", 'Timer'); return }
         Timer.countdown = setTimeout(Timer.tick, 1000, seconds + direction, direction)
     },
     interpolate() {
         if (game.decay != 0) {
-            Console.log("Interpolating regressive/progressive timer", Timer)
+            Console.log("Interpolating regressive/progressive timer", 'Timer')
             game.write = (game.write - 8) * game.decay + 8
             game.draw = (game.draw - 30) * game.decay + 30
         } 
@@ -302,7 +302,7 @@ const Koss = { // [K1]
                 //document.querySelector(".watermark").style.backgroundImage = "url('/images/ic_ready.svg')"
                 //document.querySelector(".watermark").classList.toggle("kossImage-host");
                 break;
-            default: Console.alert(Koss, "KOSS location not recognised")
+            default: Console.alert("KOSS location not recognised", 'Koss')
         }
     },
 
@@ -311,12 +311,12 @@ const Koss = { // [K1]
     tryUnderlayKossImage() {
         try { 
             document.querySelector(".drawingContainer").insertAdjacentElement("beforebegin", Koss.kossImage);
-            Console.log("Koss image underlaid", Koss)
+            Console.log("Koss image underlaid", 'Koss')
         } catch {}
     },
     screenshot() {
         Koss.kossImage.src = document.querySelector(".core").querySelector("canvas").toDataURL();
-        Console.log("Screenshot taken", Koss)
+        Console.log("Screenshot taken", 'Koss')
     }
 }
 Object.setPrototypeOf(Koss, CellulartModule)
@@ -406,11 +406,11 @@ const Refdrop = { // [R1]
             // Console.log("dragleave", Refdrop)
             // Console.log(e.relatedTarget, Refdrop)
             if (e.fromElement || e.relatedTarget !== null) { return }
-            Console.log("Dragging back to OS", Refdrop)
+            Console.log("Dragging back to OS", 'Refdrop')
             if (Refdrop.setting.current() == 'red') { Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ss.png") + ")"; }
         })
         window.addEventListener("drop", function(e){
-            Console.log("drop", Refdrop)
+            Console.log("drop", 'Refdrop')
             if (Refdrop.setting.current() == 'red') { Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ss.png") + ")"; }
         }, true)
         window.addEventListener("dragover", function(e){
@@ -456,7 +456,7 @@ const Refdrop = { // [R1]
                     document.querySelector(".core").insertAdjacentElement("afterbegin", Refdrop.refImage);
                     break;
                 default:
-                    Console.alert(Refdrop, "Intended refimg location not recognised")
+                    Console.alert("Intended refimg location not recognised", 'Refdrop')
                     break;
             } 
         }    
@@ -464,7 +464,7 @@ const Refdrop = { // [R1]
             Refdrop.refImage.src = document.querySelector(".core").querySelector("canvas").toDataURL();
             document.querySelector(".core").insertAdjacentElement("afterbegin", Refdrop.refImage);
             Refdrop.refImage.style.visibility = "visible";
-            Console.log("Screenshot taken", Refdrop)
+            Console.log("Screenshot taken", 'Refdrop')
         }
     },
     initRefctrl() {
@@ -640,7 +640,7 @@ const Spotlight = { // [S1]
         Spotlight.names = []
     },
     adjustSettings(previous, current) { // TODO override menuStep to prevent this to begin with.
-        if (current == "book") { Console.alert(Spotlight, "Changing Spotlight settings mid-album visualization tends to have disastrous consequences") }
+        if (current == "book") { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
     },
 
     // Compiles an array of ImageData into a GIF.
@@ -747,7 +747,7 @@ const Spotlight = { // [S1]
             //     Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(game.user)], "L")
             //     break;
             default:
-                Console.alert(Spotlight, "Spotlight setting not recognized")
+                Console.alert("Spotlight setting not recognized", 'Spotlight')
         }
         // intendurl = canvas;
         // setTimeout(preview, 1000)
@@ -765,7 +765,7 @@ const Spotlight = { // [S1]
         const slides = document.querySelector(".timeline").querySelectorAll(".item");
         const keySlide = slides[Spotlight.keySlideNum]
         var prevIndex = indexOfPrevSlide()
-        if (prevIndex < 0) { Console.alert(Spotlight, "Could not find fallback; no frame will be saved"); return;} //prevIndex += modeParameters[game.mode]["fallback"] }
+        if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return;} //prevIndex += modeParameters[game.mode]["fallback"] }
         const prevSlide = slides[prevIndex]
         const prevUser = (prevSlide.querySelector(".nick") ?? prevSlide.querySelector("span")).textContent;
     
@@ -1063,7 +1063,7 @@ const Geom = {
             }
         }
         function constructScreen2() {
-            Console.log("Constructing screen 2", Geom)
+            Console.log("Constructing screen 2", 'Geom')
 
             var configActive = false;
 
@@ -1083,7 +1083,7 @@ const Geom = {
             o.genPauser = setAttributes(document.createElement("button"),  { class: "geom-border geom-tray-button hover-button", parent: o.genStack })
 
             o.sendPauser.addEventListener("click", () => { o.setSendPause(Geom.flags.mode && !Geom.flags.pause) })
-            o.sendPauser.style.backgroundImage = iconPlay;
+            o.sendPauser.style.backgroundImage = iconPause;
             o.back.addEventListener("click", () => { stopGeometrize() }) // TODO put a semi-transparent negative space cancel icon instead of hover-button
             o.genPauser.addEventListener("click", () => { o.setGenPause(!Geom.flags.generate) })
             o.genPauser.style.backgroundImage = iconPause;
@@ -1095,13 +1095,13 @@ const Geom = {
                 else if (which == 'both') { o.genLabel.textContent = newValue; o.sendLabel.textContent = newValue }
             }
             o.setSendPause = function(pause) { 
-                Console.log("Send " + pause ? 'paused' : 'play', Geom)
+                Console.log("Send " + pause ? 'paused' : 'play', 'Geom')
                 o.sendPauser.style.backgroundImage = pause ? iconPause : iconPlay
                 Geom.flags.pause = pause
                 if (pause) { Geom.trySend() }
             }
             o.setGenPause = function(pause) {
-                Console.log("Gen " + pause ? 'paused' : 'play', Geom)
+                Console.log("Gen " + pause ? 'paused' : 'play', 'Geom')
                 o.genPauser.style.backgroundImage = pause ? iconPause : iconPlay
                 Geom.flags.generate = pause
             }
@@ -1114,7 +1114,7 @@ const Geom = {
             return o;
         }
         function constructScreen3() {
-            Console.log("Constructing screen 3", Geom)
+            Console.log("Constructing screen 3", 'Geom')
 
             const o = {};
 
@@ -1132,7 +1132,7 @@ const Geom = {
                 const newValue = +o.distInput.value
                 if (isNaN(newValue) || newValue < 1) { o.distInput.value = Geom.config.distance; return }
                 Geom.config.distance = newValue;
-                Console.log("Config dist set to " + newValue, Geom)
+                Console.log("Config dist set to " + newValue, 'Geom')
             })
             o.maxIcon.src = chrome.runtime.getURL("assets/module-assets/geom-3m.png")
             o.maxInput.value = Geom.config.max
@@ -1141,7 +1141,7 @@ const Geom = {
                 if (isNaN(newValue) || newValue < 1) { o.maxInput.value = Geom.config.max; return }
                 if (newValue < Geom.counters.created) { o.maxInput.value = Geom.counters.created; return }
                 Geom.config.max = newValue;
-                Console.log("Config max set to " + newValue, Geom)
+                Console.log("Config max set to " + newValue, 'Geom')
             })
 
             return o;
@@ -1196,8 +1196,8 @@ const Geom = {
         const imgdata = context.getImageData(0, 0, 758, 424)
 
         Geom.queryGW("set", { width: 758, height: 424, data: imgdata.data }).then((response) => {
-            if (response.status != 200) { Console.log("Could not recognise imagedata", Geom); return; }
-            Console.log("Image processed successfully. Beginning Geometrize", Geom);
+            if (response.status != 200) { Console.log("Could not recognise imagedata", 'Geom'); return; }
+            Console.log("Image processed successfully. Beginning Geometrize", 'Geom');
             step()
         })
 
@@ -1247,7 +1247,8 @@ const Geom = {
                 return 
             }
             const shape = await Geom.queryGW("step")
-            if (shape === undefined) { Console.alert(Geom, "Mysterious error, no shape was produced; terminating"); return }            
+            if (shape === undefined) { Console.alert("Mysterious error, no shape was produced; terminating", 'Geom'); return }     
+            Console.log(shape, 'Worker')       
             Geom.queueShape(shape)
             step() 
         }
