@@ -981,7 +981,7 @@ const Geom = {
     stepCallback : undefined,           // TimeoutID
     shapeQueue: [],                     // Queue
     flags: { interval: true, queue: false, pause: true, mode: false, ws: false, generate: true,
-        notClearToSend() { return !(this.interval && this.queue && this.pause && this.mode && this.ws) } },
+        notClearToSend() { return !(this.interval && this.queue && !this.pause && this.mode && this.ws) } },
     counters: { created: 0, sent: 0 },
     config: { distance: 1200, max: 20000 },
 
@@ -1082,10 +1082,10 @@ const Geom = {
             o.genLabel = setAttributes(document.createElement("label"),  { id: "geom-total", class: "geom-status", parent: o.genStack })
             o.genPauser = setAttributes(document.createElement("button"),  { class: "geom-border geom-tray-button hover-button", parent: o.genStack })
 
-            o.sendPauser.addEventListener("click", () => { o.setSendPause(Geom.flags.mode && !Geom.flags.pause) })
-            o.sendPauser.style.backgroundImage = iconPause;
+            o.sendPauser.addEventListener("click", () => { o.setSendPause(!Geom.flags.pause) })
+            o.sendPauser.style.backgroundImage = iconPlay;
             o.back.addEventListener("click", () => { stopGeometrize() }) // TODO put a semi-transparent negative space cancel icon instead of hover-button
-            o.genPauser.addEventListener("click", () => { o.setGenPause(!Geom.flags.generate) })
+            o.genPauser.addEventListener("click", () => { o.setGenPause(Geom.flags.generate) })
             o.genPauser.style.backgroundImage = iconPause;
             o.genLabel.addEventListener("click", () => { o.setGeomConfigWindow(!configActive) })
 
@@ -1095,15 +1095,19 @@ const Geom = {
                 else if (which == 'both') { o.genLabel.textContent = newValue; o.sendLabel.textContent = newValue }
             }
             o.setSendPause = function(pause) { 
-                Console.log("Send " + pause ? 'paused' : 'play', 'Geom')
-                o.sendPauser.style.backgroundImage = pause ? iconPause : iconPlay
+                Console.log("Send " + (pause ? 'paused' : 'play'), 'Geom')
+                if (!Geom.flags.mode) {
+                    o.sendPauser.style.backgroundImage = iconPlay
+                    return
+                } 
+                o.sendPauser.style.backgroundImage = pause ? iconPlay : iconPause
                 Geom.flags.pause = pause
-                if (pause) { Geom.trySend() }
+                if (!pause) { Geom.trySend() }
             }
             o.setGenPause = function(pause) {
-                Console.log("Gen " + pause ? 'paused' : 'play', 'Geom')
-                o.genPauser.style.backgroundImage = pause ? iconPause : iconPlay
-                Geom.flags.generate = pause
+                Console.log("Gen " + (pause ? 'paused' : 'play'), 'Geom')
+                o.genPauser.style.backgroundImage = pause ? iconPlay : iconPause
+                Geom.flags.generate = !pause
             }
             o.setGeomConfigWindow = function(active) {
                 configActive = active
@@ -1248,7 +1252,7 @@ const Geom = {
             }
             const shape = await Geom.queryGW("step")
             if (shape === undefined) { Console.alert("Mysterious error, no shape was produced; terminating", 'Geom'); return }     
-            Console.log(JSON.parse(shape), 'Worker')       
+            Console.log(shape, 'Worker')       
             Geom.queueShape(shape)
             step() 
         }
@@ -1310,6 +1314,8 @@ const Geom = {
         
             return setAttributes(document.createElementNS(svgNS, type), { ...coords, fill: color, "fill-opacity": "0.5" })
         }
+
+        console.log(Geom.flags)
 
         if(Geom.flags.notClearToSend()) { return }
         Geom.flags.interval = false

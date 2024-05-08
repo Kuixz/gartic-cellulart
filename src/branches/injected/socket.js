@@ -48,7 +48,7 @@
 // [G3]
 
 window.addEventListener('message', (event) => {
-    if (event.source !== window || event.data.direction !== 'messageToSocket') { return; }
+    if (event.source !== window || event.data.direction !== 'toSocket') { return; }
     const purp = event.data.purpose
     const data = event.data.data
     if (!Socket[purp]) { Socket.post('log', "[Cellulart] No such GSH command: " + purp)}

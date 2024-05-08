@@ -324,20 +324,20 @@ const Socket = {
 
     init() {
         window.addEventListener('message', (event) => {
-            if (event.source !== window || event.data.direction !== 'messageFromSocket') { return; }
+            if (event.source !== window || event.data.direction !== 'fromSocket') { return; }
             const purp = event.data.purpose
             const data = event.data.data
-            Console.log(`incoming (${purp}, ${data})`, Socket)
+            Console.log(`incoming (${purp}, ${data})`, 'Socket')
             Socket.handlers.forEach(handler => { 
                 if (handler.filter == purp) { handler.handle(data) }
             })
         })
     },
     post(purp, data) {
-        Console.log(`outgoing (${purp}, ${data})`, Socket)
+        Console.log(`outgoing (${purp}, ${data})`, 'Socket')
         
         window.postMessage({
-            direction: "messageToSocket",
+            direction: "toSocket",
             purpose: purp,
             data: data
         }, 'https://garticphone.com')
@@ -345,6 +345,9 @@ const Socket = {
     addMessageListener(purp, handler) {
         Socket.handlers.push({ filter:purp, handle:handler });
     }
+}
+const XHR = {
+    
 }
 
 // Utility functions
