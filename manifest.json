@@ -25,7 +25,7 @@
         },
         {
             "matches": ["https://garticphone.com/*"],
-            "js": ["src/branches/socket-injector.js"],
+            "js": ["src/branches/injector.js"],
             "run_at": "document_start",
             "all_frames": true
         }
