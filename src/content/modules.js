@@ -1143,7 +1143,7 @@ const Geom = {
             o.maxInput.addEventListener("blur", () => { 
                 const newValue = +o.maxInput.value
                 if (isNaN(newValue) || newValue < 1) { o.maxInput.value = Geom.config.max; return }
-                if (newValue < Geom.counters.created) { o.maxInput.value = Geom.counters.created; return }
+                if (newValue < Geom.counters.created) { o.maxInput.value = Geom.counters.created; /* return; */}
                 Geom.config.max = newValue;
                 Console.log("Config max set to " + newValue, 'Geom')
             })
@@ -1178,7 +1178,7 @@ const Geom = {
             geomScreen2.body.style.display = 'flex'; // TODO lazy init
             geomScreen2.echo.style.backgroundImage = "url(" + dataURL + ")"
 
-            geomScreen2.setGenPause(true)
+            geomScreen2.setGenPause(false)
             geomScreen2.updateLabel('both', 0)
             Geom.counters = { created:0, sent:0 }
             Geom.shapeQueue = [];
@@ -1315,7 +1315,7 @@ const Geom = {
             return setAttributes(document.createElementNS(svgNS, type), { ...coords, fill: color, "fill-opacity": "0.5" })
         }
 
-        console.log(Geom.flags)
+        // console.log(Geom.flags)
 
         if(Geom.flags.notClearToSend()) { return }
         Geom.flags.interval = false
