@@ -270,7 +270,8 @@ function main() {
     Controller.init()
     Observer.init()
 
-    document.querySelector(".side").remove() // lol
+    // document.querySelector(".side").remove() // lol
+    document.querySelector(".side").style.display = "none" 
 }
 document.readyState === 'complete' ? main() : window.addEventListener('load', (e) => main());
 
