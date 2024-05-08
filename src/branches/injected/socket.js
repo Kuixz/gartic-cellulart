@@ -49,11 +49,11 @@
 
 window.addEventListener('message', (event) => {
     if (event.source !== window || event.data.direction !== 'messageToSocket') { return; }
-    const func = event.data.function
+    const purp = event.data.purpose
     const data = event.data.data
-    if (!Socket[func]) { Socket.post('log', "[Cellulart] No such GSH command: " + func)}
-    try   { Socket[func](data) } 
-    catch (e) { Socket.post('log', "[Cellulart] Socket error executing " + func + "(" + JSON.stringify(data) + ")" + ":" + e) }
+    if (!Socket[purp]) { Socket.post('log', "[Cellulart] No such GSH command: " + purp)}
+    try   { Socket[purp](data) } 
+    catch (e) { Socket.post('log', "[Cellulart] Socket error executing " + purp + "(" + JSON.stringify(data) + ")" + ":" + e) }
 })
 
 const Socket = {
@@ -118,8 +118,8 @@ const Socket = {
     },
     post(purpose, data) {
         window.postMessage({
-            direction: "messageFromSocket",
-            function: purpose,
+            direction: "fromSocket",
+            purpose: purpose,
             data: data
         }, '*');
     }
