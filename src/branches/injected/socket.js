@@ -59,7 +59,7 @@ window.addEventListener('message', (event) => {
 const Socket = {
     currentWS: null,
     strokes: [],
-    bypassStrokes: 0,
+    strokeCount: 0,
 
     backToLobby() {
         currentWS = null
@@ -67,20 +67,21 @@ const Socket = {
     },
     clearStrokes() {
         Socket.strokes = []
-        Socket.bypassStrokes = 0
+        Socket.strokeCount = 0
     },
 
     setStroke(data) {
         // console.log(data)
-        Socket.bypassStrokes = data
+        // TODO undoing when just reloaded, what do?
+        Socket.strokeCount = data
     },
     redirect(data) {
         if (data.indexOf('"v":') == -1) { return data }
     
         var pieces = data.split(',')
         if (pieces[3] == '"d":1') { 
-            // Socket.bypassStrokes += 1 
-            const adjustedStroke = Number(pieces[5]) + Socket.bypassStrokes
+            Socket.strokeCount += 1 
+            const adjustedStroke = Socket.strokeCount
             pieces[5] = adjustedStroke
             Socket.strokes.push(adjustedStroke)
             return pieces.join(',')
@@ -89,7 +90,7 @@ const Socket = {
             pieces[4] = '"v":' + Socket.strokes.pop() + '}]'
             return pieces.join(',')
         } else if (pieces[3] == '"d":3') {
-            const adjustedStroke = Number(pieces[5]) + Socket.bypassStrokes
+            const adjustedStroke = Socket.strokeCount
             pieces[5] = adjustedStroke
             return pieces.join(',')
         } else {
@@ -106,8 +107,8 @@ const Socket = {
         if (!data) { return }
         if (!Socket.currentWSOpen(Socket.currentWS)) { Socket.onDisconnect(data); return }
     
-        Socket.bypassStrokes += 1
-        const toSend = data.fst + Socket.bypassStrokes + data.snd;
+        Socket.strokeCount += 1
+        const toSend = data.fst + Socket.strokeCount + data.snd;
         Socket.currentWS.expressSend(toSend);
         Socket.post('log', "Sent: " + toSend);
     },
@@ -125,9 +126,9 @@ const Socket = {
 }
 
 window.addEventListener('beforeunload', (e) => {
-    console.log(Socket.bypassStrokes)
+    console.log(Socket.strokeCount)
     // e.returnValue = Socket.stroke
     // return Socket.stroke
-    Socket.post('strokeCount', Socket.bypassStrokes)
+    Socket.post('strokeCount', Socket.strokeCount)
     // alert(Socket.stroke)
 })
