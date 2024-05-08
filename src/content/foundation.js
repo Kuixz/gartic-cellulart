@@ -196,35 +196,72 @@ const Console = { // Only block certain messages
 //     },
 //     onprint: function(message) {} // Dynamically set
 // }
-const Shelf = {
-    // init() {
-    //     ;["session", "local"].forEach((zone) => {
-    //         Box[zone] = { }
-    //         ;["set, get"].forEach((func) => {
-    //             Box[zone][func] = async function(items) { chrome.storage[zone][func](items) }
-    //         })
-    //     })
-    // },
+const Shelf = { // FAKE SHELF - REMOVE THIS WHEN PUSHING BETA 
+    dict: { 
+        auth: "dc4b4e203f9dddce4687f1d66989b838fe281ab4bb4b533bd34fd9b577bf1136",
+        p: "q",
+    },
 
     async set(items) { // Dictionary<String, any>
-        return await chrome.storage.local.set(items)
+        for (const key in items) {
+            Shelf.dict[key] = items[key]
+        }
     },
     async get(items) { // [String]
-        return await chrome.storage.local.get(items)
+        var t = {}
+        switch (typeof items) {
+            case 'object':
+                items.forEach((key) => {
+                    t[key] = Shelf.dict[key]
+                })
+                break;
+            case 'string':
+                t[items] = Shelf.dict[items]
+                break;
+            default:
+                t = Shelf.dict
+                break;
+        }
+        return t
     },
     async remove(items) { // [String]
-        return await chrome.storage.local.remove(items)
+        for (const key in items) {
+            delete Shelf.dict[key]
+        }
     },
     async clear() {
-        chrome.storage.local.clear()
-    },
-    async retrieveOrElse(key, defaultValue, write = false) {
-        const data = await chrome.storage.local.get(key)
-        if (data[key] !== undefined) { return data[key] }
-        if (write) { chrome.storage.local.set({ [key]:defaultValue }) }
-        return defaultValue
+        Shelf.dict = { }
     }
 }
+// const Shelf = {
+//     // init() {
+//     //     ;["session", "local"].forEach((zone) => {
+//     //         Box[zone] = { }
+//     //         ;["set, get"].forEach((func) => {
+//     //             Box[zone][func] = async function(items) { chrome.storage[zone][func](items) }
+//     //         })
+//     //     })
+//     // },
+
+//     async set(items) { // Dictionary<String, any>
+//         return await chrome.storage.local.set(items)
+//     },
+//     async get(items) { // [String]
+//         return await chrome.storage.local.get(items)
+//     },
+//     async remove(items) { // [String]
+//         return await chrome.storage.local.remove(items)
+//     },
+//     async clear() {
+//         chrome.storage.local.clear()
+//     },
+//     async retrieveOrElse(key, defaultValue, write = false) {
+//         const data = await chrome.storage.local.get(key)
+//         if (data[key] !== undefined) { return data[key] }
+//         if (write) { chrome.storage.local.set({ [key]:defaultValue }) }
+//         return defaultValue
+//     }
+// }
 const Keybinder = {
     keybinds: undefined,   // [Keybind]
     init() {
