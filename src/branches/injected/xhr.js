@@ -19,6 +19,15 @@
     console.log("[Cellulart] XHR proxified")
 })()
 
+window.addEventListener('message', (event) => {
+    if (event.source !== window || event.data.direction !== 'toXHR') { return; }
+    const purp = event.data.purpose
+    const data = event.data.data
+    if (!XHR[purp]) { XHR.post('log', "[Cellulart] No such OXH command: " + purp)}
+    try   { XHR[purp](data) } 
+    catch (e) { XHR.post('log', "[Cellulart] XHR error executing " + purp + "(" + JSON.stringify(data) + ")" + ":" + e) }
+})
+
 const XHR = {
     eavesdrop (text) {
         // console.log(text)
@@ -27,33 +36,20 @@ const XHR = {
         // console.log(text)
         var json = JSON.parse(text.slice(indexFirstBracket))
         // console.log(json)
-
+        var gameDict = json[1]
+        if ('configs' in gameDict) {
+            XHR.post('lobbySettings', gameDict['configs'])
+            // console.log('succ')
+        }
     },
     post(purpose, data) {
         window.postMessage({
             direction: "fromXHR",
-            function: purpose,
+            purpose: purpose,
             data: data
         }, '*');
     }
 }
-
-window.addEventListener('beforeunload', (e) => {
-    console.log(Socket.strokeCount)
-    // e.returnValue = Socket.stroke
-    // return Socket.stroke
-    Socket.post('strokeCount', Socket.strokeCount)
-    // alert(Socket.stroke)
-})
-// var ty = undefined
-
-
-// var xhrListen = XMLHttpRequest.prototype.addEventListener
-// XMLHttpRequest.prototype.addEventListener = function(type, handler) {
-//     ty = type
-//     console.log(type)
-//     return xhrListen.call(this, ...arguments)
-// }
 
 
 // TODO TODO TODO Intercept the Fetch response to set... everything.

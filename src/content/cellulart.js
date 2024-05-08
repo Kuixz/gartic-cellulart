@@ -15,13 +15,14 @@ const Controller = {
         WIW.constructWIWNode();
         Controller.keybinds.init()
         Socket.init()
+        XHR.init()
 
         Controller.initPopupAuth()
         Controller.createMenu()
-        Socket.addMessageListener('strokeCount', (data) => {
-            console.log('Stroke count set to ' + data)
-            Shelf.set({ strokeCount:data })
-        })
+        // Socket.addMessageListener('strokeCount', (data) => {
+        //     console.log('Stroke count set to ' + data)
+        //     Shelf.set({ strokeCount:data })
+        // })
     },
     mutation (oldPhase, newPhase) {
         Controller.modules.forEach(mod => mod.mutation(oldPhase, newPhase))
@@ -97,6 +98,7 @@ const Observer = {
     init() { 
         Observer.attachContentObserver(); 
         // Socket.addMessageListener('settings', Observer.adjustSettings)
+        XHR.addMessageListener('lobbySettings', Observer.deduceSettingsFromXHR)
     },
     mutation(newPhase) {
         const oldPhase = Observer.currentPhase
@@ -259,6 +261,10 @@ const Observer = {
         Observer.contentObserver.observe(frame, configChildTrunk);
         console.log("[Cellulart] Successfully attached observer");
         Observer.content = frame;
+    },
+
+    deduceSettingsFromXHR(data) {
+        console.log(data)
     }
 }
 

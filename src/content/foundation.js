@@ -347,7 +347,32 @@ const Socket = {
     }
 }
 const XHR = {
-    
+    name: 'XHR',
+    handlers: [],
+
+    init() {
+        window.addEventListener('message', (event) => {
+            if (event.source !== window || event.data.direction !== 'fromXHR') { return; }
+            const purp = event.data.purpose
+            const data = event.data.data
+            Console.log(`incoming (${purp}, ${data})`, 'XHR')
+            XHR.handlers.forEach(handler => { 
+                if (handler.filter == purp) { handler.handle(data) }
+            })
+        })
+    },
+    post(purp, data) {
+        Console.log(`outgoing (${purp}, ${data})`, 'XHR')
+        
+        window.postMessage({
+            direction: "toXHR",
+            purpose: purp,
+            data: data
+        }, 'https://garticphone.com')
+    },
+    addMessageListener(purp, handler) {
+        XHR.handlers.push({ filter:purp, handle:handler });
+    }
 }
 
 // Utility functions

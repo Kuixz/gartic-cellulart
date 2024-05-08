@@ -125,10 +125,10 @@ const Socket = {
     }
 }
 
-window.addEventListener('beforeunload', (e) => {
-    console.log(Socket.strokeCount)
-    // e.returnValue = Socket.stroke
-    // return Socket.stroke
-    Socket.post('strokeCount', Socket.strokeCount)
-    // alert(Socket.stroke)
-})
+// window.addEventListener('beforeunload', (e) => {
+//     console.log(Socket.strokeCount)
+//     // e.returnValue = Socket.stroke
+//     // return Socket.stroke
+//     Socket.post('strokeCount', Socket.strokeCount)
+//     // alert(Socket.stroke)
+// })
