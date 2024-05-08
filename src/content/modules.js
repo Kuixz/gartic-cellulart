@@ -1248,7 +1248,7 @@ const Geom = {
             }
             const shape = await Geom.queryGW("step")
             if (shape === undefined) { Console.alert("Mysterious error, no shape was produced; terminating", 'Geom'); return }     
-            Console.log(shape, 'Worker')       
+            Console.log(JSON.parse(shape), 'Worker')       
             Geom.queueShape(shape)
             step() 
         }
