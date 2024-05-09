@@ -19,7 +19,7 @@
     window.WebSocket.prototype.send = function(data) {
         Socket.registerWS(this)
 
-        const modifiedData = Socket.redirect(data)
+        const modifiedData = Socket.interceptOutgoing(data)
         // console.log(modifiedData)
         if (!modifiedData) { return }
         const args = arguments
@@ -32,14 +32,14 @@
 
         /* OrigWebSocket.prototype.send = new Proxy(OrigWebSocket.prototype.send, {
             apply: function(data) {
-                if (redirect(data)) {return}
+                if (interceptOutgoing(data)) {return}
                 return Reflect.apply( ...arguments );
             }
         }) */
 
         /* window.WebSocket.prototype = new Proxy(window.WebSocket.prototype, {
             apply: function(target, thisArg, argumentsList) {
-                if (redirect(argumentsList[0])) {return}
+                if (interceptOutgoing(argumentsList[0])) {return}
                 return Reflect.apply( ...arguments );
             }
         }) */
@@ -51,9 +51,9 @@ window.addEventListener('message', (event) => {
     if (event.source !== window || event.data.direction !== 'toSocket') { return; }
     const purp = event.data.purpose
     const data = event.data.data
-    if (!Socket[purp]) { Socket.post('log', "[Cellulart] No such GSH command: " + purp)}
+    if (!Socket[purp]) { Socket.post('log', "No such GSH command: " + purp)}
     try   { Socket[purp](data) } 
-    catch (e) { Socket.post('log', "[Cellulart] Socket error executing " + purp + "(" + JSON.stringify(data) + ")" + ":" + e) }
+    catch (e) { Socket.post('log', "Socket error executing " + purp + "(" + JSON.stringify(data) + ")" + ":" + e) }
 })
 
 const Socket = {
@@ -66,19 +66,51 @@ const Socket = {
         Socket.clearStrokes()
     },
     clearStrokes() {
+        // Socket.setStrokeStack([])
         Socket.strokes = []
         Socket.strokeCount = 0
     },
 
-    setStroke(data) {
-        // console.log(data)
-        // TODO undoing when just reloaded, what do?
-        Socket.strokeCount = data
+    setStrokeStack(data) {
+        // if (!(data instanceof Array)) { console.log('[Socket] ERROR: Not a stroke stack'); return }
+        Socket.strokes = data.map((strokeArray) => strokeArray[1])
+        // if (data != []) { Socket.strokeCount = Socket.strokes.at(-1) }
+        Socket.strokeCount = data.length > 0 ? Socket.strokes.at(-1) : 0
     },
-    redirect(data) {
+    interceptIncoming(data) {
+        // if (data.indexOf('42[') == -1) { return }
+        // Socket.post('gameEvent', data)
+        // console.log(data)
+        // console.log(data.slice(0,8))
+        if (data.slice(0,8) != '42[2,11,') { return }
+        // Socket.post('gameEventScreenTransition', data)
+        // if (data.indexOf('"draw":') == -1) { return }
+
+        // if (data.indexOf('"draw":') == -1) { return }
+        // console.log('passed')
+
+        var json = JSON.parse(data.slice(2))
+        json = json[2]
+        // if (json.screen != 5) { return }  // This saves on redundant clearStrokes, but risks breaking if Gartic changes something on a whim.
+        // var json = JSON.parse(data.slice(8, -1))
+        // console.log(json)
+        if ('draw' in json) { 
+            console.log(json.draw)
+            Socket.setStrokeStack(json.draw)
+            Socket.post('turnNum', json.turnNum)
+        } else {
+            Socket.clearStrokes()
+        }
+
+        // console.log('has draw')
+        // console.log(json.draw)
+        // Socket.setStrokeStack(json.draw)
+        // Socket.post('turnNum', json.turnNum)
+    },
+    interceptOutgoing(data) {
         if (data.indexOf('"v":') == -1) { return data }
     
-        var pieces = data.split(',')
+        var pieces = data.split(',')  // TODO: could be a costly operation with big data, consider a different method
         if (pieces[3] == '"d":1') { 
             Socket.strokeCount += 1 
             const adjustedStroke = Socket.strokeCount
@@ -91,6 +123,7 @@ const Socket = {
             return pieces.join(',')
         } else if (pieces[3] == '"d":3') {
             const adjustedStroke = Socket.strokeCount
+            // console.log(pieces[5])
             pieces[5] = adjustedStroke
             return pieces.join(',')
         } else {
@@ -100,6 +133,7 @@ const Socket = {
     registerWS(ws) {
         if (Socket.currentWSOpen()) { return }
         Socket.currentWS = ws
+        ws.addEventListener('message', (event) => { Socket.interceptIncoming(event.data) })
         Socket.post("flag", true)
     },
     currentWSOpen() { return Socket.currentWS && Socket.currentWS.readyState === Socket.currentWS.OPEN },

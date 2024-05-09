@@ -1,5 +1,5 @@
  /* ----------------------------------------------------------------------
-  *                         Cellulart BETA 1.1.3
+  *                         Cellulart BETA 1.2.0
   *                           Created by Quoi3
   * Please send any concerns, errors, reviews, and feedback to Quixz#0033 
   *    And please don't stare like that!! It's embarrassing (,,>﹏<,,) 
@@ -15,7 +15,7 @@ const Controller = {
         WIW.constructWIWNode();
         Controller.keybinds.init()
         Socket.init()
-        XHR.init()
+        Xhr.init()
 
         Controller.initPopupAuth()
         Controller.createMenu()
@@ -90,6 +90,101 @@ const Controller = {
     }
 }   // [C2]
 
+/* Normal: {
+    "tab": 1, means PRESET
+    "maxUsers": 14,
+    "mod": 2,
+    "mode": 1,
+    "visible": 1,
+    "speed": 2,
+    "turns": 3,
+    "first": 1,
+    "score": 2,
+    "animate": 2,
+    "keep": 2
+} */
+/* KO: {
+    "tab": 1,
+    "maxUsers": 14,
+    "mod": 2,
+    "mode": 8,
+    "visible": 1,
+    "speed": 5,
+    "turns": 3,
+    "first": 3,
+    "score": 2,
+    "animate": 2,
+    "keep": 2
+} */
+/* KO Custom Menu {
+    "tab": 2, means CUSTOM MENU
+    "maxUsers": 14,
+    "mod": 2, means OFF
+    "mode": 8,
+    "visible": 1,
+    "speed": 5,
+    "turns": 3,
+    "first": 3, could be ONLY DRAWINGS
+    "score": 2, means OFF
+    "animate": 2, means OFF
+    "keep": 2
+} */
+/* Fiddled Settings {
+    "tab": 2,
+    "maxUsers": 14,
+    "mod": 1, means ON
+    "mode": 8,
+    "visible": 2, could be SECRECY
+    "speed": 7,  could be TIME (Host Decision)
+    "turns": 15, apparently means 8 TURNS
+    "first": 9, could be SOLO DRAWING
+    "score": 1, means Score ON
+    "animate": 1, means Animation ON
+    "keep": 2, means keep drawing OFF
+} */
+/* More or less Normal {
+    "tab": 2,
+    "maxUsers": 14,
+    "mod": 1,
+    "mode": 8,
+    "visible": 2,
+    "speed": 2, could be NORMAL
+    "turns": 6, means SINGLE TURN
+    "first": 1, could be WRITING, DRAWING
+    "score": 1,
+    "animate": 1,
+    "keep": 1, means keep drawing ON
+} */
+/* MASTERPIECE {
+    "tab": 1,
+    "maxUsers": 14,
+    "mod": 2,
+    "mode": 20, TWENTY?!?!?
+    "visible": 1,
+    "speed": 7,
+    "turns": 6, 
+    "first": 9,
+    "score": 2,
+    "animate": 2,
+    "keep": 2
+} */
+/* COMPLEMENT Custom Menu {
+    "tab": 2,
+    "maxUsers": 14,
+    "mod": 2,
+    "mode": 15,
+    "visible": 1,
+    "speed": 9, Faster First
+    "turns": 12, ALL +1
+    "first": 11, Drawing with a Background, No Preview
+    "score": 2,
+    "animate": 2,
+    "keep": 2
+} */
+
+// 27: switch screens, 26: switch default settings, 18: custom settings, 24: end game, 15: turn end update,
+// 11: transition (with turnNum property), 5: round start (3rd entry is player count), 9: book event, 23: book begins, 12: book next timeline, 20: back to lobby
+
 const Observer = { 
     name: "Observer",
     content: undefined,
@@ -97,8 +192,10 @@ const Observer = {
     
     init() { 
         Observer.attachContentObserver(); 
-        // Socket.addMessageListener('settings', Observer.adjustSettings)
-        XHR.addMessageListener('lobbySettings', Observer.deduceSettingsFromXHR)
+        // Socket.addMessageListener('gameEvent', Observer.deduceSettingsFromSocket)
+        // Socket.addMessageListener('gameEventScreenTransition', Observer.deduceSettingsFromSocket)
+        Xhr.addMessageListener('lobbySettings', Observer.deduceSettingsFromXHR)
+        // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     },
     mutation(newPhase) {
         const oldPhase = Observer.currentPhase
@@ -119,40 +216,6 @@ const Observer = {
     waiting() { Console.log("Waiting", Observer) }, // [C4]
 
     // adjustSettings(data) {
-    //     // if (data.slice(0,2) != '42') { return }
-    //     // const settings = JSON.parse(data.slice(2))
-    //     // const settingType = settings[1]
-    //     // 26 is preset
-    //     // 27 is change
-    //     // 18 is edit
-    //     // Fuck this, just reuse the original observer logic
-    //     // if (settingType == 26) {
-    //     //     const mode = settings[2]
-    //     //     game.mode = mode
-    //     //     game.parameters = modeParameters[mode] ?? modeParameters[1]
-    //     // }
-    //     // else if (settingType == 27) {
-    //     //     game.mode = 'CUSTOM'
-    //     // }
-    //     // else if (settingType == 18) {
-    //     //     // const left = document.querySelector(".left")
-    //     //     // const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
-         
-    //     //     const encodedSettings = settings[2]
-    //     //     if (encodedSettings['speed']) { 
-    //     //         ({
-    //     //             1: [80, 300, 1.25, 2]
-    //     //         })[encodedSettings['speed']]
-    //     //         game.parameters['write'] = [0,80,40,20][encodedSettings['speed']] 
-    //     //         game.parameters['draw'] = [0,80,40,20][first] 
-    //     //         game.parameters['firstMultiplier'] = [0,80,40,20][first] 
-    //     //         game.parameters['fallback'] = [0,80,40,20][first] 
-    //     //         game.parameters['decay'] = 1
-    //     //     } else if (encodedSettings['first']) { 
-    //     //         // const first = encodedSettings['first']
-    //     //         // game.parameters['fallback'] = 1
-    //     //     }
-    //     // }
     // },
 
     nextObserver: new MutationObserver((records) => {     
@@ -160,6 +223,66 @@ const Observer = {
 
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
+        Observer.deduceSettingsFromDocument()
+    }),
+    contentObserver: new MutationObserver((records) => {
+        // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
+        if(records[0].addedNodes.length <= 0) { return; }
+        Observer.nextObserver.disconnect()
+
+        Observer.mutation(Observer.content.firstChild.firstChild.classList.item(1))
+    }),
+    attachContentObserver() {
+        var frame = document.querySelector("#content");
+        if (!frame) {
+            setTimeout(Observer.attachContentObserver, 500);
+            Console.log('Waiting for target node', 'Observer')
+            return
+        }
+        Observer.contentObserver.observe(frame, configChildTrunk);
+        Console.log("Successfully attached observer", 'Observer');
+        Observer.content = frame;
+    },
+
+    deduceSettingsFromXHR(data) {
+        Console.log(data, 'Observer')
+        // const config = data.configs
+
+        // if (config.tab == 1) { 
+        //     Console.log("XHR can use presets", 'Observer')
+        //     try {
+        //         const preset = Converter.modeIndexToString(config.mode)
+        //         Object.assign(game, modeParameters[preset]);
+        //         Timer.rejoinInterpolate(data.turnNum)
+        //         return
+        //     } catch {
+        //         Console.alert('This is an unknown preset, defaulting to piecewise assignment', 'Observer')
+        //     }
+        // }
+        // Console.log("XHR can't use presets", 'Observer')
+
+        // Converter.setMode('CUSTOM')
+        // TODO: add piecewise assignment here
+        // game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
+        // Object.assign(game, Converter.modeStringToParameters(gameConfig[0]))
+        // game.fallback = Converter.flowStringToFallback(gameConfig[1])
+
+        if (data.turnMax > 0) {
+            // todo: in theory we should pass these through to all the modules, but ehh.
+            game.turns = data.turnMax
+            Timer.interpolate(data.turnNum)
+            Socket.post('setStrokeStack', data.draw)
+        }
+    },
+    // deduceSettingsFromSocket(data) {
+    //     // console.log(data)
+    //     if (data[1] == 5) {
+    //         // game.turns = data[2]  // it's not that easy...
+    //         game.turns = Converter.turnsStringToFunction(/* TODO TODO TODO */)(data[2])
+    //     }
+    // },
+    deduceSettingsFromDocument() {
+        // TODO: move as much of this as possible to Converter / Timer.
 
         const left = document.querySelector(".left")
         const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
@@ -167,7 +290,7 @@ const Observer = {
         try {
             // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
             const mode = document.querySelector(".checked").querySelector("h4").textContent;
-            Object.assign(game, modeParameters[mode]);
+            Object.assign(game, Converter.getParameters(mode));
             switch (mode) {
                 case "ICEBREAKER":  game.turns = players + 1; break;
                 case "MASTERPIECE": game.turns = 1;           break;
@@ -180,92 +303,17 @@ const Observer = {
             const gameConfig = {};
             const gameEncodedConfig = document.querySelector(".config").querySelectorAll(".select");
             // console.log(gameEncodedConfig);
-            ;[0,1,2].forEach( num => { 
+            ;[0,1,2].forEach((num) => { 
                 try { const select = gameEncodedConfig[num].querySelector("select"); 
                         gameConfig[num] = select.childNodes[select.selectedIndex].textContent; }
                 catch { gameConfig[num] = gameEncodedConfig[num].childNodes[0].textContent;    }
-            } )
-            game.turns = turns()
-            switch (gameConfig[0]) { // Setting custom game.parameters
-                case "SLOW":              Object.assign(game, { "write": 80, "draw": 300, 'decay': 0, "firstMultiplier": 1.25 }); break;
-                case "NORMAL":            Object.assign(game, modeParameters["NORMAL"]); break;
-                case "FAST":              Object.assign(game, modeParameters["SECRET"]); break;
-                case "PROGRESSIVE":       Object.assign(game, { "write": 8, "draw": 30 , "decay": Math.exp(8 / game.turns), "firstMultiplier": 1}); break;
-                case "REGRESSIVE":        Object.assign(game, { ...modeParameters['KNOCK-OFF'], decay: 1 / Math.exp(8 / game.turns) }); break;
-                case "DYNAMIC":           Object.assign(game, modeParameters["SOLO"]); break;
-                case "INFINITE":          Object.assign(game, modeParameters["SOLO"]); break;
-                case "HOST'S DECISION":   Object.assign(game, modeParameters["SOLO"]); break;
-                case "FASTER FIRST TURN": Object.assign(game, modeParameters["COMPLEMENT"]); break;
-                case "SLOWER FIRST TURN": Object.assign(game, modeParameters["BACKGROUND"]); break;
-                default: console.log("[Cellulart] ERROR: Could not identify the time setting being used")
-            }
-            switch (gameConfig[1]) { 
-                case "WRITING, DRAWING":                     game.fallback = 2;
-                case "DRAWING, WRITING":                     game.fallback = 2;
-                case "SINGLE SENTENCE":                      game.fallback = -1;
-                case "SINGLE DRAWING":                       game.fallback = -1;
-                case "DRAWINGS WITH A BACKPACK":             game.fallback = -1;
-                case "DRAWINGS WITH A BACKPACK, NO PREVIEW": game.fallback = -1;
-                default:                                     game.fallback = 1;
-            }
-            function turns() { // Finding custom turn count for PROGRESSIVE / REGRESSIVE by taking Turns setting into account
-                switch (gameConfig[2]) {
-                    case "FEW":         return Math.floor(players / 2);     // [C3]
-                    case "MOST":        return Math.floor(3 * players / 4); // [C3]
-                    case "ALL":         return players; 
-                    case "ALL +1":      return players + 1;
-                    case "200%":        return 2 * players;
-                    case "300%":        return 3 * players;
-                    case "SINGLE TURN": return 1;
-                    case "2 TURNS":     return 2;
-                    case "3 TURNS":     return 3;
-                    case "4 TURNS":     return 4;
-                    case "5 TURNS":     return 5;
-                    case "6 TURNS":     return 6;
-                    case "7 TURNS":     return 7;
-                    case "8 TURNS":     return 8;
-                    case "9 TURNS":     return 9;
-                    case "10 TURNS":    return 10;
-                    case "20 TURNS":    return 20;
-                    default: console.log("[Cellulart] ERROR: Could not identify the turn setting being used"); return 0;
-                }
-            }
-            // console.log(gameConfig)
+            })
+            game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
+            Object.assign(game, Converter.modeStringToParameters(gameConfig[0]))
+            game.fallback = Converter.flowStringToFallback(gameConfig[1])
         }
-    }),
-
-    contentObserver: new MutationObserver((records) => {
-        // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
-        if(records[0].addedNodes.length <= 0) { return; }
-        Observer.nextObserver.disconnect()
-
-        // game.user = document.querySelector(".users").querySelector("i").parentNode.nextSibling.textContent
-        // switch (game.mode) {
-        //     case "ICEBREAKER":  game.turns = players + 1; break;
-        //     case "MASTERPIECE": game.turns = 1;           break;
-        //     case "CROWD":       game.turns = players / 2; break;
-        //     case "KNOCK-OFF":   game.decay = Math.exp(8 / game.turns); 
-        //     default:            game.turns = players;     break;
-        // }
-
-        Observer.mutation(Observer.content.firstChild.firstChild.classList.item(1))
-    }),
-
-    attachContentObserver() {
-        var frame = document.querySelector("#content");
-        if (!frame) {
-            setTimeout(Observer.attachContentObserver, 500);
-            Console.log('Waiting for target node', Observer)
-            return
-        }
-        Observer.contentObserver.observe(frame, configChildTrunk);
-        console.log("[Cellulart] Successfully attached observer");
-        Observer.content = frame;
     },
-
-    deduceSettingsFromXHR(data) {
-        console.log(data)
-    }
+    // TODO: Get phase transition data from Socket
 }
 
 
@@ -282,7 +330,5 @@ function main() {
 document.readyState === 'complete' ? main() : window.addEventListener('load', (e) => main());
 
 // function sandbox() {
-//     chrome.webRequest.onBeforeRequest.addListener(
-//         (details) => { console.log(details) }
-//     )
+// 
 // }

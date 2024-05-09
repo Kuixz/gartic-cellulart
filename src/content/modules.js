@@ -43,8 +43,8 @@ const CellulartModule = { // [F2]
   *                                 Debug 
   * With credit to Jon Ege Ronnenberg (https://jsfiddle.net/user/dotnetCarpenter/)
   * ---------------------------------------------------------------------- */
-/** Debug creates an onscreen window where console messages are rerouted.
-  * Works closely with Console; the two may be merged into one.
+/** Debug routes or blocks console messages.
+  * Works closely with Console; the two should be merged into one.
   * ---------------------------------------------------------------------- */
 const Debug = {
     name : "Debug",
@@ -56,35 +56,17 @@ const Debug = {
         const debugWIW = WIW.newWIW(false, false, 0.2)
         const body = setAttributes(debugWIW.querySelector(".wiw-body"), { id:"debug-body" });
         const iconSelect = setAttributes(document.createElement("div"), { id: 'debug-header', parent: body })
-        // const logArea = setAttributes(document.createElement("div"), { id: "debug-log", parent: body })
-        // const textArea = setAttributes(document.createElement("input"), {id: "debug-input", parent: body })
-        // const backColor = new SettingsBelt(["rgb(30,30,30)", "rgb(50,50,50)"])
-        // const modNames = new Set([...modules.map((mod) => mod.name), "Socket", "Worker", "Observer"])
-        // const filter = new Set()
 
-        modules.concat([{ name:"Socket" }, { name:"Worker" }, Observer]).forEach((mod) => {
+        // const preactivated = [ Observer ]
+        modules.concat([Socket, Xhr, { name:"Worker" }, Observer]).forEach((mod) => {
             const modIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/" + mod.name.toLowerCase() + "_on" + ".png"), parent: iconSelect })
-            modIcon.addEventListener("click", () => { 
-                // filter.has(mod.name) ? filter.delete(mod.name) : filter.add(mod.name) 
+            modIcon.addEventListener("click", toggle)
+            if (Console.enabled.has(mod.name)) { toggle() }
+            function toggle() {
                 modIcon.classList.toggle("debug-selected")
-                // Debug.filter(logArea, modNames, filter)
                 Console.toggle(mod.name)
-            })
-        }) // TODO: none or all is all
-
-        // Console.onprint = function(message, mod) {
-        //     if (Debug.setting.current == 'off') { return }
-        //     // The below function is adapted from Jon Ege Ronnenberg at (https://jsfiddle.net/dotnetCarpenter/KpM5j)
-        //     // and is used to keep the user scrolled to the bottom of the messages.
-        //     const isScrolledToBottom = logArea.scrollHeight - logArea.clientHeight <= logArea.scrollTop + 1;
-
-        //     const logEntry = setAttributes(document.createElement("label"), { style: "background-color:" + backColor.next(), class:"debug-entry", owner:mod.name });
-        //     logEntry.textContent = message;
-        //     logArea.appendChild(logEntry);
-        //     if (filter.size > 0 && !filter.has(mod.name)) { logEntry.style.display = 'none' }
-            
-        //     if(isScrolledToBottom) {logArea.scrollTop = logArea.scrollHeight - logArea.clientHeight};
-        // }
+            }
+        }) 
 
         Debug.debugWIW = debugWIW;
     },
@@ -93,21 +75,7 @@ const Debug = {
             Debug.debugWIW.style.visibility = 'initial'; return 
         }
         Debug.debugWIW.style.visibility = 'hidden'
-        // Debug.debugWIW.querySelector('debug-log').childNodes.forEach((entry) => entry.remove())
     },
-    /* filter(logArea, all, selected) {
-        const pass = selected.size == 0 ? all : selected
-        var color = "rgb(30,30,30)"
-        logArea.childNodes.forEach((entry) => {
-            if (pass.has(entry.getAttribute("owner"))) {
-                entry.style.display = 'block'
-                entry.style.backgroundColor = color
-                color = color == "rgb(50,50,50)" ? "rgb(30,30,30)" : "rgb(50,50,50)" 
-                return
-            }
-            entry.style.display = 'none'
-        })
-    } */
 }; 
 Object.setPrototypeOf(Debug, CellulartModule)
 
@@ -193,7 +161,7 @@ const Timer = {
             Timer.tick(Timer.getSecondsForPhase(newPhase) - 1, -1)
         }
         // if (game.parameters["timerCurve"] != 0) { 
-        Timer.interpolate(); 
+        Timer.interpolate(1); 
         // }
     },
     getSecondsForPhase(newPhase) {
@@ -226,13 +194,20 @@ const Timer = {
         if (seconds <= 0 || !Timer.display) { Console.log("Countdown ended", 'Timer'); return }
         Timer.countdown = setTimeout(Timer.tick, 1000, seconds + direction, direction)
     },
-    interpolate() {
+    interpolate(times) {
         if (game.decay != 0) {
             Console.log("Interpolating regressive/progressive timer", 'Timer')
-            game.write = (game.write - 8) * game.decay + 8
-            game.draw = (game.draw - 30) * game.decay + 30
+            game.write = (game.write - 8) * (game.decay ** times) + 8
+            game.draw = (game.draw - 30) * (game.decay ** times) + 30
         } 
-    }
+    },
+
+    // deduceSettingsFromXHR(data) {
+    //     console.log(data)
+    // },
+    // deduceSettingsFromSocket(data) {
+
+    // }
 };
 Object.setPrototypeOf(Timer, CellulartModule)
 
@@ -328,6 +303,7 @@ Object.setPrototypeOf(Koss, CellulartModule)
   * ---------------------------------------------------------------------- */
 /** Refdrop allows you to upload reference images over or behind the canvas,
   * with controls for position and opacity.
+  * Includes arrow key keybinds for adjustment of the image when in Red mode.
   * ---------------------------------------------------------------------- */
 const Refdrop = { // [R1]
     name : "Refdrop",
@@ -639,8 +615,9 @@ const Spotlight = { // [S1]
         Spotlight.avatars = []
         Spotlight.names = []
     },
-    adjustSettings(previous, current) { // TODO override menuStep to prevent this to begin with.
-        if (current == "book") { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
+    adjustSettings(previous, current) {
+        // TODO: TODO override menuStep to prevent this to begin with. Also, this is the wrong thing to check.
+        // if (current == "book") { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
     },
 
     // Compiles an array of ImageData into a GIF.
@@ -966,7 +943,7 @@ Object.setPrototypeOf(Reveal, CellulartModule)
  /* ----------------------------------------------------------------------
   *                                  Geom 
   * ---------------------------------------------------------------------- */
-/** Geoem (Geometrize) is the second generation of Gartic autodrawers 
+/** Geom (Geometrize) is the second generation of Gartic autodrawers 
   * after rate limiting culled the first generation.     
   * The longest module at 360 lines. Some of my finer work.                  
   * ---------------------------------------------------------------------- */
@@ -1001,11 +978,11 @@ const Geom = {
             Geom.flags.mode = false; 
             return 
         }
-        if (oldPhase == 'start') {
-            Shelf.retrieveOrElse('strokeCount', 0, false).then(c => Socket.post('setStroke', c))
-        } else {
-            Socket.post('clearStrokes')
-        }
+        // if (oldPhase == 'start') {
+        //     Shelf.retrieveOrElse('strokeCount', 0, false).then(c => Socket.post('setStroke', c))
+        // } else {
+        //     Socket.post('clearStrokes')
+        // }
         Geom.flags.mode = true
         Geom.geomPreview = setAttributes(document.createElementNS(svgNS, "svg"), { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424", parent: document.querySelector(".core") })
     },
@@ -1331,14 +1308,65 @@ const Geom = {
         Geom.geomPreview.appendChild(svg)
         Geom.updateLabel('sent', Geom.counters.sent)
     },
-    async queryGW(purpose, data) {
-        var message; // todo: condense this line and below
-        if (data === undefined) { message = { function: purpose } } else { message = { function: purpose, data: data }}
+    async queryGW(purpose, data=undefined) {
+        const message = (data === undefined) ? { function: purpose } : { function: purpose, data: data } 
         const response = await chrome.runtime.sendMessage(message);
-        // Console.log(response, Geom) TODO: This is GW setting
+        Console.log(response, 'Worker') 
         return response
     },
 }
 Object.setPrototypeOf(Geom, CellulartModule)
+
+
+
+ /* ----------------------------------------------------------------------
+  *                                 Triangle 
+  * ---------------------------------------------------------------------- */
+/** Triangles (full with T, outlined with K).
+  * Also opens the door to a third generation of autodrawers.            
+  * ---------------------------------------------------------------------- */
+const Triangle = { // [F2]
+    name : "Triangle",          // All modules have a name property
+    setting : new WhiteSettingsBelt(),    // All modules have a SettingsBelt
+    keybinds : [
+        new Keybind((e) => e.code == "T" , (e) => { Triangle.toggleFullTriangle() }),
+        new Keybind((e) => e.code == "K" , (e) => { Triangle.toggleFrameTriangle() }),
+                ],
+
+    init() {},
+    mutation(oldPhase, newPhase) {
+        // Recover the ref controls from the lower corners so that we don't lose track of them.
+        // document.body.appendChild(Refdrop.refUpload);
+        // document.body.appendChild(Refdrop.refCtrl)
+        // Recover the refimg from the overlay position so that we don't lose track of it.
+        // Refdrop.refUpload.appendChild(Refdrop.refImage);
+        // Refdrop.refImage.style.visibility = "hidden";
+    
+        // if (newPhase == "draw") {
+        //     setTimeout(Refdrop.placeRefdropControls, 200)
+        // } else {
+        //     Refdrop.refUpload.style.display = "none";
+        //     Refdrop.refCtrl.style.display = "none";
+        // }
+    },
+    backToLobby(oldPhase) {
+
+    },
+    adjustSettings(previous, current) {
+        switch (current) {
+            case 'off': 
+                // document.querySelectorAll(".wiw-close").forEach(v => v.parentNode.parentNode.remove()) // This closes all references, forcing you to drag them in again.
+                // Refdrop.refImage.src = "";
+                // Refdrop.refUpload.style.visibility = "hidden";
+                // Refdrop.refCtrl.style.visibility = "hidden";
+                // return;
+            case 'on':
+                // Refdrop.refUpload.style.visibility = "visible"
+                // Refdrop.onSocketClick = Refdrop.seFunctions.clickBridge;
+                // Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ul.png") + ")";
+                // return;
+        }
+    },
+}
 
 // #endregion

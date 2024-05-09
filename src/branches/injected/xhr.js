@@ -3,16 +3,14 @@
   * ---------------------------------------------------------------------- */
 /** GSH enhances the functions of Observer by eavesdropping on XHR requests 
   * that transmit information about the game state.                        */
- /* ----------------------------------------------------------------------
-  * currentWS :: WebSocket, the currently active WebSocket.
-  * ---------------------------------------------------------------------- */
+ /* ---------------------------------------------------------------------- */
 
 (function() {
     var xhrOpen = XMLHttpRequest.prototype.open
     
     XMLHttpRequest.prototype.open = function() {
         // console.log(arguments)
-        this.addEventListener('loadend', () => XHR.eavesdrop(this.responseText))
+        this.addEventListener('loadend', () => Xhr.interceptIncoming(this.responseText))
         return xhrOpen.call(this, ...arguments)
     }
     
@@ -23,13 +21,13 @@ window.addEventListener('message', (event) => {
     if (event.source !== window || event.data.direction !== 'toXHR') { return; }
     const purp = event.data.purpose
     const data = event.data.data
-    if (!XHR[purp]) { XHR.post('log', "[Cellulart] No such OXH command: " + purp)}
-    try   { XHR[purp](data) } 
-    catch (e) { XHR.post('log', "[Cellulart] XHR error executing " + purp + "(" + JSON.stringify(data) + ")" + ":" + e) }
+    if (!Xhr[purp]) { Xhr.post('log', "No such OXH command: " + purp)}
+    try   { Xhr[purp](data) } 
+    catch (e) { Xhr.post('log', "XHR error executing " + purp + "(" + JSON.stringify(data) + ")" + ":" + e) }
 })
 
-const XHR = {
-    eavesdrop (text) {
+const Xhr = {
+    interceptIncoming (text) {
         // console.log(text)
         var indexFirstBracket = text.indexOf('[')
         if (indexFirstBracket < 0 || text.indexOf('{') < indexFirstBracket) { return }
@@ -38,7 +36,7 @@ const XHR = {
         // console.log(json)
         var gameDict = json[1]
         if ('configs' in gameDict) {
-            XHR.post('lobbySettings', gameDict['configs'])
+            Xhr.post('lobbySettings', gameDict/*['configs']*/)
             // console.log('succ')
         }
     },

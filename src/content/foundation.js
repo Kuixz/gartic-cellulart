@@ -129,52 +129,10 @@ const WIW = {
 }
 
 // Submodule functionalities
-// const Console = { // No filtering functionality
-//     name: "Console",
-    
-//     log: function(message, optMod) {
-//         const mod = optMod || { name:'?' }
-//         const msg = `[${mod.name || '?'}] ${message}`
-//         this.onprint(msg, mod)
-//         // console.log(msg)
-//     },
-//     alert: function(message, optMod) {
-//         const mod = optMod || { name:'?' }
-//         const msg = `[${mod.name || '?'}] ERROR: ${message}`
-//         this.onprint(msg, mod)
-//         console.log(msg)
-//     },
-//     onprint: function(message) {} // Dynamically set
-// }
-/* */
-// const Console = { // Only block certain messages
-//     name: "Console",
-//     disabled: new Set(), //(["Console"]),
-
-//     toggle: function(mod) {
-//         this.set(mod, !this.disabled.has(mod))
-//     },
-//     set: function(mod, disabled) {
-//         disabled ? this.disabled.add(mod) : this.disabled.delete(mod)
-//         Console.log('Console', (disabled ? "Disabled " : "Enabled ") + "logging for " + mod.name)
-//     },
-//     log: function(mod, message) {
-//         if (this.disabled.has(mod)) { return }
-//         const msg = `[${mod.name}] ${message}`
-//         this.onprint(msg)
-//         // console.log(msg)
-//     },
-//     alert: function(mod, message) {
-//         const msg = `[${mod.name}] ERROR: ${message}`
-//         this.onprint(msg)
-//         console.log(msg)
-//     },
-//     onprint: function(message) {} // Dynamically set
-// }
-/* */
 const Console = { // Only print certain messages
     name: "Console",
-    enabled: new Set(),
+    // enabled: new Set(),
+    enabled: new Set(['Observer', 'Socket', 'XHR']),
 
     toggle: function(mod) {
         this.set(mod, !this.enabled.has(mod))
@@ -183,14 +141,14 @@ const Console = { // Only print certain messages
         enabled ? this.enabled.add(mod) : this.enabled.delete(mod)
         Console.log((enabled ? "Enabled " : "Disabled ") + "logging for " + mod, 'Console')
     },
-    log: function(message, mod=null) {
-        if (mod && !this.enabled.has(mod)) { return }
-        const msg = `[${mod}] ${message}`
+    log: function(message, modName=null) {
+        if (modName && !this.enabled.has(modName)) { return }
+        const msg = `[${modName}] ${message}`
         this.onprint(msg)
         console.log(msg)
     },
-    alert: function(message, mod) {
-        const msg = `[${mod}] ERROR: ${message}`
+    alert: function(message, modName) {
+        const msg = `[${modName}] ERROR: ${message}`
         this.onprint(msg)
         console.log(msg)
     },
@@ -320,7 +278,7 @@ const SHAuth = {
 }
 const Socket = {
     name: 'Socket',
-    handlers: [],
+    handlers: [{ filter:'log', handle:(data) => { Console.log(data, 'Socket') }}],
 
     init() {
         window.addEventListener('message', (event) => {
@@ -346,9 +304,9 @@ const Socket = {
         Socket.handlers.push({ filter:purp, handle:handler });
     }
 }
-const XHR = {
+const Xhr = {
     name: 'XHR',
-    handlers: [],
+    handlers: [{ filter:'log', handle:(data) => { Console.log(data, 'XHR') }}],
 
     init() {
         window.addEventListener('message', (event) => {
@@ -356,7 +314,7 @@ const XHR = {
             const purp = event.data.purpose
             const data = event.data.data
             Console.log(`incoming (${purp}, ${data})`, 'XHR')
-            XHR.handlers.forEach(handler => { 
+            Xhr.handlers.forEach(handler => { 
                 if (handler.filter == purp) { handler.handle(data) }
             })
         })
@@ -371,7 +329,7 @@ const XHR = {
         }, 'https://garticphone.com')
     },
     addMessageListener(purp, handler) {
-        XHR.handlers.push({ filter:purp, handle:handler });
+        Xhr.handlers.push({ filter:purp, handle:handler });
     }
 }
 
@@ -412,20 +370,22 @@ const modeParameters =
 //     13: { write: 2,   draw: 2,   firstMultiplier: 1   , fallback: 1,  turns: echo,       decay: const0 },
 // }
 {
-    "NORMAL":        { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 1
-    "KNOCK-OFF":     { write: 90,  draw: 300,           firstMultiplier: 1   , fallback: 1  }, // 2
-    "SECRET":        { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 3
-    "ANIMATION":     { write: 40,  draw: 150, decay: 0, firstMultiplier: 1   , fallback: 1  }, // 4
-    "ICEBREAKER":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: -1 }, // 5
-    "COMPLEMENT":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 0.2 , fallback: -1 }, // 6 speedrun is 7
-    "MASTERPIECE":   { write: 2,   draw: 2,   decay: 0, firstMultiplier: 1   , fallback: 1  }, // 15
-    "STORY":         { write: 40,  draw: 2,   decay: 0, firstMultiplier: 1.25, fallback: 1  },
-    "MISSING PIECE": { write: 2 ,  draw: 150, decay: 0, firstMultiplier: 1   , fallback: 1  },
-    "CO-OP":         { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 1  },
-    "SANDWICH":      { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: 1  }, // 12
-    "CROWD":         { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 13
-    "BACKGROUND":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 2   , fallback: 1  }, // 14
-    "SOLO":          { write: 2,   draw: 2,   decay: 0, firstMultiplier: 1   , fallback: 1  }, // 15
+    "NORMAL":        { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 1 -> 1
+    "KNOCK-OFF":     { write: 90,  draw: 300,           firstMultiplier: 1   , fallback: 1  }, // 2 -> 8
+    "SECRET":        { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 3 -> 3
+    "ANIMATION":     { write: 40,  draw: 150, decay: 0, firstMultiplier: 1   , fallback: 1  }, // 4 -> 11
+    "ICEBREAKER":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: -1 }, // 5 -> 9
+    "COMPLEMENT":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 0.2 , fallback: -1 }, // 6 -> 15
+    // speedrun is 7 (what? no it isn't???)
+    "MASTERPIECE":   { write: 2,   draw: 2,   decay: 0, firstMultiplier: 1   , fallback: 1  }, // 15 -> 20
+    "STORY":         { write: 40,  draw: 2,   decay: 0, firstMultiplier: 1.25, fallback: 1  },       // 17
+    "MISSING PIECE": { write: 2 ,  draw: 150, decay: 0, firstMultiplier: 1   , fallback: 1  },       // 21 
+    "CO-OP":         { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 1  },       // 18
+    "SCORE":         { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: 2  },       // 10
+    "SANDWICH":      { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: 1  }, // 12 -> 5
+    "CROWD":         { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 13 -> 7
+    "BACKGROUND":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 2   , fallback: 1  }, // 14 -> 14
+    "SOLO":          { write: 2,   draw: 2,   decay: 0, firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
 }
 
 // Global variables
@@ -438,6 +398,105 @@ const game = {
     decay: 0,              // used by Timer
     firstMultiplier: 1.25, // used by Timer
     fallback: 2            // used by Spotlight
+}
+const Converter = {
+    // user: 'Joyce Moore',
+    // turns: 0,
+
+    // mode: 'CUSTOM',
+    // write: 40,
+    // draw: 150,
+    // decay: 0,
+    // firstMultiplier: 1.25,
+    // fallback: 2,
+
+    // setMode(str) {
+    //     Converter.mode = str
+    // },
+    modeParameters: {
+        "NORMAL":        { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 1 -> 1
+        "KNOCK-OFF":     { write: 90,  draw: 300,           firstMultiplier: 1   , fallback: 1  }, // 2 -> 8
+        "SECRET":        { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 3 -> 3
+        "ANIMATION":     { write: 40,  draw: 150, decay: 0, firstMultiplier: 1   , fallback: 1  }, // 4 -> 11
+        "ICEBREAKER":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: -1 }, // 5 -> 9
+        "COMPLEMENT":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 0.2 , fallback: -1 }, // 6 -> 15
+        // speedrun is 7 (what? no it isn't???)
+        "MASTERPIECE":   { write: 2,   draw: 2,   decay: 0, firstMultiplier: 1   , fallback: 1  }, // 15 -> 20
+        "STORY":         { write: 40,  draw: 2,   decay: 0, firstMultiplier: 1.25, fallback: 1  },       // 17
+        "MISSING PIECE": { write: 2 ,  draw: 150, decay: 0, firstMultiplier: 1   , fallback: 1  },       // 21 
+        "CO-OP":         { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 1  },       // 18
+        "SCORE":         { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: 2  },       // 10
+        "SANDWICH":      { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: 1  }, // 12 -> 5
+        "CROWD":         { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 13 -> 7
+        "BACKGROUND":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 2   , fallback: 1  }, // 14 -> 14
+        "SOLO":          { write: 2,   draw: 2,   decay: 0, firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
+    },
+
+    getParameters(str) {
+        return Converter.modeParameters[str]
+    },
+
+    modeIndexToString(index) {
+        return ([0,'NORMAL',2,'SECRET',4,'SANDWICH',6,'CROWD','KNOCK-OFF','ICEBREAKER','SCORE','ANIMATION',12,'SOLO','BACKGROUND','COMPLEMENT',16,'STORY','CO-OP',19,'MASTERPIECE', 'MISSING PIECE'])[index]
+    },
+    modeStringToParameters(str) {
+        switch (str) { // Setting custom game.parameters
+            case "SLOW":              return { "write": 80, "draw": 300, 'decay': 0, "firstMultiplier": 1.25 };
+            case "NORMAL":            return Converter.getParameters(["NORMAL"]);
+            case "FAST":              return Converter.getParameters(["SECRET"]);
+            case "PROGRESSIVE":       return { "write": 8, "draw": 30, "firstMultiplier": 1, "decay": Math.exp(8 / game.turns)};
+            case "REGRESSIVE":        return { ...Converter.getParameters(['KNOCK-OFF']),    "decay": 1 / Math.exp(8 / game.turns) };
+            case "DYNAMIC":           return Converter.getParameters(["SOLO"]);
+            case "INFINITE":          return Converter.getParameters(["SOLO"]);
+            case "HOST'S DECISION":   return Converter.getParameters(["SOLO"]);
+            case "FASTER FIRST TURN": return Converter.getParameters(["COMPLEMENT"]);
+            case "SLOWER FIRST TURN": return Converter.getParameters(["BACKGROUND"]);
+            default: Console.alert("Could not identify the time setting being used", 'Converter'); return {}
+        }
+    },
+
+    flowIndexToString(index) {
+        // TODO
+    },
+    flowStringToFallback(str) {
+        switch (str) { 
+            case "WRITING, DRAWING":                     return 2;
+            case "DRAWING, WRITING":                     return 2;
+            case "SINGLE SENTENCE":                      return -1;
+            case "SINGLE DRAWING":                       return -1;
+            case "DRAWINGS WITH A BACKPACK":             return -1;
+            case "DRAWINGS WITH A BACKPACK, NO PREVIEW": return -1;
+            default:                                     return 1;
+        }
+    },
+
+    turnsIndexToString(index) {
+        // TODO
+    },
+    turnsStringToFunction(str) {
+        return (players) => {
+            switch (str) {
+                case "FEW":         return Math.floor(players / 2);     // [C3]
+                case "MOST":        return Math.floor(3 * players / 4); // [C3]
+                case "ALL":         return players; 
+                case "ALL +1":      return players + 1;
+                case "200%":        return 2 * players;
+                case "300%":        return 3 * players;
+                case "SINGLE TURN": return 1;
+                case "2 TURNS":     return 2;
+                case "3 TURNS":     return 3;
+                case "4 TURNS":     return 4;
+                case "5 TURNS":     return 5;
+                case "6 TURNS":     return 6;
+                case "7 TURNS":     return 7;
+                case "8 TURNS":     return 8;
+                case "9 TURNS":     return 9;
+                case "10 TURNS":    return 10;
+                case "20 TURNS":    return 20;
+                default: console.alert("Could not identify the turn setting being used", 'Converter'); return 0;
+            }
+        }
+    }
 }
 
 // Structures
