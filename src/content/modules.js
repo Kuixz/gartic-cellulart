@@ -132,7 +132,7 @@ const Timer = {
         clearTimeout(Timer.countdown)
         setTimeout(Timer.restartTimer, 200, newPhase)
     },
-    backToLobby(oldPhase) {},
+    backToLobby(oldPhase) {}, // Empty.
     adjustSettings(previous, current) {
         if (Timer.display == undefined) { return }
         if (current == "on") { Timer.display.style.visibility = "visible" } else { Timer.display.style.visibility = "hidden" }
@@ -879,68 +879,6 @@ Object.setPrototypeOf(Spotlight, CellulartModule)
 
 
  /* ----------------------------------------------------------------------
-  *                               Reveal (WIP)
-  * ---------------------------------------------------------------------- */
-/** Reveal uncovers the secrets of the Secret mode. Considered a "cheat". 
-  * (WIP) This module is not initialized by Controller.
-  * ---------------------------------------------------------------------- */
-const Reveal = {
-
-    name : "Reveal",
-    isCheat : true,
-    setting : new SettingsBelt(["OFF", "TEXT"], 0, "ALL"), // [V2]
-
-    hiddenElements : undefined,
-
-    // init() {}, // Empty.
-    mutation(oldPhase, newPhase) {
-        if (Reveal.setting.current() == "OFF") { return; }
-        if (newPhase == "write" || newPhase == "first") {
-            Reveal.revealPrompt()
-        } else if (Reveal.setting.current() == "ALL" && newPhase == "draw") {
-            Reveal.revealDrawing()
-        }
-    },
-    /*
-    // (deprecated) This function receives messages from the popup
-    recieveMessage(message) {}
-
-    // (deprecated) This function asks the module what message it would like to pass to the popup
-    getMessage() {} */
-    // backToLobby() {} // Empty.
-    // These functions receive messages from the in-window menu
-    adjustSettings(previous, current) {
-        switch (current) {
-            case "OFF": Reveal.rehide(); break;
-            case "TEXT": Reveal.revealPrompt(); break;
-            case "ALL": Reveal.revealDrawing(); break;
-        }
-    },
-
-    revealPrompt() {
-        Reveal.hiddenElements = document.querySelector(".center").querySelectorAll(".hiddenMode")
-        Reveal.hiddenElements.forEach(n => n.style.cssText = "font-family:Bold; -webkit-text-security: none")
-    },
-    revealDrawing() {
-        Reveal.hiddenCanvases = document.querySelector(".drawingContainer").querySelectorAll("canvas");
-        Reveal.hiddenCanvases[1].addEventListener("mouseup", e => {
-            const newwiw = WIW.newWIW(true, true);
-            setAttributes(new Image(), { class: "wiw-img", parent: newwiw.children[1], src: Reveal.hiddenCanvases[0].toDataURL() })
-        })
-        // [V3]
-    },
-    rehide() {
-        Reveal.hiddenElements.forEach(n => n.style.cssText = "");
-        // [V3]
-    }
-
-    // animate the black cover lifting to gray [V3]
-}
-Object.setPrototypeOf(Reveal, CellulartModule)
-
-
-
- /* ----------------------------------------------------------------------
   *                                  Geom 
   * ---------------------------------------------------------------------- */
 /** Geom (Geometrize) is the second generation of Gartic autodrawers 
@@ -1320,53 +1258,111 @@ Object.setPrototypeOf(Geom, CellulartModule)
 
 
  /* ----------------------------------------------------------------------
-  *                                 Triangle 
+  *                              Triangle (WIP)
   * ---------------------------------------------------------------------- */
 /** Triangles (full with T, outlined with K).
-  * Also opens the door to a third generation of autodrawers.            
+  * Possibly opens the door to a third generation of autodrawers.
+  * (WIP) This module is not initialized by Controller.        
   * ---------------------------------------------------------------------- */
 const Triangle = { // [F2]
     name : "Triangle",          // All modules have a name property
-    setting : new WhiteSettingsBelt(),    // All modules have a SettingsBelt
-    keybinds : [
-        new Keybind((e) => e.code == "T" , (e) => { Triangle.toggleFullTriangle() }),
-        new Keybind((e) => e.code == "K" , (e) => { Triangle.toggleFrameTriangle() }),
-                ],
+    setting : new SettingsBelt(['isoceles','3point'],),    // All modules have a SettingsBelt
+    // keybinds : [
+    //     new Keybind((e) => e.code == "T" , (e) => { Triangle.beginDrawingFullTriangle() }),
+    //     new Keybind((e) => e.code == "K" , (e) => { Triangle.beginDrawingFrameTriangle() }),
+    //             ],
+    // previewCanvas : undefined, 
 
-    init() {},
+    init() {}, // Probably empty.
     mutation(oldPhase, newPhase) {
-        // Recover the ref controls from the lower corners so that we don't lose track of them.
-        // document.body.appendChild(Refdrop.refUpload);
-        // document.body.appendChild(Refdrop.refCtrl)
-        // Recover the refimg from the overlay position so that we don't lose track of it.
-        // Refdrop.refUpload.appendChild(Refdrop.refImage);
-        // Refdrop.refImage.style.visibility = "hidden";
-    
-        // if (newPhase == "draw") {
-        //     setTimeout(Refdrop.placeRefdropControls, 200)
-        // } else {
-        //     Refdrop.refUpload.style.display = "none";
-        //     Refdrop.refCtrl.style.display = "none";
-        // }
+        // Probably, we should discard the preview canvas (let it get removed from DOM),
+        // and reinitialize it on every new drawing phase.
     },
-    backToLobby(oldPhase) {
-
-    },
+    backToLobby(oldPhase) {},  // Probably empty.
     adjustSettings(previous, current) {
         switch (current) {
-            case 'off': 
-                // document.querySelectorAll(".wiw-close").forEach(v => v.parentNode.parentNode.remove()) // This closes all references, forcing you to drag them in again.
-                // Refdrop.refImage.src = "";
-                // Refdrop.refUpload.style.visibility = "hidden";
-                // Refdrop.refCtrl.style.visibility = "hidden";
-                // return;
-            case 'on':
-                // Refdrop.refUpload.style.visibility = "visible"
-                // Refdrop.onSocketClick = Refdrop.seFunctions.clickBridge;
-                // Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ul.png") + ")";
-                // return;
+            case 'isoceles': 
+                // 
+            case '3point':
+                // 
+        }
+        // Isoceles and 3-point have entirely different control schemes.
+    },
+
+    beginDrawingFullTriangle() {
+
+    },
+    beginDrawingFrameTriangle() {
+
+    },
+    deselect() {
+        // I need to carefully juggle variables to yield the correct behaviour when deselecting.
+    },
+
+    // Snowball 2, 6, 10, 14, 18
+}
+Object.setPrototypeOf(Triangle, CellulartModule)
+
+
+
+ /* ----------------------------------------------------------------------
+  *                               Reveal (WIP)
+  * ---------------------------------------------------------------------- */
+/** Reveal uncovers the secrets of the Secret mode. Considered a "cheat". 
+  * (WIP) This module is not initialized by Controller.
+  * ---------------------------------------------------------------------- */
+const Reveal = {
+
+    name : "Reveal",
+    isCheat : true,
+    setting : new RedSettingsBelt('off'), // SettingsBelt(["OFF", "TEXT"], 0, "ALL"), // [V2]
+
+    hiddenElements : undefined,
+
+    // init() {}, // Empty.
+    mutation(oldPhase, newPhase) {
+        if (Reveal.setting.current() == "OFF") { return; }
+        if (newPhase == "write" || newPhase == "first") {
+            Reveal.revealPrompt()
+        } else if (Reveal.setting.current() == "ALL" && newPhase == "draw") {
+            Reveal.revealDrawing()
         }
     },
+    /*
+    // (deprecated) This function receives messages from the popup
+    recieveMessage(message) {}
+
+    // (deprecated) This function asks the module what message it would like to pass to the popup
+    getMessage() {} */
+    // backToLobby() {} // Empty.
+    // These functions receive messages from the in-window menu
+    adjustSettings(previous, current) {
+        switch (current) {
+            case "OFF": Reveal.rehide(); break;
+            case "TEXT": Reveal.revealPrompt(); break;
+            case "ALL": Reveal.revealDrawing(); break;
+        }
+    },
+
+    revealPrompt() {
+        Reveal.hiddenElements = document.querySelector(".center").querySelectorAll(".hiddenMode")
+        Reveal.hiddenElements.forEach(n => n.style.cssText = "font-family:Bold; -webkit-text-security: none")
+    },
+    revealDrawing() {
+        Reveal.hiddenCanvases = document.querySelector(".drawingContainer").querySelectorAll("canvas");
+        Reveal.hiddenCanvases[1].addEventListener("mouseup", e => {
+            const newwiw = WIW.newWIW(true, true);
+            setAttributes(new Image(), { class: "wiw-img", parent: newwiw.children[1], src: Reveal.hiddenCanvases[0].toDataURL() })
+        })
+        // [V3]
+    },
+    rehide() {
+        Reveal.hiddenElements.forEach(n => n.style.cssText = "");
+        // [V3]
+    }
+
+    // animate the black cover lifting to gray [V3]
 }
+Object.setPrototypeOf(Reveal, CellulartModule)
 
 // #endregion

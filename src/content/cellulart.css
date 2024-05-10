@@ -358,25 +358,6 @@ div#debug-header {
         display: none;
     }
 }
-.debug-entry {
-    font-size: 5cqw;
-    color: rgb(180, 180, 180); /* rgb(210, 150, 90); */
-    display: block;
-    width: 100%;
-}
-#debug-input {
-    height: 20%;
-    font-size: 7cqw;
-    color: rgb(180, 180, 180);
-    background-color: rgb(50,50,50);
-    border: none;
-    border-top: 1.5cqh solid black;
-    outline: 0px;
-}
-#debug-log {
-    height: 75%; /* 80% of 75%; */
-    overflow: scroll;
-}
 div#cellulart-menu{
     top: 80px; 
     right: 50px;
@@ -404,8 +385,11 @@ img.cellulart-circular-icon {
     opacity: 0.5;
 }
 img.cellulart-circular-icon:hover {
-    opacity: 0.9;
+    opacity: 0.8;
 }
 img.cellulart-circular-icon.debug-selected {
-    opacity: 0.9;
+    opacity: 0.8;
+}
+img.cellulart-circular-icon.debug-selected:hover {
+    opacity: 1;
 }
