@@ -112,6 +112,7 @@ const Socket = {
     
         var pieces = data.split(',')  // TODO: could be a costly operation with big data, consider a different method
         if (pieces[3] == '"d":1') { 
+            // if (pieces[3] > Socket.strokeCount) { Socket.strokeCount = pieces[3] }
             Socket.strokeCount += 1 
             const adjustedStroke = Socket.strokeCount
             pieces[5] = adjustedStroke
