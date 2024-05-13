@@ -7,7 +7,7 @@
 const Controller = { 
     
     menu: null, // [C1]
-    modules: [Timer, Koss, Refdrop, Spotlight, Geom, Red, Debug], //, Reveal]
+    modules: [Timer, Koss, Refdrop, Geom, Red, Debug], //, Reveal]
     keybinds: Keybinder,
     auth: SHAuth.using(Shelf),
 

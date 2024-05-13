@@ -61,7 +61,9 @@ const Debug = {
         modules.concat([Socket, Xhr, { name:"Worker" }, Observer]).forEach((mod) => {
             const modIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/" + mod.name.toLowerCase() + "_on" + ".png"), parent: iconSelect })
             modIcon.addEventListener("click", toggle)
-            if (Console.enabled.has(mod.name)) { toggle() }
+            if (Console.enabled.has(mod.name)) { 
+                modIcon.classList.add("debug-selected")
+            }
             function toggle() {
                 modIcon.classList.toggle("debug-selected")
                 Console.toggle(mod.name)
@@ -569,11 +571,12 @@ Object.setPrototypeOf(Refdrop, CellulartModule)
 
 
  /* ----------------------------------------------------------------------
-  *                                Spotlight 
+  *                            Spotlight (DOWN)
   * ---------------------------------------------------------------------- */
 /** Spotlight condenses your performance for the current round into a gif. 
   * The most spaghetti, convoluted module, second longest at 300 lines.
-  * And it's not even particularly useful.                                 
+  * And it's not even particularly useful.   
+  * Down for maintenance.                              
   * ---------------------------------------------------------------------- */
 const Spotlight = { // [S1]
 
@@ -623,25 +626,26 @@ const Spotlight = { // [S1]
     // Compiles an array of ImageData into a GIF.
     compileToGif() {
         if( Spotlight.setting.current() == 'off' || Spotlight.compositedFrameDatas.length == 0) { return }
-        // Console.log(compositedFrameDatas, Spotlight);
+        Console.log('Now compiling to GIF', 'Spotlight');
         const gif = gifenc.GIFEncoder();
         
         var index = 0;
         // Console.log(compositedFrameDatas.length, Spotlight)
         while (index < Spotlight.compositedFrameDatas.length) {
-            // console.log("Queueing frame " + index);
+            Console.log("Queueing frame " + index, 'Spotlight');
             /*const canvasElement = compositedFrames[index];
             if (canvasElement != null) { gif.addFrame(canvasElement, {delay: 400}) };
             index += 1;*/
             const data = Spotlight.compositedFrameDatas[index];
             index += 1
-            if (!data) { return }
+            if (!data) { continue }
             const format = "rgb444";
             const palette = gifenc.quantize(data, 256, { format });
             const indexed = gifenc.applyPalette(data, palette, format);
             gif.writeFrame(indexed, 1616, 683, { palette });
         }
 
+        Console.log('Complete', 'Spotlight')
         gif.finish();
         const buffer = gif.bytesView();
 
