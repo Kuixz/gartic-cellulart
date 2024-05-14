@@ -133,7 +133,7 @@ const WIW = {
 const Console = { // Only print certain messages
     name: "Console",
     // enabled: new Set(),
-    enabled: new Set(['Observer', 'Socket', 'XHR']),
+    enabled: new Set([/*'Observer',*/'Socket', 'XHR']),
 
     toggle: function(mod) {
         this.set(mod, !this.enabled.has(mod))
@@ -289,9 +289,15 @@ const Socket = {
             const purp = event.data.purpose
             const data = event.data.data
             Console.log(`incoming (${purp}, ${data})`, 'Socket')
-            Socket.handlers.forEach(handler => { 
-                if (handler.filter == purp) { handler.handle(data) }
-            })
+            Socket.handle(purp, data)
+            // Socket.handlers.forEach(handler => { 
+            //     if (handler.filter == purp) { handler.handle(data) }
+            // })
+        })
+    },
+    handle(purp, data){
+        Socket.handlers.forEach(handler => { 
+            if (handler.filter == purp) { handler.handle(data) }
         })
     },
     post(purp, data) {
@@ -317,9 +323,15 @@ const Xhr = {
             const purp = event.data.purpose
             const data = event.data.data
             Console.log(`incoming (${purp}, ${data})`, 'XHR')
-            Xhr.handlers.forEach(handler => { 
-                if (handler.filter == purp) { handler.handle(data) }
-            })
+            Xhr.handle(purp, data)
+            // Xhr.handlers.forEach(handler => { 
+            //     if (handler.filter == purp) { handler.handle(data) }
+            // })
+        })
+    },
+    handle(purp, data) {
+        Xhr.handlers.forEach(handler => { 
+            if (handler.filter == purp) { handler.handle(data) }
         })
     },
     post(purp, data) {
@@ -510,7 +522,11 @@ class Keybind {
     }
 }
 
+
 // module.exports = { this.wdinwos }
 if (typeof exports !== 'undefined') {
-    module.exports = { gifenc, WIW, Console, Shelf, Keybinder, SHAuth, Socket, Xhr, clamp, preventDefaults, svgNS, configChildTrunk, game, Converter, SettingsBelt, WhiteSettingsBelt, RedSettingsBelt, Keybind };
+    module.exports = { gifenc, WIW, Console, Shelf, Keybinder, SHAuth, Socket, Xhr, clamp, preventDefaults, setAttributes, svgNS, configChildTrunk, game, Converter, SettingsBelt, WhiteSettingsBelt, RedSettingsBelt, Keybind };
+    // module.exports = { ...Object.entries(this) }
+    // module.exports = { ...Object.entries(window) }
+    // module.exports = { ...Object.values(this) }
 }

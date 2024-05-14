@@ -1,4 +1,8 @@
-const foundation = require('../src/content/foundation.js');
+/**
+ * @jest-environment node
+ */
+
+const foundation = require(PATH + '/src/content/foundation.js');
 Object.assign(global, foundation)
 
 test('Shelf get', async () => {

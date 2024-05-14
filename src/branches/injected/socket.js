@@ -167,3 +167,6 @@ const Socket = {
 //     Socket.post('strokeCount', Socket.strokeCount)
 //     // alert(Socket.stroke)
 // })
+if (typeof exports !== 'undefined') {
+    module.exports = { Socket };
+}

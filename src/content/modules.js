@@ -13,20 +13,25 @@ const CellulartModule = { // [F2]
     keybinds : undefined,   // Some modules have keybinds
 
     // Initialization. 
-    // To be overriden by each module.
+    // To be overridden by each module.
     init() {},
 
     // This function is called whenever the game transitions to a new phase.
-    // To be overriden by each module.
+    // To be overridden by each module.
     mutation(oldPhase, newPhase) {},
 
     // This function "cleans the slate" when a game ends. 
-    // To be overriden by each module.
+    // To be overridden by each module.
     backToLobby(oldPhase) {}, 
 
     // This function makes required changes when switching between settings. 
-    // To be overriden by each (controllable) module.
+    // To be overridden by each (controllable) module.
     adjustSettings(previous, current) {},
+
+    // This function should set internal states based on the game config
+    // depending on the needs of the module.
+    // To be overridden by each module that requires more than marginal state knowledge.
+    adjustGameParameters(parameters) {},
 
     // These functions receive messages from the in-window menu and are generally shared between modules.
     menuStep() { const c = this.setting.current(); const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this.name); return n },
@@ -1374,6 +1379,6 @@ Object.setPrototypeOf(Reveal, CellulartModule)
 
 
 // console.log(Object.keys(window))
-// if (typeof exports !== 'undefined') {
-//     module.exports = { Debug, Red, Timer, Koss, Refdrop, Spotlight, Geom, Triangle, Reveal };
-// }
+if (typeof exports !== 'undefined') {
+    module.exports = { Debug, Red, Timer, Koss, Refdrop, Spotlight, Geom, Triangle, Reveal };
+}

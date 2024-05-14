@@ -51,3 +51,7 @@ const Xhr = {
 
 
 // TODO TODO TODO Intercept the Fetch response to set... everything.
+
+if (typeof exports !== 'undefined') {
+    module.exports = { Xhr };
+}

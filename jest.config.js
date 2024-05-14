@@ -4,7 +4,9 @@ const config = {
     transform: {
         // 'src.*js$' : '<rootDir>/test/setup/antiquated-transformer.js'
     },
+    testEnvironment: 'jsdom',
     setupFiles: ['<rootDir>/test/setup/mock-extension-apis.js'],
+    // setupFilesAfterEnv: ['<rootDir>/test/setup/polyfills.js']
     // transform: { }
 };
   

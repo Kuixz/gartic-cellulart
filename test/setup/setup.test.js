@@ -1,3 +1,7 @@
+/**
+* @jest-environment jsdom
+*/
+
 const sum = require('./sum.js');
 
 const foundation = require('../../src/content/foundation.js');
@@ -11,4 +15,9 @@ test('jest', () => {
 // });
 test('namespace', () => {
     expect(svgNS).toBe("http://www.w3.org/2000/svg");
+});
+
+test('jsdom', () => {
+   const element = document.createElement('div');
+   expect(element).not.toBeNull();
 });
