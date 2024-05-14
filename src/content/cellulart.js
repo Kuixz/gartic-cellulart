@@ -42,7 +42,6 @@ const Controller = {
     },
     async createMenu() {
         var hiddenButtons = []
-        var unlock = new SettingsBelt(['on', 'red'])
 
         green = !(await Controller.auth.tryLogin())
         createMenuButtons(green)

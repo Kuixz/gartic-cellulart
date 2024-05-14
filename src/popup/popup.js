@@ -21,10 +21,10 @@ async function mail(message, rsvp) {
 }
 
 function closeChannel(blurb) {
-    subtitle = document.createElement("h2");
+    const subtitle = document.createElement("h2");
     subtitle.textContent = blurb;
     
-    main = document.getElementById("main");
+    const main = document.getElementById("main");
     main.insertAdjacentElement("afterEnd", subtitle); 
     main.remove();
 }
