@@ -41,7 +41,6 @@ const CellulartModule = { // [F2]
 
 /* ----------------------------------------------------------------------
   *                                 Debug 
-  * With credit to Jon Ege Ronnenberg (https://jsfiddle.net/user/dotnetCarpenter/)
   * ---------------------------------------------------------------------- */
 /** Debug routes or blocks console messages.
   * Works closely with Console; the two should be merged into one.
@@ -289,7 +288,9 @@ const Koss = { // [K1]
         try { 
             document.querySelector(".drawingContainer").insertAdjacentElement("beforebegin", Koss.kossImage);
             Console.log("Koss image underlaid", 'Koss')
-        } catch {}
+        } catch {
+            Console.log("Koss image NOT underlaid, no place found : not on draw mode?", 'Koss')
+        }
     },
     screenshot() {
         Koss.kossImage.src = document.querySelector(".core").querySelector("canvas").toDataURL();
@@ -660,7 +661,7 @@ const Spotlight = { // [S1]
             anchor.href = url;
             anchor.download = filename;
             anchor.click();
-        };
+        }
 
         const dlnode = WIW.newWIW(true, true)
         const dlicon = setAttributes(new Image(), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/spotlight-1.png") })
@@ -1285,9 +1286,9 @@ const Triangle = { // [F2]
     backToLobby(oldPhase) {},  // Probably empty.
     adjustSettings(previous, current) {
         switch (current) {
-            case 'isoceles': 
+            case 'isoceles': break;
                 // 
-            case '3point':
+            case '3point': break;
                 // 
         }
         // Isoceles and 3-point have entirely different control schemes.
@@ -1370,3 +1371,9 @@ const Reveal = {
 Object.setPrototypeOf(Reveal, CellulartModule)
 
 // #endregion
+
+
+// console.log(Object.keys(window))
+// if (typeof exports !== 'undefined') {
+//     module.exports = { Debug, Red, Timer, Koss, Refdrop, Spotlight, Geom, Triangle, Reveal };
+// }

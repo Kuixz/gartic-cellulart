@@ -9,6 +9,7 @@ var gifenc;
     const src = chrome.runtime.getURL("src/lib/gifenc.esm.mjs");
     gifenc = await import(src);
 })(); // setTimeout(function(){console.log(gifenc); console.log(gifenc.GIFEncoder); console.log(gifenc.quantize)}, 1000)
+
 const WIW = {
     wiwNode: undefined, // HTMLDivElement
     currentZIndex: 20,  // todo reset z index when a threshold is passed
@@ -166,21 +167,23 @@ const Shelf = { // FAKE SHELF - REMOVE THIS WHEN PUSHING BETA
         }
     },
     async get(items) { // [String]
-        var t = {}
         switch (typeof items) {
+            case 'string':
+                // t[items] = Shelf.dict[items]
+                // break;
+                return Shelf.dict[items]
             case 'object':
+                var t = {}
                 items.forEach((key) => {
                     t[key] = Shelf.dict[key]
                 })
-                break;
-            case 'string':
-                t[items] = Shelf.dict[items]
-                break;
+                return t
+                // break;
             default:
-                t = Shelf.dict
-                break;
+                return Shelf.dict
+                // break;
         }
-        return t
+        // return t
     },
     async remove(items) { // [String]
         for (const key in items) {
@@ -253,8 +256,8 @@ const SHAuth = {
     validated: false, //false,
     storage: null,  
 
-    remember(str) {
-        _ = SHAuth.storage.set({"auth":str})
+    async remember(str) {
+        _ = await SHAuth.storage.set({"auth":str})
     },
     validate(str) {
         const correct = str === SHAuth.hash
@@ -264,7 +267,7 @@ const SHAuth = {
     async tryLogin() {
         const r = await SHAuth.storage.get("auth")
         // console.log(r)
-        return SHAuth.validate(r.auth)
+        return SHAuth.validate(r)
     },
     async authenticate (message) {
         if (SHAuth.validated) { return true }
@@ -272,7 +275,7 @@ const SHAuth = {
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer)
         const hashString = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
         SHAuth.remember(hashString)
-        alert(hashString)
+        // alert(hashString)
         return SHAuth.validate(hashString)
     }
 }
@@ -342,7 +345,7 @@ const setAttributes = (node, attrs) => {
             case "parent": value.appendChild(node);  break;
             default: node.setAttribute(attr, value); break;
         }
-    }; 
+    }
     return node 
 }
 
@@ -351,42 +354,7 @@ const svgNS = "http://www.w3.org/2000/svg"
 const configChildTrunk = { childList: true };
 // const echo = (v) => v
 // const const0 = () => 0
-const modeParameters = 
-// {
-//     1:  { write: 40,  draw: 150, firstMultiplier: 1.25, fallback: 2,  turns: echo,       decay: const0 },
-//     8:  { write: 90,  draw: 300, firstMultiplier: 1   , fallback: 1,  turns: echo,       decay: (turns) => Math.exp(8 / turns) },
-//     3:  { write: 20,  draw: 75,  firstMultiplier: 1.25, fallback: 2,  turns: echo,       decay: const0 },
-//     11: { write: 40,  draw: 150, firstMultiplier: 1   , fallback: 1,  turns: echo,       decay: const0 },
-//     9:  { write: 40,  draw: 150, firstMultiplier: 1.25, fallback: -1, turns: (v) => v+1, decay: const0 },
-//     5:  { write: 40,  draw: 150, firstMultiplier: 0.2 , fallback: -1, turns: echo,       decay: const0 },
-//     20: { write: 2,   draw: 2,   firstMultiplier: 1   , fallback: 1,  turns: echo,       decay: const0 },
-//     17: { write: 40,  draw: 2,   firstMultiplier: 1.25, fallback: 1,  turns: () => 1,    decay: const0 },
-//     21: { write: 2 ,  draw: 150, firstMultiplier: 1   , fallback: 1,  turns: echo,       decay: const0 },
-//     18: { write: 20,  draw: 75,  firstMultiplier: 1.25, fallback: 1,  turns: echo,       decay: const0 },
-//     10: { write: 40,  draw: 150, firstMultiplier: 1.25, fallback: 2,  turns: echo,       decay: const0 },
-//     5:  { write: 40,  draw: 150, firstMultiplier: 1.25, fallback: 1,  turns: echo,       decay: const0 },
-//     7:  { write: 20,  draw: 75,  firstMultiplier: 1.25, fallback: 2,  turns: echo,       decay: const0 },
-//     14: { write: 40,  draw: 150, firstMultiplier: 2   , fallback: 1,  turns: echo,       decay: const0 },
-//     13: { write: 2,   draw: 2,   firstMultiplier: 1   , fallback: 1,  turns: echo,       decay: const0 },
-// }
-{
-    "NORMAL":        { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 1 -> 1
-    "KNOCK-OFF":     { write: 90,  draw: 300,           firstMultiplier: 1   , fallback: 1  }, // 2 -> 8
-    "SECRET":        { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 3 -> 3
-    "ANIMATION":     { write: 40,  draw: 150, decay: 0, firstMultiplier: 1   , fallback: 1  }, // 4 -> 11
-    "ICEBREAKER":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: -1 }, // 5 -> 9
-    "COMPLEMENT":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 0.2 , fallback: -1 }, // 6 -> 15
-    // speedrun is 7 (what? no it isn't???)
-    "MASTERPIECE":   { write: 2,   draw: 2,   decay: 0, firstMultiplier: 1   , fallback: 1  }, // 15 -> 20
-    "STORY":         { write: 40,  draw: 2,   decay: 0, firstMultiplier: 1.25, fallback: 1  },       // 17
-    "MISSING PIECE": { write: 2 ,  draw: 150, decay: 0, firstMultiplier: 1   , fallback: 1  },       // 21 
-    "CO-OP":         { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 1  },       // 18
-    "SCORE":         { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: 2  },       // 10
-    "SANDWICH":      { write: 40,  draw: 150, decay: 0, firstMultiplier: 1.25, fallback: 1  }, // 12 -> 5
-    "CROWD":         { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 13 -> 7
-    "BACKGROUND":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 2   , fallback: 1  }, // 14 -> 14
-    "SOLO":          { write: 2,   draw: 2,   decay: 0, firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
-}
+
 
 // Global variables
 const game = {
@@ -540,4 +508,9 @@ class Keybind {
         this.triggeredBy = triggeredBy;
         this.response = response;
     }
+}
+
+// module.exports = { this.wdinwos }
+if (typeof exports !== 'undefined') {
+    module.exports = { gifenc, WIW, Console, Shelf, Keybinder, SHAuth, Socket, Xhr, clamp, preventDefaults, svgNS, configChildTrunk, game, Converter, SettingsBelt, WhiteSettingsBelt, RedSettingsBelt, Keybind };
 }

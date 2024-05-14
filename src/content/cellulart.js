@@ -293,7 +293,7 @@ const Observer = {
                 case "ICEBREAKER":  game.turns = players + 1; break;
                 case "MASTERPIECE": game.turns = 1;           break;
                 case "CROWD":       game.turns = players / 2; break;
-                case "KNOCK-OFF":   game.decay = Math.exp(8 / players); 
+                case "KNOCK-OFF":   game.decay = Math.exp(8 / players); game.turns = players; break;
                 default:            game.turns = players;     break;
             }
         } catch { 
@@ -301,7 +301,7 @@ const Observer = {
             const gameConfig = {};
             const gameEncodedConfig = document.querySelector(".config").querySelectorAll(".select");
             // console.log(gameEncodedConfig);
-            ;[0,1,2].forEach((num) => { 
+            [0,1,2].forEach((num) => { 
                 try { const select = gameEncodedConfig[num].querySelector("select"); 
                         gameConfig[num] = select.childNodes[select.selectedIndex].textContent; }
                 catch { gameConfig[num] = gameEncodedConfig[num].childNodes[0].textContent;    }
@@ -329,4 +329,8 @@ document.readyState === 'complete' ? main() : window.addEventListener('load', (e
 
 // function sandbox() {
 // 
+// }
+
+// if (typeof exports !== 'undefined') {
+//     module.exports = { Controller, Observer };
 // }
