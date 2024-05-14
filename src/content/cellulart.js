@@ -8,12 +8,11 @@ const Controller = {
     
     menu: null, // [C1]
     modules: [Timer, Koss, Refdrop, Geom, Red, Debug], //, Reveal]
-    keybinds: Keybinder,
     auth: SHAuth.using(Shelf),
 
     init() {
         WIW.constructWIWNode();
-        Controller.keybinds.init()
+        Keybinder.init()
         Socket.init()
         Xhr.init()
 
@@ -55,7 +54,7 @@ const Controller = {
             Controller.modules.forEach((mod) => { 
                 mod.init(Controller.modules)
                 if (mod.setting) { createModuleButton(mod, green) } 
-                if (mod.keybinds) { Controller.keybinds.add(mod.keybinds) }
+                if (mod.keybinds) { Keybinder.add(mod.keybinds) }
             })
         }
         function createModuleButton(mod, green) {
