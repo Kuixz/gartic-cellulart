@@ -144,6 +144,7 @@ const Timer = {
     // init(modules) {}, // Empty.
     mutation(oldPhase, newPhase) {
         if (["book", "start"].includes(newPhase)) { return }
+        // Timer.finalizeTurns()
         setTimeout(Timer.placeTimer, 200)
 
         // If we changed from a phase that warrants a reset in the timer, reset the timer.
@@ -161,7 +162,7 @@ const Timer = {
             case 1: Timer.adjustParameters(data); break;
             // case 2: Timer.parameters.players += 1; break;
             // case 3: Timer.parameters.players -= 1; break;
-            case 5: Timer.finalizeTurns(); break;
+            // case 5: Timer.finalizeTurns(); break;
             case 18: Timer.tweakParameters(data)
         }
     },
