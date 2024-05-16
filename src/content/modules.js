@@ -8,13 +8,14 @@
   * ---------------------------------------------------------------------- */
 const CellulartModule = { // [F2]
     name : "null",          // All modules have a name property
+    hasMenuButton : true,   // Some modules aren't directly controllable
     isCheat : false,        // Most modules declare if they are unfair or not
     setting : undefined,    // All modules have a SettingsBelt
     keybinds : undefined,   // Some modules have keybinds
 
     // Initialization. 
     // To be overridden by each module.
-    init() {},
+    init(modules) {},
 
     // This function is called whenever the game transitions to a new phase.
     // To be overridden by each module.
@@ -101,7 +102,7 @@ const Red = {
 
     modules : null,
 
-    init(modules) { this.modules = modules },
+    init(modules) { this.modules = modules.filter((x) => { 'setting' in x }) },
     adjustSettings(previous, current) {
         this.modules.forEach((mod) => { mod.togglePlus(current == 'red') })
     }
@@ -128,7 +129,15 @@ const Timer = {
     display : undefined, // HTMLDivElement
     countdown : undefined, // timeoutID
 
-    init() {}, // Empty.
+    parameters : {    
+        turns: 0,              // used by Timer 
+        write: 40,             // used by Timer
+        draw: 150,             // used by Timer
+        decay: 0,              // used by Timer
+        firstMultiplier: 1.25, // used by Timer
+    },
+
+    // init(modules) {}, // Empty.
     mutation(oldPhase, newPhase) {
         if (["book", "start"].includes(newPhase)) { return }
         setTimeout(Timer.placeTimer, 200)
@@ -138,10 +147,50 @@ const Timer = {
         clearTimeout(Timer.countdown)
         setTimeout(Timer.restartTimer, 200, newPhase)
     },
-    backToLobby(oldPhase) {}, // Empty.
+    // backToLobby(oldPhase) {}, // Empty.
     adjustSettings(previous, current) {
         if (Timer.display == undefined) { return }
         if (current == "on") { Timer.display.style.visibility = "visible" } else { Timer.display.style.visibility = "hidden" }
+    },
+    adjustGameParameters(parameters) {
+        const config = parameters.config
+        const midgame = parameters.turnMax > 0
+        if (config.tab == 1) { 
+            Console.log("XHR can use presets", 'Observer')
+            try {
+                // const preset = Converter.modeIndexToString(config.mode)
+                // Object.assign(Timer.parameters, Converter.getParameters(preset));
+                // switch (preset) {
+                //     case "ICEBREAKER":  Timer.parameters.turns = players + 1; break;
+                //     case "MASTERPIECE": Timer.parameters.turns = 1;           break;
+                //     case "CROWD":       Timer.parameters.turns = players / 2; break;
+                //     case "KNOCK-OFF":   Timer.parameters.turns = Math.exp(8 / players); Timer.parameters.turns = players; break;
+                //     default:            Timer.parameters.turns = players;     break;
+                // }
+                // Timer.rejoinInterpolate(data.turnNum)
+            } catch {
+                Console.alert('This is an unknown preset, defaulting to piecewise assignment', 'Observer')
+                setPiecewise()
+            }
+        } else { setPiecewise() }
+        function setPiecewise() {
+            Console.log("XHR can't use presets", 'Observer')
+            Timer.parameters.turns = midgame ? parameters.turnMax : Converter.turnsStringToFunction(config.turns)(players) 
+            Object.assign(Timer.parameters, Converter.timeStringToParameters(config.speed))
+            Timer.parameters.fallback = Converter.flowStringToFallback(config.first)
+        }
+
+        // Converter.setMode('CUSTOM')
+        // TODO: add piecewise assignment here
+        // game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
+        // Object.assign(game, Converter.timeStringToParameters(gameConfig[0]))
+        // game.fallback = Converter.flowStringToFallback(gameConfig[1])
+
+        if (midgame) {
+            // todo: in theory we should pass these through to all the modules, but ehh.
+            // Timer.parameters.turns = parameters.turnMax
+            Timer.interpolate(parameters.turnNum)
+        }
     },
 
     placeTimer() {  // [T3]
@@ -235,7 +284,7 @@ const Koss = { // [K1]
     kossWIW : undefined,    // HTMLDivElement
     kossImage : undefined,  // HTMLImageElement
 
-    init() {
+    init(modules) {
         Koss.kossWIW = WIW.newWIW(false, false);
         Koss.kossImage = setAttributes(new Image(), { style: "position: absolute", class:"wiw-img" })
     },
@@ -286,6 +335,7 @@ const Koss = { // [K1]
             default: Console.alert("KOSS location not recognised", 'Koss')
         }
     },
+    // adjustGameParameters(parameters) {},
 
     // This function takes a screenshot of the core canvas and shows it on the kossImage element.
     
@@ -329,7 +379,7 @@ const Refdrop = { // [R1]
     refSocket : undefined, // HTMLDivElement
     seFunctions : null,    // { clickBridge: function, screenshot: function }
 
-    init() {
+    init(modules) {
         Refdrop.seFunctions = Refdrop.initRefdrop();
         Refdrop.onSocketClick = Refdrop.seFunctions.clickBridge;
         Refdrop.initRefctrl()
@@ -353,7 +403,6 @@ const Refdrop = { // [R1]
         Refdrop.refImage.src = "";
     },
     adjustSettings(previous, current) {
-
         switch (current) {
             case 'off': 
                 document.querySelectorAll(".wiw-close").forEach(v => v.parentNode.parentNode.remove()) // This closes all references, forcing you to drag them in again.
@@ -373,6 +422,7 @@ const Refdrop = { // [R1]
                 return;
         }
     },
+    // adjustGameParameters(parameters) {},
 
     initRefdrop() {
         Refdrop.refImage = setAttributes(document.createElement("img"),  { class: "bounded",    id: "ref-img"    })
@@ -597,7 +647,7 @@ const Spotlight = { // [S1]
     slideNum : -1,
     keySlideNum : -3,
     
-    init() {
+    init(modules) {
         Spotlight.bg.src = chrome.runtime.getURL("assets/module-assets/spotlight-base.png");
     },
     mutation(oldPhase, newPhase) {
@@ -628,6 +678,7 @@ const Spotlight = { // [S1]
         // TODO: TODO override menuStep to prevent this to begin with. Also, this is the wrong thing to check.
         // if (current == "book") { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
     },
+    // adjustGameParameters(parameters) {},
 
     // Compiles an array of ImageData into a GIF.
     compileToGif() {
@@ -910,7 +961,7 @@ const Geom = {
     counters: { created: 0, sent: 0 },
     config: { distance: 1200, max: 20000 },
 
-    init() {
+    init(modules) {
         Socket.addMessageListener('flag', (data) => {
             Geom.flags.ws = data
         })
@@ -946,6 +997,7 @@ const Geom = {
             Geom.geomWIW.style.visibility = "visible"
         }
     },
+    // adjustGameParameters(parameters) {},
 
     initGeomWIW() { // [G8]
         const newWIW = setAttributes(WIW.newWIW(false, false, 1), { "id":"geom-wiw" })
@@ -1283,7 +1335,7 @@ const Triangle = { // [F2]
     //             ],
     // previewCanvas : undefined, 
 
-    init() {}, // Probably empty.
+    init(modules) {}, // Probably empty.
     mutation(oldPhase, newPhase) {
         // Probably, we should discard the preview canvas (let it get removed from DOM),
         // and reinitialize it on every new drawing phase.
@@ -1298,6 +1350,7 @@ const Triangle = { // [F2]
         }
         // Isoceles and 3-point have entirely different control schemes.
     },
+    // adjustGameParameters(parameters) {},
 
     beginDrawingFullTriangle() {
 
@@ -1329,7 +1382,7 @@ const Reveal = {
 
     hiddenElements : undefined,
 
-    // init() {}, // Empty.
+    // init(modules) {}, // Empty.
     mutation(oldPhase, newPhase) {
         if (Reveal.setting.current() == "OFF") { return; }
         if (newPhase == "write" || newPhase == "first") {
@@ -1353,6 +1406,7 @@ const Reveal = {
             case "ALL": Reveal.revealDrawing(); break;
         }
     },
+    // adjustGameParameters(parameters) {},
 
     revealPrompt() {
         Reveal.hiddenElements = document.querySelector(".center").querySelectorAll(".hiddenMode")

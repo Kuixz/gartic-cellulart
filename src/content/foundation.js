@@ -153,7 +153,7 @@ const Console = { // Only print certain messages
         this.onprint(msg)
         console.log(msg)
     },
-    onprint: function(message) {} // Dynamically set
+    onprint: function(message) {}, // Dynamically set
 }; Console.enabled.add('Console')
 const Shelf = { // FAKE SHELF - REMOVE THIS WHEN PUSHING BETA 
     dict: { 
@@ -295,6 +295,9 @@ const Socket = {
             // })
         })
     },
+    backToLobby() {
+        Socket.post("backToLobby")
+    },
     handle(purp, data){
         Socket.handlers.forEach(handler => { 
             if (handler.filter == purp) { handler.handle(data) }
@@ -371,7 +374,7 @@ const configChildTrunk = { childList: true };
 // Global variables
 const game = {
     user: "Joyce Moore", // used by Spotlight
-    turns: 0,            // used by Spotlight
+    turns: 0,            // used by Timer and Spotlight
     // The NORMAL settings follow
     write: 40,             // used by Timer
     draw: 150,             // used by Timer
@@ -419,7 +422,11 @@ const Converter = {
     modeIndexToString(index) {
         return ([0,'NORMAL',2,'SECRET',4,'SANDWICH',6,'CROWD','KNOCK-OFF','ICEBREAKER','SCORE','ANIMATION',12,'SOLO','BACKGROUND','COMPLEMENT',16,'STORY','CO-OP',19,'MASTERPIECE', 'MISSING PIECE'])[index]
     },
-    modeStringToParameters(str) {
+
+    timeIndexToString(index) {
+        return ([0,1,2,3,4,5,6,"HOST'S DECISION",8,9,10,11,12])[index]
+    },
+    timeStringToParameters(str) {
         switch (str) { // Setting custom game.parameters
             case "SLOW":              return { "write": 80, "draw": 300, 'decay': 0, "firstMultiplier": 1.25 };
             case "NORMAL":            return Converter.getParameters(["NORMAL"]);

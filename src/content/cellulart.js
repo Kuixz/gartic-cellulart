@@ -1,3 +1,5 @@
+const { Converter } = require("./foundation");
+
  /* ----------------------------------------------------------------------
   *                         Cellulart BETA 1.2.0
   *                           Created by Quoi3
@@ -27,9 +29,14 @@ const Controller = {
         Controller.modules.forEach(mod => mod.mutation(oldPhase, newPhase))
     },
     backToLobby(oldPhase) {
-        Socket.post("backToLobby")
+        // Socket.post("backToLobby")
+        Socket.backToLobby()
         // Shelf.set({ strokeCount:data }) // Possibly redundant? Will have to test.
         Controller.modules.forEach(mod => mod.backToLobby(oldPhase))
+    },
+    // adjustSettings(previous, current) {},
+    adjustGameParameters(parameters) {
+        Controller.modules.forEach(mod => mod.backToLobby(parameters))
     },
 
     initPopupAuth() {
@@ -258,19 +265,21 @@ const Observer = {
         //     }
         // }
         // Console.log("XHR can't use presets", 'Observer')
-
+        // data.configs.mode = Converter.modeIndexToString(data.configs.mode)
+        // data.configs.first = Converter.flowIndexToString(data.configs.first)
         // Converter.setMode('CUSTOM')
         // TODO: add piecewise assignment here
         // game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
-        // Object.assign(game, Converter.modeStringToParameters(gameConfig[0]))
+        // Object.assign(game, Converter.timeStringToParameters(gameConfig[0]))
         // game.fallback = Converter.flowStringToFallback(gameConfig[1])
 
         if (data.turnMax > 0) {
             // todo: in theory we should pass these through to all the modules, but ehh.
-            game.turns = data.turnMax
-            Timer.interpolate(data.turnNum)
+            // game.turns = data.turnMax
+            // Timer.interpolate(data.turnNum)
             Socket.post('setStrokeStack', data.draw)
         }
+        Controller.adjustGameParameters(data)
     },
     // deduceSettingsFromSocket(data) {
     //     // console.log(data)
@@ -285,6 +294,7 @@ const Observer = {
         const left = document.querySelector(".left")
         const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
         
+        /*
         try {
             // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
             const mode = document.querySelector(".checked").querySelector("h4").textContent;
@@ -307,9 +317,10 @@ const Observer = {
                 catch { gameConfig[num] = gameEncodedConfig[num].childNodes[0].textContent;    }
             })
             game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
-            Object.assign(game, Converter.modeStringToParameters(gameConfig[0]))
+            Object.assign(game, Converter.timeStringToParameters(gameConfig[0]))
             game.fallback = Converter.flowStringToFallback(gameConfig[1])
         }
+        */
     },
     // TODO: Get phase transition data from Socket
 }
