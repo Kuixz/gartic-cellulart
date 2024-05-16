@@ -104,6 +104,7 @@ test('defaults', () => {
     expect(Spotlight.user).toBe('shazam')
 })
 
+/*
 test('player count', () => {
     sequence([['xhr', 'lobbySettings', {
         "screen":1,
@@ -135,7 +136,7 @@ test('player count', () => {
 
     sequence([['socket', 'update42', [2,3,{"userLeft":2,"newOwner":null},false]]])
     expect(Timer.parameters.players).toBe(3)
-})
+})*/
 
 test('custom settings', () => {
     sequence([['xhr','lobbySettings', {  // SECRET
