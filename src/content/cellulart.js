@@ -1,5 +1,3 @@
-const { Converter } = require("./foundation");
-
  /* ----------------------------------------------------------------------
   *                         Cellulart BETA 1.2.0
   *                           Created by Quoi3
@@ -215,7 +213,7 @@ const Observer = {
         Controller.mutation(oldPhase, newPhase)
     },
     backToLobby(oldPhase) {
-        Observer.nextObserver.observe(document.querySelector("#__next"), configChildTrunk); 
+        // Observer.nextObserver.observe(document.querySelector("#__next"), configChildTrunk); 
         Controller.backToLobby(oldPhase) 
     },
 
@@ -224,17 +222,17 @@ const Observer = {
     // adjustSettings(data) {
     // },
 
-    nextObserver: new MutationObserver((records) => {     
-        // todo: add a button to manually reattach the lobby observer in popup, if I try to disconnect the observer early.
+    // nextObserver: new MutationObserver((records) => {     
+    //     // todo: add a button to manually reattach the lobby observer in popup, if I try to disconnect the observer early.
 
-        // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
-        if(records[0].addedNodes.length <= 0) { return; }
-        Observer.deduceSettingsFromDocument()
-    }),
+    //     // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
+    //     if(records[0].addedNodes.length <= 0) { return; }
+    //     Observer.deduceSettingsFromDocument()
+    // }),
     contentObserver: new MutationObserver((records) => {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
-        Observer.nextObserver.disconnect()
+        // Observer.nextObserver.disconnect()
 
         Observer.mutation(Observer.content.firstChild.firstChild.classList.item(1))
     }),
@@ -291,11 +289,11 @@ const Observer = {
         //     game.turns = Converter.turnsStringToFunction(/* TODO TODO TODO */)(data[2])
         // }
     },
-    deduceSettingsFromDocument() {
+    // deduceSettingsFromDocument() {
         // TODO: move as much of this as possible to Converter / Timer.
 
-        const left = document.querySelector(".left")
-        const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
+        // const left = document.querySelector(".left")
+        // const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
         
         /*
         try {
@@ -324,7 +322,7 @@ const Observer = {
             game.fallback = Converter.flowStringToFallback(gameConfig[1])
         }
         */
-    },
+    // },
     // TODO: Get phase transition data from Socket
 }
 
@@ -339,7 +337,7 @@ function main() {
     // document.querySelector(".side").remove() // lol
     var side = document.querySelector(".side"); if (side) { side.style.display = "none" }
 }
-document.readyState === 'complete' ? main() : window.addEventListener('load', (e) => main());
+document.readyState === 'complete' ? main() : window.addEventListener('load', () => main());
 
 // function sandbox() {
 // 

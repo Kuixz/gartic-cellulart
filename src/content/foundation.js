@@ -443,7 +443,7 @@ const Converter = {
     },
 
     flowIndexToString(index) {
-        // TODO
+        return ([0,"WRITING, DRAWING","DRAWING, WRITING","ONLY DRAWING","WRITING ONLY AT THE BEGINNING AND END","WRITING ONLY AT THE BEGINNING","WRITING ONLY AT THE END","SINGLE SENTENCE",'SINGLE DRAWING','SOLO DRAWING','DRAWINGS WITH A BACKGROUND','DRAWINGS WITH A BACKGROUND, NO PREVIEW',"ONLY WRITING"])[index]
     },
     flowStringToFallback(str) {
         switch (str) { 
@@ -451,14 +451,14 @@ const Converter = {
             case "DRAWING, WRITING":                     return 2;
             case "SINGLE SENTENCE":                      return -1;
             case "SINGLE DRAWING":                       return -1;
-            case "DRAWINGS WITH A BACKPACK":             return -1;
-            case "DRAWINGS WITH A BACKPACK, NO PREVIEW": return -1;
+            case "DRAWINGS WITH A BACKGROUND":             return -1;
+            case "DRAWINGS WITH A BACKGROUND, NO PREVIEW": return -1;
             default:                                     return 1;
         }
     },
 
     turnsIndexToString(index) {
-        // TODO
+        return ([0,"FEW","MOST","ALL","200%","300%","SINGLE TURN","5 TURNS","10 TURNS","20 TURNS","2 TURNS","3 TURNS","ALL +1","6 TURNS","7 TURNS","8 TURNS","9 TURNS","4 TURNS",])[index]
     },
     turnsStringToFunction(str) {
         return (players) => {
@@ -480,7 +480,7 @@ const Converter = {
                 case "9 TURNS":     return 9;
                 case "10 TURNS":    return 10;
                 case "20 TURNS":    return 20;
-                default: console.alert("Could not identify the turn setting being used", 'Converter'); return 0;
+                default: Console.alert("Could not identify the turn setting being used", 'Converter'); return 0;
             }
         }
     }
