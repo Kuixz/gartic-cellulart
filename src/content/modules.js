@@ -172,8 +172,6 @@ const Timer = {
 
         Timer.parameters.players = parameters.users.length;
         Timer.tweakParameters(config, midgame)
-        // Timer.parameters.turns = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns))  // (players) 
-        // Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed)))
 
         if (midgame) {
             // todo: in theory we should pass these through to all the modules, but ehh.
@@ -187,8 +185,8 @@ const Timer = {
         if ('speed' in config) { Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
     },
     finalizeTurns(players) {
-        Timer.parameters.turns = Timer.parameters.turns(players)
-        Timer.parameters.decay = Timer.parameters.decay(Timer.parameters.turns)
+        const t = Timer.parameters.turns; if (t instanceof Function) { Timer.parameters.turns = t(players) }
+        const d = Timer.parameters.decay; if (d instanceof Function) { Timer.parameters.decay(Timer.parameters.turns) }
     },
 
     placeTimer() {  // [T3]
@@ -845,9 +843,9 @@ const Spotlight = { // [S1]
         setTimeout(function() {Spotlight.compositedFrameDatas[Spotlight.keySlideNum - 1] = context.getImageData(0, 0, 1616, 683).data}, 200) // TODO: Horrendously bad bodged solution to the pfp not yet being loaded
 
         function indexOfPrevSlide() {
-            var i = game.fallback > 0 ? Spotlight.keySlideNum - 1 : 0; 
+            var i = Spotlight.fallback > 0 ? Spotlight.keySlideNum - 1 : 0; 
             /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
-            while (i >= 0 && slides[i].querySelector(".empty") != null) { i -= game.fallback; }
+            while (i >= 0 && slides[i].querySelector(".empty") != null) { i -= Spotlight.fallback; }
             return i
         }
     }, // [S3]
