@@ -76,6 +76,7 @@ div.window-in-window {
         height: calc(100% - 40px);
         display: flex;
         justify-content: center;
+        /* position: relative; */
     }
     & img.wiw-img {
         max-width: 100%;
@@ -115,6 +116,15 @@ div.window-in-window {
     margin: auto;
     color: rgb(255, 255, 255);
     font-family: black;
+}
+
+/* Koss */
+
+canvas.koss-canvas {
+    max-height: 100%;
+    max-width: 100%;
+    /* height: 100% !important; */
+    /* width: 100% !important; */
 }
 
 /* Refdrop */

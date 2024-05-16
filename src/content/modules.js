@@ -102,7 +102,10 @@ const Red = {
 
     modules : null,
 
-    init(modules) { this.modules = modules.filter((x) => { 'setting' in x }) },
+    init(modules) { 
+        this.modules = modules.filter((x) => 'setting' in x ) 
+        console.log(this.modules)
+    },
     adjustSettings(previous, current) {
         this.modules.forEach((mod) => { mod.togglePlus(current == 'red') })
     }
@@ -190,7 +193,7 @@ const Timer = {
     },
 
     placeTimer() {  // [T3]
-        const p = document.querySelector("p.jsx-3561292207"); if (p) { p.remove() }
+        // const p = document.querySelector("p.jsx-3561292207"); if (p) { p.remove() }
 
         // todo: is it even possible to run a rescue scheme, given that we pluck the clock and stick it in the holder?
         const clock = document.querySelector(".time");
@@ -202,6 +205,8 @@ const Timer = {
         const timerHolder = setAttributes(document.createElement("div"), { id: "timerHolder", parent: holder })
 
         Timer.display = setAttributes(document.createElement("div"), { id: "timer", style: "visibility:" + Timer.setting.current() == 'off' ? "hidden" : "visible", parent: timerHolder })
+
+        const p = clock.querySelector('p'); if (p) { p.remove() }
     },
     restartTimer(newPhase) {
         const clock = document.querySelector(".time")
@@ -279,74 +284,86 @@ const Koss = { // [K1]
     // KOSS variables
     kossWIW : undefined,    // HTMLDivElement
     kossImage : undefined,  // HTMLImageElement
+    kossCanvas : undefined, // HTMLCanvasElement
 
     init(modules) {
         Koss.kossWIW = WIW.newWIW(false, false);
+        Koss.kossWIW.querySelector('.wiw-body').style.position = 'relative';
         Koss.kossImage = setAttributes(new Image(), { style: "position: absolute", class:"wiw-img" })
     },
     mutation(oldPhase, newPhase) { 
         // ssView.childNodes[1].appendChild(kossImage);
-        
-        // If the new phase is "memory", schedule a screenshot to be taken of the canvas approximately when it's done drawing.
-        if (newPhase == "memory") {
-            // Recover the kossImage from the overlay position so that we don't lose track of it.
-            Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossImage);
-            setTimeout(Koss.screenshot, 1500);
-        } else if (newPhase == "draw" && Koss.setting.current() == 'red') {
-            setTimeout(Koss.tryUnderlayKossImage, 1000)
+        const wiwBody = Koss.kossWIW.querySelector(".wiw-body")
+        if (wiwBody.firstChild) { wiwBody.removeChild(wiwBody.firstChild) }
+        if (newPhase == 'memory') {
+            setTimeout(() => { Koss.kossCanvas = document.querySelector(".core").querySelector("canvas") }, 10)
         }
+        else if (newPhase == 'draw') {
+            // document.querySelector(".core").querySelector("canvas")
+            // Koss.kossCanvas
+            Koss.placeCanvas()
+        }
+        // If the new phase is "memory", schedule a screenshot to be taken of the canvas approximately when it's done drawing.
+        // if (newPhase == "memory") {
+        //     // Recover the kossImage from the overlay position so that we don't lose track of it.
+        //     Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossImage);
+        //     setTimeout(Koss.screenshot, 1500);
+        // } else if (newPhase == "draw" && Koss.setting.current() == 'red') {
+        //     setTimeout(Koss.tryUnderlayKossImage, 1000)
+        // }
     },
     backToLobby(oldPhase) {
-        Koss.kossImage.src = "";
+        // Koss.kossImage.src = "";
+        Koss.kossCanvas.remove();
+        Koss.kossCanvas = undefined;
     },
     adjustSettings(previous, current) {
         // alert(current)
         switch (current) {
             case 'off':
-                Koss.kossImage.style.opacity = "1";
-                // Koss.kossImage.style.position = "static";
                 Koss.kossWIW.style.visibility = "hidden";
-                Koss.kossImage.style.display = "none"; // todo for some reason going from OVERLAY to OFF wipes your canvas unless you use display instead of visibility parameter, wtf?
-                
+                Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas);
                 break;
             case 'on':
-                Koss.kossImage.style.display = "initial";
-
                 Koss.kossWIW.style.visibility = "visible";
-                Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossImage);
+                if (Koss.kossCanvas) { Koss.kossCanvas.style.opacity = "1"; }
+                Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas);
                 break;
             case 'red':
                 Koss.kossWIW.style.visibility = "hidden";
-
-                Koss.kossImage.style.opacity = "0.25";
-                // Koss.kossImage.style.position = "absolute";
-                
-                //var kossimg_host = document.createElement("div");
-                //kossimg_host.classList.add("kossImage-host");
+                if (Koss.kossCanvas) { Koss.kossCanvas.style.opacity = "0.25"; }
                 Koss.tryUnderlayKossImage();
-                //kossimg_host.style.backgroundImage = "url(\"".concat(kossImage.src, "\")"); 
-                //document.querySelector(".watermark").style.backgroundImage = "url('/images/ic_ready.svg')"
-                //document.querySelector(".watermark").classList.toggle("kossImage-host");
                 break;
             default: Console.alert("KOSS location not recognised", 'Koss')
         }
     },
     // update42(type, data) {},
 
-    // This function takes a screenshot of the core canvas and shows it on the kossImage element.
-    
+    placeCanvas() {
+        if (!Koss.kossCanvas) { return }
+       /* if (Koss.kossCanvas) { */ Koss.kossCanvas.classList.add('koss-canvas') // }
+        switch (Koss.setting.current()) {
+            case 'off':
+                Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas);
+                break;
+            case 'on':
+                Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas);
+                break;
+            case 'red':
+                setTimeout(Koss.tryUnderlayKossImage, 1000);
+                break;
+            default: Console.alert("KOSS location not recognised", 'Koss')
+        }
+    },
     tryUnderlayKossImage() {
+        Koss.kossCanvas.style.opacity = "0.25";
         try { 
-            document.querySelector(".drawingContainer").insertAdjacentElement("beforebegin", Koss.kossImage);
+            document.querySelector(".drawingContainer").insertAdjacentElement("beforebegin", Koss.kossCanvas);
             Console.log("Koss image underlaid", 'Koss')
         } catch {
             Console.log("Koss image NOT underlaid, no place found : not on draw mode?", 'Koss')
         }
     },
-    screenshot() {
-        Koss.kossImage.src = document.querySelector(".core").querySelector("canvas").toDataURL();
-        Console.log("Screenshot taken", 'Koss')
-    }
 }
 Object.setPrototypeOf(Koss, CellulartModule)
 
