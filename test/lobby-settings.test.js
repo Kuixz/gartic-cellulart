@@ -136,3 +136,33 @@ test('player count', () => {
     sequence([['socket', 'update42', [2,3,{"userLeft":2,"newOwner":null},false]]])
     expect(Timer.parameters.players).toBe(3)
 })
+
+test('custom settings', () => {
+    sequence([['xhr','lobbySettings', {  // SECRET
+        "screen":1,
+        "countDown":false,
+        "user":{"id":1,"nick":"stingy","avatar":"39","viewer":false,"owner":true,"points":0,"change":0,"access":"019462cff0","alert":false,"waiting":false},
+        "users":[{"id":1,"nick":"stingy","avatar":"39","owner":true,"viewer":false,"points":0,"change":0,"alert":false},{"id":2,"nick":"CoolNickname5021","avatar":27,"owner":false,"viewer":false,"points":0,"change":0,"alert":false}],
+        "turnNum":0,
+        "turnMax":0,
+        "roundNum":0,
+        "bookNum":0,
+        "bookAutomatic":true,
+        "bookVoice":false,
+        "bookOrder":true,
+        "configs":{"tab":1,"maxUsers":14,"mod":2,"mode":3,"visible":2,"speed":3,"turns":3,"first":1,"score":2,"animate":2,"keep":2},
+        "animationConfigs":{"speed":3,"loop":1},
+        "sentence":"",
+        "timeStarted":false,
+        "code":"019462cff0",
+        "invite":"019qfOKr8SR30EaRpMKT0Iaq",
+        "modCode":"019TfjOEHLksHnSKMSWS369C"
+    }], ['socket', 'update42', [2,18,{
+        'speed': 1   // LONG
+    }]], ['socket', 'update42', [2,18,{
+        'turns': 13  // 6 TURNS
+    }]]])
+    expect(Timer.parameters.write).toBe(80)
+    expect(Timer.parameters.draw).toBe(300)
+    expect(Timer.parameters.turns(10)).not.toBe(10)
+})

@@ -104,7 +104,7 @@ const Red = {
 
     init(modules) { 
         this.modules = modules.filter((x) => 'setting' in x ) 
-        console.log(this.modules)
+        // console.log(this.modules)
     },
     adjustSettings(previous, current) {
         this.modules.forEach((mod) => { mod.togglePlus(current == 'red') })
@@ -162,6 +162,7 @@ const Timer = {
             case 2: Timer.parameters.players += 1; break;
             case 3: Timer.parameters.players -= 1; break;
             case 5: Timer.finalizeTurns(); break;
+            case 18: Timer.tweakParameters(data)
         }
     },
 
@@ -170,15 +171,9 @@ const Timer = {
         const midgame = parameters.turnMax > 0
 
         Timer.parameters.players = parameters.users.length;
-        Timer.parameters.turns = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns))  // (players) 
-        Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed)))
-        // }
-
-        // Converter.setMode('CUSTOM')
-        // TODO: add piecewise assignment here
-        // game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
-        // Object.assign(game, Converter.timeStringToParameters(gameConfig[0]))
-        // game.fallback = Converter.flowStringToFallback(gameConfig[1])
+        Timer.tweakParameters(config, midgame)
+        // Timer.parameters.turns = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns))  // (players) 
+        // Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed)))
 
         if (midgame) {
             // todo: in theory we should pass these through to all the modules, but ehh.
@@ -186,6 +181,10 @@ const Timer = {
             Timer.interpolate(parameters.turnNum)
             Timer.finalizeTurns(Timer.parameters.players)
         }
+    },
+    tweakParameters(config, midgame=false) {
+        if ('turns' in config) { Timer.parameters.turns = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns)) }  // (players) 
+        if ('speed' in config) { Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
     },
     finalizeTurns(players) {
         Timer.parameters.turns = Timer.parameters.turns(players)
@@ -322,17 +321,21 @@ const Koss = { // [K1]
         switch (current) {
             case 'off':
                 Koss.kossWIW.style.visibility = "hidden";
-                Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas);
+                if (Koss.kossCanvas) { Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas); }
                 break;
             case 'on':
                 Koss.kossWIW.style.visibility = "visible";
-                if (Koss.kossCanvas) { Koss.kossCanvas.style.opacity = "1"; }
-                Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas);
+                if (Koss.kossCanvas) { 
+                    Koss.kossCanvas.style.opacity = "1"; 
+                    Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas); 
+                }
                 break;
             case 'red':
                 Koss.kossWIW.style.visibility = "hidden";
-                if (Koss.kossCanvas) { Koss.kossCanvas.style.opacity = "0.25"; }
-                Koss.tryUnderlayKossImage();
+                if (Koss.kossCanvas) { 
+                    Koss.kossCanvas.style.opacity = "0.25"; 
+                    Koss.tryUnderlayKossImage();
+                }
                 break;
             default: Console.alert("KOSS location not recognised", 'Koss')
         }
