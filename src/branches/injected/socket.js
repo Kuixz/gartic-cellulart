@@ -82,8 +82,7 @@ const Socket = {
         // Socket.post('gameEvent', data)
         // console.log(data)
         // console.log(data.slice(0,8))
-        // if (data.slice(0,8) != '42[2,11,') { return }
-        if (data.slice(0,5) != '42[2,') { return }
+        if (data.slice(0,8) != '42[2,11,') { return }
         // Socket.post('gameEventScreenTransition', data)
         // if (data.indexOf('"draw":') == -1) { return }
 
@@ -91,19 +90,16 @@ const Socket = {
         // console.log('passed')
 
         var json = JSON.parse(data.slice(2))
-        var message = json[2]
+        json = json[2]
         // if (json.screen != 5) { return }  // This saves on redundant clearStrokes, but risks breaking if Gartic changes something on a whim.
         // var json = JSON.parse(data.slice(8, -1))
         // console.log(json)
-
-        if (json[1] == 11) {
-            if ('draw' in message) { 
-                console.log(message.draw)
-                Socket.setStrokeStack(json.draw)
-                Socket.post('turnNum', json.turnNum)
-            } else {
-                Socket.clearStrokes()
-            }
+        if ('draw' in json) { 
+            console.log(json.draw)
+            Socket.setStrokeStack(json.draw)
+            Socket.post('turnNum', json.turnNum)
+        } else {
+            Socket.clearStrokes()
         }
 
         // console.log('has draw')
