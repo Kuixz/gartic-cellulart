@@ -159,8 +159,8 @@ const Timer = {
     update42(type, data) {
         switch (type) {
             case 1: Timer.adjustParameters(data); break;
-            case 2: Timer.parameters.players += 1; break;
-            case 3: Timer.parameters.players -= 1; break;
+            // case 2: Timer.parameters.players += 1; break;
+            // case 3: Timer.parameters.players -= 1; break;
             case 5: Timer.finalizeTurns(); break;
             case 18: Timer.tweakParameters(data)
         }
@@ -170,22 +170,30 @@ const Timer = {
         const config = parameters.configs
         const midgame = parameters.turnMax > 0
 
-        Timer.parameters.players = parameters.users.length;
+        // Timer.parameters.players = parameters.users.length;
         Timer.tweakParameters(config, midgame)
 
         if (midgame) {
             // todo: in theory we should pass these through to all the modules, but ehh.
             // Timer.parameters.turns = parameters.turnMax
             Timer.interpolate(parameters.turnNum)
-            Timer.finalizeTurns(Timer.parameters.players)
+            // Timer.finalizeTurns(Timer.parameters.players)
         }
     },
     tweakParameters(config, midgame=false) {
         if ('turns' in config) { Timer.parameters.turns = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns)) }  // (players) 
         if ('speed' in config) { Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
     },
-    finalizeTurns(players) {
-        const t = Timer.parameters.turns; if (t instanceof Function) { Timer.parameters.turns = t(players) }
+    finalizeTurns() {
+        // if (newPhase != 'book') { 
+            // if (Timer.parameters.turns == 0) { 
+                const indicator = document.querySelector('.step').querySelector('p').textContent
+                Timer.parameters.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
+            // }
+            // return
+        // }
+    // finalizeTurns(players) {
+        // const t = Timer.parameters.turns; if (t instanceof Function) { Timer.parameters.turns = t(players) }
         const d = Timer.parameters.decay; if (d instanceof Function) { Timer.parameters.decay(Timer.parameters.turns) }
     },
 
@@ -311,8 +319,10 @@ const Koss = { // [K1]
     },
     backToLobby(oldPhase) {
         // Koss.kossImage.src = "";
-        Koss.kossCanvas.remove();
-        Koss.kossCanvas = undefined;
+        if (Koss.kossCanvas) {
+            Koss.kossCanvas.remove();
+            Koss.kossCanvas = undefined;
+        }
     },
     adjustSettings(previous, current) {
         // alert(current)
@@ -662,22 +672,29 @@ const Spotlight = { // [S1]
     keySlideNum : -3,
 
     user : '',
+    turns : 0,
     fallback : 0,
     
     init(modules) {
         Spotlight.bg.src = chrome.runtime.getURL("assets/module-assets/spotlight-base.png");
     },
     mutation(oldPhase, newPhase) {
-        if (newPhase != 'book') { return }
-        if (oldPhase == "start") {
-            // In case you had to reload in the middle of visualization
-            Spotlight.user = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
+        if (newPhase != 'book') { 
+            if (Spotlight.turns == 0) { 
+                const indicator = document.querySelector('.step').querySelector('p').textContent
+                Spotlight.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
+            }
+            return
         }
+        // if (oldPhase == "start") {
+        //     // In case you had to reload in the middle of visualization
+        //     Spotlight.user = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
+        // }
         Spotlight.avatars = Array.from(document.querySelectorAll(".avatar")).map(element => window.getComputedStyle(element.childNodes[0]).backgroundImage.slice(5, -2));//.slice(13, -2) );//.slice(29, -2));
         Spotlight.names = Array.from(document.querySelectorAll(".nick")).map(element => element.textContent);
 
         Spotlight.compositeBackgrounds();
-        game.turns > 0 
+        Spotlight.turns > 0 
             ? Spotlight.compositedFrameDatas = new Array(game.turns - 1) 
             : Spotlight.compositedFrameDatas = {}
 
@@ -690,19 +707,33 @@ const Spotlight = { // [S1]
         Spotlight.timelineObserver.disconnect()
         Spotlight.avatars = []
         Spotlight.names = []
+        Spotlight.turns = 0
     },
     adjustSettings(previous, current) {
-        // TODO: TODO override menuStep to prevent this to begin with. Also, this is the wrong thing to check.
-        // if (current == "book") { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
+        // TODO: TODO override menuStep to prevent this to begin with.
+        // if (Spotlight.compositedFrameDatas != []) { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
     },
     update42(type, data) {
         switch (type) {
             case 1: 
                 Spotlight.user = data.user.nick; 
                 Spotlight.fallback = Converter.flowStringToFallback(Converter.flowIndexToString(data.configs.first))
-            break;
+        
+                // Spotlight.players = data.users.length;
+                if (data.turnMax > 0) { Spotlight.turns = data.turnMax }
+                break;
+            // case 2: Spotlight.players += 1; break;
+            // case 3: Spotlight.players -= 1; break;
+            // case 5: 
+            //     Spotlight.finalizeTurns(); break;
+
+            // Spotlight can be a bit looser on its turn tracking, so we do just that.
         }
     },
+
+    // finalizeTurns(players) {
+    //     const t = Spotlight.parameters.turns; if (t instanceof Function) { Spotlight.parameters.turns = t(players) }
+    // },
 
     // Compiles an array of ImageData into a GIF.
     compileToGif() {
@@ -787,7 +818,7 @@ const Spotlight = { // [S1]
         const currentSlide = records[0].addedNodes[0];
         if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == Spotlight.user) {
             Spotlight.keySlideNum = Spotlight.slideNum
-        } else if (Spotlight.slideNum == game.turns) {//currentSlide.querySelector(".download") != null) {
+        } else if (Spotlight.slideNum == Spotlight.turns) {//currentSlide.querySelector(".download") != null) {
             // console.log("Stepped over. Compositing response")
             Spotlight.compositeResponseFrame()
         }
@@ -836,7 +867,7 @@ const Spotlight = { // [S1]
         Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(prevUser)], side.other)
         try { Spotlight.drawDrawing(context, prevSlide.querySelector("canvas"), side.other) } catch { Spotlight.drawPrompt(context, prevSlide.querySelector(".balloon").textContent, side.other) }
         try { Spotlight.drawDrawing(context,  keySlide.querySelector("canvas"), side.key  ) } catch { Spotlight.drawPrompt(context, keySlide.querySelector(".balloon").textContent, side.key ) }
-        Spotlight.drawTurnsCounter(context, Spotlight.keySlideNum, game.turns - 1)
+        Spotlight.drawTurnsCounter(context, Spotlight.keySlideNum, Spotlight.turns - 1)
         // TODO being on a different tab causes image grabs to fail
     
         setTimeout(Spotlight.preview, 500, canvas.canvas) // Temporary
@@ -1160,7 +1191,7 @@ const Geom = {
             label: (which, newValue) => { geomScreen2.updateLabel(which, newValue) }
         }
 
-        function stopGeometrize() {
+        function stopGeometrize() {  // TODO this init can be lazier
             geomScreen2 = geomScreen2 || constructScreen2()
             geomScreen3 = geomScreen3 || constructScreen3()
 
