@@ -32,7 +32,7 @@ const CellulartModule = { // [F2]
     // This function should set internal states based on the game config
     // depending on the needs of the module.
     // To be overridden by each module that requires more than marginal state knowledge.
-    adjustGameParameters(parameters) {},
+    update42(type, data) {},
 
     // These functions receive messages from the in-window menu and are generally shared between modules.
     menuStep() { const c = this.setting.current(); const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this.name); return n },
@@ -130,6 +130,7 @@ const Timer = {
     countdown : undefined, // timeoutID
 
     parameters : {    
+        players: 0,
         turns: 0,              // used by Timer 
         write: 40,             // used by Timer
         draw: 150,             // used by Timer
@@ -152,33 +153,23 @@ const Timer = {
         if (Timer.display == undefined) { return }
         if (current == "on") { Timer.display.style.visibility = "visible" } else { Timer.display.style.visibility = "hidden" }
     },
-    adjustGameParameters(parameters) {
-        const config = parameters.config
-        const midgame = parameters.turnMax > 0
-        if (config.tab == 1) { 
-            Console.log("XHR can use presets", 'Observer')
-            try {
-                // const preset = Converter.modeIndexToString(config.mode)
-                // Object.assign(Timer.parameters, Converter.getParameters(preset));
-                // switch (preset) {
-                //     case "ICEBREAKER":  Timer.parameters.turns = players + 1; break;
-                //     case "MASTERPIECE": Timer.parameters.turns = 1;           break;
-                //     case "CROWD":       Timer.parameters.turns = players / 2; break;
-                //     case "KNOCK-OFF":   Timer.parameters.turns = Math.exp(8 / players); Timer.parameters.turns = players; break;
-                //     default:            Timer.parameters.turns = players;     break;
-                // }
-                // Timer.rejoinInterpolate(data.turnNum)
-            } catch {
-                Console.alert('This is an unknown preset, defaulting to piecewise assignment', 'Observer')
-                setPiecewise()
-            }
-        } else { setPiecewise() }
-        function setPiecewise() {
-            Console.log("XHR can't use presets", 'Observer')
-            Timer.parameters.turns = midgame ? parameters.turnMax : Converter.turnsStringToFunction(config.turns)(players) 
-            Object.assign(Timer.parameters, Converter.timeStringToParameters(config.speed))
-            Timer.parameters.fallback = Converter.flowStringToFallback(config.first)
+    update42(type, data) {
+        switch (type) {
+            case 1: Timer.adjustParameters(data); break;
+            case 2: Timer.parameters.players += 1; break;
+            case 3: Timer.parameters.players -= 1; break;
+            case 5: Timer.finalizeTurns(); break;
         }
+    },
+
+    adjustParameters(parameters) {
+        const config = parameters.configs
+        const midgame = parameters.turnMax > 0
+
+        Timer.parameters.players = parameters.users.length;
+        Timer.parameters.turns = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns))  // (players) 
+        Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed)))
+        // }
 
         // Converter.setMode('CUSTOM')
         // TODO: add piecewise assignment here
@@ -190,7 +181,12 @@ const Timer = {
             // todo: in theory we should pass these through to all the modules, but ehh.
             // Timer.parameters.turns = parameters.turnMax
             Timer.interpolate(parameters.turnNum)
+            Timer.finalizeTurns(Timer.parameters.players)
         }
+    },
+    finalizeTurns(players) {
+        Timer.parameters.turns = Timer.parameters.turns(players)
+        Timer.parameters.decay = Timer.parameters.decay(Timer.parameters.turns)
     },
 
     placeTimer() {  // [T3]
@@ -225,13 +221,13 @@ const Timer = {
         switch (newPhase) {
             case 'draw': case 'memory': 
                 // Checks if first turn && the firstMultiplier is so extreme that it must be either FASTER FIRST or SLOWER FIRST
-                if (![1,1.25].includes(game.firstMultiplier) && document.querySelector(".step").textContent.slice(0, 2) == "1/") {
-                    toReturn = 150 * game.firstMultiplier;  // Experimental optimization replacing game.draw with flat 150
+                if (![1,1.25].includes(Timer.parameters.firstMultiplier) && document.querySelector(".step").textContent.slice(0, 2) == "1/") {
+                    toReturn = 150 * Timer.parameters.firstMultiplier;  // Experimental optimization replacing Timer.parameters.draw with flat 150
                 } else { 
-                    toReturn = game.draw;
+                    toReturn = Timer.parameters.draw;
                 } break;
-            case 'write': toReturn = game.write; break;
-            case 'first': toReturn = game.write * game.firstMultiplier; break;
+            case 'write': toReturn = Timer.parameters.write; break;
+            case 'first': toReturn = Timer.parameters.write * Timer.parameters.firstMultiplier; break;
             case 'mod':   return 25 // 10 // [T2]
             default:
                 Console.alert("Could not determine duration of phase " + newPhase, 'Timer')
@@ -250,10 +246,10 @@ const Timer = {
         Timer.countdown = setTimeout(Timer.tick, 1000, seconds + direction, direction)
     },
     interpolate(times) {
-        if (game.decay != 0) {
+        if (Timer.parameters.decay != 0) {
             Console.log("Interpolating regressive/progressive timer", 'Timer')
-            game.write = (game.write - 8) * (game.decay ** times) + 8
-            game.draw = (game.draw - 30) * (game.decay ** times) + 30
+            Timer.parameters.write = (Timer.parameters.write - 8) * (Timer.parameters.decay ** times) + 8
+            Timer.parameters.draw = (Timer.parameters.draw - 30) * (Timer.parameters.decay ** times) + 30
         } 
     },
 
@@ -335,7 +331,7 @@ const Koss = { // [K1]
             default: Console.alert("KOSS location not recognised", 'Koss')
         }
     },
-    // adjustGameParameters(parameters) {},
+    // update42(type, data) {},
 
     // This function takes a screenshot of the core canvas and shows it on the kossImage element.
     
@@ -422,7 +418,7 @@ const Refdrop = { // [R1]
                 return;
         }
     },
-    // adjustGameParameters(parameters) {},
+    // update42(type, data) {},
 
     initRefdrop() {
         Refdrop.refImage = setAttributes(document.createElement("img"),  { class: "bounded",    id: "ref-img"    })
@@ -646,6 +642,9 @@ const Spotlight = { // [S1]
     names : [],
     slideNum : -1,
     keySlideNum : -3,
+
+    user : '',
+    fallback : 0,
     
     init(modules) {
         Spotlight.bg.src = chrome.runtime.getURL("assets/module-assets/spotlight-base.png");
@@ -654,7 +653,7 @@ const Spotlight = { // [S1]
         if (newPhase != 'book') { return }
         if (oldPhase == "start") {
             // In case you had to reload in the middle of visualization
-            game.user = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
+            Spotlight.user = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
         }
         Spotlight.avatars = Array.from(document.querySelectorAll(".avatar")).map(element => window.getComputedStyle(element.childNodes[0]).backgroundImage.slice(5, -2));//.slice(13, -2) );//.slice(29, -2));
         Spotlight.names = Array.from(document.querySelectorAll(".nick")).map(element => element.textContent);
@@ -678,7 +677,14 @@ const Spotlight = { // [S1]
         // TODO: TODO override menuStep to prevent this to begin with. Also, this is the wrong thing to check.
         // if (current == "book") { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
     },
-    // adjustGameParameters(parameters) {},
+    update42(type, data) {
+        switch (type) {
+            case 1: 
+                Spotlight.user = data.user.nick; 
+                Spotlight.fallback = Converter.flowStringToFallback(Converter.flowIndexToString(data.configs.first))
+            break;
+        }
+    },
 
     // Compiles an array of ImageData into a GIF.
     compileToGif() {
@@ -709,7 +715,7 @@ const Spotlight = { // [S1]
         const today = new Date();
         const day = today.getDate() + "-" + (today.getMonth() + 1) + '-' + today.getFullYear()
         const time = today.getHours() + ":" + today.getMinutes()
-        const filename = "Spotlight " + game.user + " " + day + " " + time + ".gif"
+        const filename = "Spotlight " + Spotlight.user + " " + day + " " + time + ".gif"
         function download (buf, filename, type) {
             const blob = buf instanceof Blob ? buf : new Blob([buf], { type });
             const url = URL.createObjectURL(blob);
@@ -761,7 +767,7 @@ const Spotlight = { // [S1]
         // what if an EMPTY response? Sometimes backtrack two steps, sometimes one. Hence modeParameters now has fallback values.
         Spotlight.slideNum += 1
         const currentSlide = records[0].addedNodes[0];
-        if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == game.user) {
+        if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == Spotlight.user) {
             Spotlight.keySlideNum = Spotlight.slideNum
         } else if (Spotlight.slideNum == game.turns) {//currentSlide.querySelector(".download") != null) {
             // console.log("Stepped over. Compositing response")
@@ -777,12 +783,12 @@ const Spotlight = { // [S1]
         Spotlight.drawText(context, "HOSTED BY " + Spotlight.names[0].toUpperCase(), 1206, 82, 50, 400, "M", "white")
         switch (Spotlight.setting.current()) {
             case 'on':
-                Spotlight.drawName(context, game.user.toUpperCase(), "R") 
-                Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(game.user)], "R")
+                Spotlight.drawName(context, Spotlight.user.toUpperCase(), "R") 
+                Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(Spotlight.user)], "R")
                 break;
             // case 1:
-            //     Spotlight.drawName(context, game.user.toUpperCase(), "L") 
-            //     Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(game.user)], "L")
+            //     Spotlight.drawName(context, Spotlight.user.toUpperCase(), "L") 
+            //     Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(Spotlight.user)], "L")
             //     break;
             default:
                 Console.alert("Spotlight setting not recognized", 'Spotlight')
@@ -997,7 +1003,7 @@ const Geom = {
             Geom.geomWIW.style.visibility = "visible"
         }
     },
-    // adjustGameParameters(parameters) {},
+    // update42(type, data) {},
 
     initGeomWIW() { // [G8]
         const newWIW = setAttributes(WIW.newWIW(false, false, 1), { "id":"geom-wiw" })
@@ -1350,7 +1356,7 @@ const Triangle = { // [F2]
         }
         // Isoceles and 3-point have entirely different control schemes.
     },
-    // adjustGameParameters(parameters) {},
+    // update42(type, data) {},
 
     beginDrawingFullTriangle() {
 
@@ -1406,7 +1412,7 @@ const Reveal = {
             case "ALL": Reveal.revealDrawing(); break;
         }
     },
-    // adjustGameParameters(parameters) {},
+    // update42(type, data) {},
 
     revealPrompt() {
         Reveal.hiddenElements = document.querySelector(".center").querySelectorAll(".hiddenMode")

@@ -9,7 +9,7 @@ const { Converter } = require("./foundation");
 const Controller = { 
     
     menu: null, // [C1]
-    modules: [Timer, Koss, Refdrop, Geom, Red, Debug], //, Reveal]
+    modules: [Timer, Koss, Refdrop, Spotlight, Geom, Red, Debug], //, Reveal]
     auth: SHAuth.using(Shelf),
 
     init() {
@@ -35,8 +35,8 @@ const Controller = {
         Controller.modules.forEach(mod => mod.backToLobby(oldPhase))
     },
     // adjustSettings(previous, current) {},
-    adjustGameParameters(parameters) {
-        Controller.modules.forEach(mod => mod.backToLobby(parameters))
+    update42(type, data) {
+        Controller.modules.forEach(mod => mod.update42(type, data))
     },
 
     initPopupAuth() {
@@ -199,6 +199,7 @@ const Observer = {
         Observer.attachContentObserver(); 
         // Socket.addMessageListener('gameEvent', Observer.deduceSettingsFromSocket)
         // Socket.addMessageListener('gameEventScreenTransition', Observer.deduceSettingsFromSocket)
+        Socket.addMessageListener('update42', Observer.deduceSettingsFromSocket)
         Xhr.addMessageListener('lobbySettings', Observer.deduceSettingsFromXHR)
         // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     },
@@ -279,15 +280,17 @@ const Observer = {
             // Timer.interpolate(data.turnNum)
             Socket.post('setStrokeStack', data.draw)
         }
-        Controller.adjustGameParameters(data)
+        Controller.update42(1, data)
+        // Controller.update42(data[0], data[1])
     },
-    // deduceSettingsFromSocket(data) {
-    //     // console.log(data)
-    //     if (data[1] == 5) {
-    //         // game.turns = data[2]  // it's not that easy...
-    //         game.turns = Converter.turnsStringToFunction(/* TODO TODO TODO */)(data[2])
-    //     }
-    // },
+    deduceSettingsFromSocket(data) {
+        // console.log(data)
+        Controller.update42(data[1], data[2])
+        // if (data[1] == 5) {
+            // game.turns = data[2]  // it's not that easy...
+        //     game.turns = Converter.turnsStringToFunction(/* TODO TODO TODO */)(data[2])
+        // }
+    },
     deduceSettingsFromDocument() {
         // TODO: move as much of this as possible to Converter / Timer.
 

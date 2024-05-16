@@ -28,7 +28,7 @@
         return wsSend.call(this, ...args);
     }; 
 
-    console.log("[Cellulart] WebSocket proxified")
+    // console.log("[Cellulart] WebSocket proxified")   TODO: Uncomment this
 
         /* OrigWebSocket.prototype.send = new Proxy(OrigWebSocket.prototype.send, {
             apply: function(data) {
@@ -96,11 +96,13 @@ const Socket = {
         // var json = JSON.parse(data.slice(8, -1))
         // console.log(json)
 
+        Socket.post('update42', json)
+
         if (json[1] == 11) {
             if ('draw' in message) { 
                 console.log(message.draw)
                 Socket.setStrokeStack(json.draw)
-                Socket.post('turnNum', json.turnNum)
+                // Socket.post('turnNum', json.turnNum)
             } else {
                 Socket.clearStrokes()
             }
