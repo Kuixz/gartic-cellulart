@@ -144,7 +144,7 @@ const Timer = {
     // init(modules) {}, // Empty.
     mutation(oldPhase, newPhase) {
         if (["book", "start"].includes(newPhase)) { return }
-        Timer.finalizeTurns()
+        if (Timer.parameters.turns == 0) { Timer.finalizeTurns() }
         setTimeout(Timer.placeTimer, 200)
 
         // If we changed from a phase that warrants a reset in the timer, reset the timer.
@@ -152,7 +152,9 @@ const Timer = {
         clearTimeout(Timer.countdown)
         setTimeout(Timer.restartTimer, 200, newPhase)
     },
-    // backToLobby(oldPhase) {}, // Empty.
+    backToLobby(oldPhase) {
+        Timer.parameters.turns = 0
+    }, // Empty.
     adjustSettings(previous, current) {
         if (Timer.display == undefined) { return }
         if (current == "on") { Timer.display.style.visibility = "visible" } else { Timer.display.style.visibility = "hidden" }
@@ -188,6 +190,7 @@ const Timer = {
     finalizeTurns() {
         // if (newPhase != 'book') { 
             // if (Timer.parameters.turns == 0) { 
+        // const d = Timer.parameters.turns; if (t 
                 const indicator = document.querySelector('.step').querySelector('p').textContent
                 Timer.parameters.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
             // }
@@ -669,8 +672,8 @@ const Spotlight = { // [S1]
     canbase: undefined, // HTMLCanvasElement
     avatars : [],
     names : [],
-    slideNum : -1,
-    keySlideNum : -3,
+    // slideNum : -1,
+    // keySlideNum : -3,
 
     user : '',
     turns : 0,
@@ -691,8 +694,8 @@ const Spotlight = { // [S1]
         //     // In case you had to reload in the middle of visualization
         //     Spotlight.user = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
         // }
-        Spotlight.avatars = Array.from(document.querySelectorAll(".avatar")).map(element => window.getComputedStyle(element.childNodes[0]).backgroundImage.slice(5, -2));//.slice(13, -2) );//.slice(29, -2));
-        Spotlight.names = Array.from(document.querySelectorAll(".nick")).map(element => element.textContent);
+        // Spotlight.avatars = Array.from(document.querySelectorAll(".avatar")).map(element => window.getComputedStyle(element.childNodes[0]).backgroundImage.slice(5, -2));//.slice(13, -2) );//.slice(29, -2));
+        // Spotlight.names = Array.from(document.querySelectorAll(".nick")).map(element => element.textContent);
 
         Spotlight.compositeBackgrounds();
         Spotlight.turns > 0 
@@ -705,14 +708,14 @@ const Spotlight = { // [S1]
     backToLobby(oldPhase) {
         if (oldPhase != 'book') { return }
         Spotlight.compileToGif()
-        Spotlight.timelineObserver.disconnect()
-        Spotlight.avatars = []
-        Spotlight.names = []
+        // Spotlight.timelineObserver.disconnect()
+        // Spotlight.avatars = []
+        // Spotlight.names = []
         Spotlight.turns = 0
     },
     adjustSettings(previous, current) {
-        // TODO: TODO override menuStep to prevent this to begin with.
-        // if (Spotlight.compositedFrameDatas != []) { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
+        // We can actually override menuStep to prevent this to begin with.
+        if (Spotlight.compositedFrameDatas != []) { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
     },
     update42(type, data) {
         switch (type) {
@@ -785,56 +788,57 @@ const Spotlight = { // [S1]
         document.body.appendChild(dlnode)
     },
     // These four determine when things should fire.
-    attachBookObserver() { // [S2]
-        var frame = document.querySelector(".timeline")//.previousSibling//.parentElement;
-        if (!frame) {
-            setTimeout(Spotlight.attachBookObserver, 500);
-            return
-        }
-        Spotlight.bookObserver.observe(frame, configChildTrunk);// { characterData: true });
-    },
-    bookObserver : new MutationObserver(() => {
-        // console.log("timline obse fired; attaching book obse"); 
-        Spotlight.attachTimelineObserver(); 
-        Spotlight.bookObserver.disconnect();
-    }),
-    attachTimelineObserver() {
-        var frame = document.querySelector(".timeline").childNodes[0].childNodes[0];
-        if (!frame) {
-            setTimeout(Spotlight.attachTimelineObserver, 500);
-            return
-        }
-        Spotlight.timelineObserver.observe(frame, configChildTrunk);
-    },
-    timelineObserver : new MutationObserver((records) => { // Catch errors when the NEXT button shows up / the next round begins to load
-        // console.log("book obse fired")
-        if (records[0].removedNodes.length > 0) {
-            // console.log("New timeline entered; resetting slideNums")
-            Spotlight.slideNum = -1;
-            Spotlight.keySlideNum = -2;
-            return;
-        }
-        // what if an EMPTY response? Sometimes backtrack two steps, sometimes one. Hence modeParameters now has fallback values.
-        Spotlight.slideNum += 1
-        const currentSlide = records[0].addedNodes[0];
-        if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == Spotlight.user) {
-            Spotlight.keySlideNum = Spotlight.slideNum
-        } else if (Spotlight.slideNum == Spotlight.turns) {//currentSlide.querySelector(".download") != null) {
-            // console.log("Stepped over. Compositing response")
-            Spotlight.compositeResponseFrame()
-        }
-    }),
+    // attachBookObserver() { // [S2]
+    //     var frame = document.querySelector(".timeline")//.previousSibling//.parentElement;
+    //     if (!frame) {
+    //         setTimeout(Spotlight.attachBookObserver, 500);
+    //         return
+    //     }
+    //     Spotlight.bookObserver.observe(frame, configChildTrunk);// { characterData: true });
+    // },
+    // bookObserver : new MutationObserver(() => {
+    //     // console.log("timline obse fired; attaching book obse"); 
+    //     Spotlight.attachTimelineObserver(); 
+    //     Spotlight.bookObserver.disconnect();
+    // }),
+    // attachTimelineObserver() {
+    //     var frame = document.querySelector(".timeline").childNodes[0].childNodes[0];
+    //     if (!frame) {
+    //         setTimeout(Spotlight.attachTimelineObserver, 500);
+    //         return
+    //     }
+    //     Spotlight.timelineObserver.observe(frame, configChildTrunk);
+    // },
+    // timelineObserver : new MutationObserver((records) => { // Catch errors when the NEXT button shows up / the next round begins to load
+    //     // console.log("book obse fired")
+    //     if (records[0].removedNodes.length > 0) {
+    //         // console.log("New timeline entered; resetting slideNums")
+    //         Spotlight.slideNum = -1;
+    //         Spotlight.keySlideNum = -2;
+    //         return;
+    //     }
+    //     // what if an EMPTY response? Sometimes backtrack two steps, sometimes one. Hence modeParameters now has fallback values.
+    //     Spotlight.slideNum += 1
+    //     const currentSlide = records[0].addedNodes[0];
+    //     if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == Spotlight.user) {
+    //         Spotlight.keySlideNum = Spotlight.slideNum
+    //     } else if (Spotlight.slideNum == Spotlight.turns) {//currentSlide.querySelector(".download") != null) {
+    //         // console.log("Stepped over. Compositing response")
+    //         Spotlight.compositeResponseFrame()
+    //     }
+    // }),
 
     // These functions manage the compositing of timelines into ImageDatas.
     compositeBackgrounds() {
-        if( Spotlight.setting.current() == 'off' ) { return }
+        if (Spotlight.setting.current() == 'off') { return }
         const canvas = Spotlight.initFrom(Spotlight.bg)
         const context = canvas.context
         Spotlight.drawText(context, "HOSTED BY " + Spotlight.names[0].toUpperCase(), 1206, 82, 50, 400, "M", "white")
         switch (Spotlight.setting.current()) {
             case 'on':
                 Spotlight.drawName(context, Spotlight.user.toUpperCase(), "R") 
-                Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(Spotlight.user)], "R")
+                // Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(Spotlight.user)], "R")
+                // TODO TODO TODO 
                 break;
             // case 1:
             //     Spotlight.drawName(context, Spotlight.user.toUpperCase(), "L") 
@@ -847,38 +851,73 @@ const Spotlight = { // [S1]
         // setTimeout(preview, 1000)
         Spotlight.canbase = canvas.canvas;
     },
-    compositeResponseFrame() {  // TODO incorrectly grabbing the same image twice, wtf?
+    // determineResponseIndices() {
+    //     const slides = document.querySelector(".timeline").querySelectorAll(".item");
+    //     const keyIndex = slides.find((item) => findUsername(item) == Spotlight.user)
+    //     // if (keySlide < 0) { Console.log('Did not participate in this round; no frame will be saved') }
+    //     // const keySlide = slides[keyIndex]  // slides[Spotlight.keyIndex]
+    //     var prevIndex = indexOfPrevSlide(keySlide)
+    //     // if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return } //prevIndex += modeParameters[game.mode]["fallback"] }
+    //     // const prevSlide = slides[prevIndex]
+    //     // const prevUser = findUsername(prevSlide);
+    //     return { key:keyIndex, prev: prevIndex }
+
+    //     function indexOfPrevSlide(key) {
+    //         var i = Spotlight.fallback > 0 ? key - 1 : 0; 
+    //         /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
+    //         while (i >= 0 && slides[i].querySelector(".empty") != null) { 
+    //             i -= Spotlight.fallback; 
+    //             Console.log(`Could not find prompt frame, falling back by ${Spotlight.fallback}`, 'Spotlight')
+    //         }
+    //         return i
+    //     }
+    // },
+    compositeResponseFrame(/* keyIndex, prevIndex */) {  // TODO incorrectly grabbing the same image twice, wtf?
         // todo: What to do if the one being spotlighted has an EMPTY?
-        if( Spotlight.setting.current() == 'off' ) { return }
+        // TODO: Some rounds might loop back to the same person multiple times.
+        if (Spotlight.setting.current() == 'off') { return }
         const canvas = Spotlight.initFrom(Spotlight.canbase)
         const context = canvas.context
 
-        const side = Spotlight.setting.current() == 'on' ? { key:'R', other: 'L' } : { key:'L', other: 'R' }
+        // const side = Spotlight.setting.current() == 'on' ? { key:'R', other: 'L' } : { key:'L', other: 'R' }
+        const side = { key:'R', other:'L' }
         
         // Determinine slides
         const slides = document.querySelector(".timeline").querySelectorAll(".item");
-        const keySlide = slides[Spotlight.keySlideNum]
-        var prevIndex = indexOfPrevSlide()
-        if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return;} //prevIndex += modeParameters[game.mode]["fallback"] }
+        const keyIndex = slides.find((item) => findUsername(item) == Spotlight.user)
+        if (keySlide < 0) { Console.log('Did not participate in this round; no frame will be saved') }
+        const keySlide = slides[keyIndex]  // slides[Spotlight.keyIndex]
+        var prevIndex = indexOfPrevSlide(keySlide)
+        if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return } //prevIndex += modeParameters[game.mode]["fallback"] }
         const prevSlide = slides[prevIndex]
-        const prevUser = (prevSlide.querySelector(".nick") ?? prevSlide.querySelector("span")).textContent;
+        const prevUser = findUsername(prevSlide);
+        // const prevAvatar = Spotlight.avatars[Spotlight.names.indexOf(prevUser)]
+        const prevAvatar = prevSlide.querySelector('avatar').firstChild.style.backgroundImage
     
         // Draw everything
         Spotlight.drawName(context, prevUser.toUpperCase(), side.other)
-        Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(prevUser)], side.other)
+        const bottleneck = Spotlight.drawPFP(context, prevAvatar, side.other)  // This smells !!!
         try { Spotlight.drawDrawing(context, prevSlide.querySelector("canvas"), side.other) } catch { Spotlight.drawPrompt(context, prevSlide.querySelector(".balloon").textContent, side.other) }
-        try { Spotlight.drawDrawing(context,  keySlide.querySelector("canvas"), side.key  ) } catch { Spotlight.drawPrompt(context, keySlide.querySelector(".balloon").textContent, side.key ) }
-        Spotlight.drawTurnsCounter(context, Spotlight.keySlideNum, Spotlight.turns - 1)
+        try { Spotlight.drawDrawing(context,  keySlide.querySelector("canvas"), side.key  ) } catch { Spotlight.drawPrompt(context,  keySlide.querySelector(".balloon").textContent, side.key  ) }
+        Spotlight.drawTurnsCounter(context, Spotlight.keyIndex, Spotlight.turns - 1);
         // TODO being on a different tab causes image grabs to fail
     
-        setTimeout(Spotlight.preview, 500, canvas.canvas) // Temporary
-        setTimeout(function() {Spotlight.compositedFrameDatas[Spotlight.keySlideNum - 1] = context.getImageData(0, 0, 1616, 683).data}, 200) // TODO: Horrendously bad bodged solution to the pfp not yet being loaded
+        // setTimeout(Spotlight.preview, 500, canvas.canvas) // Temporary
+        (() => { const b = bottleneck.onload; bottleneck.onload = () => { b(); Spotlight.compositedFrameDatas[Spotlight.keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data }})()  // This stinks to high heaven!
+        // setTimeout(function() { Spotlight.compositedFrameDatas[Spotlight.keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data }, 200) // TODO: Horrendously bad bodged solution to the pfp not yet being loaded
+        // prevAvatar
 
-        function indexOfPrevSlide() {
-            var i = Spotlight.fallback > 0 ? Spotlight.keySlideNum - 1 : 0; 
+        function indexOfPrevSlide(key) {
+            var i = Spotlight.fallback > 0 ? key - 1 : 0; 
             /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
-            while (i >= 0 && slides[i].querySelector(".empty") != null) { i -= Spotlight.fallback; }
+            while (i >= 0 && slides[i].querySelector(".empty") != null) { 
+                i -= Spotlight.fallback; 
+                Console.log(`Could not find prompt frame, falling back by ${Spotlight.fallback}`, 'Spotlight')
+            }
             return i
+        }
+        function findUsername(element) {
+            return (element.querySelector(".nick") ?? element.querySelector("span")).textContent
         }
     }, // [S3]
     
@@ -989,6 +1028,7 @@ const Spotlight = { // [S1]
     drawPFP(context, pfpURL, side) { // todo: An attempt was made to repair tainted canvasses, verify
         const pfp = new Image(); pfp.setAttribute('crossorigin', 'anonymous'); pfp.src = pfpURL; pfp.onload = function() { 
         context.drawImage(pfp, (side == "L" ? 39 : 1422), 7, 155, 175) };
+        return pfp
     },
 }
 Object.setPrototypeOf(Spotlight, CellulartModule)
@@ -1028,7 +1068,7 @@ const Geom = {
         Geom.updateLabel = initializedFunctions.label
     },
     mutation(oldPhase, newPhase) {
-        Geom.setSendPause(false)
+        Geom.setSendPause(true)
         if (newPhase != 'draw') { 
             Geom.flags.mode = false; 
             return 
@@ -1042,12 +1082,13 @@ const Geom = {
         Geom.geomPreview = setAttributes(document.createElementNS(svgNS, "svg"), { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424", parent: document.querySelector(".core") })
     },
     backToLobby(oldPhase) {
+        Geom.flags.mode = false; 
         if (oldPhase != 'start') { Geom.stopGeometrize() }
     }, 
     adjustSettings(previous, current) { 
         // hide or show Geom window without stopping web worker (just like Koss)
         if (current == 'off') {
-            Geom.setSendPause(false)
+            Geom.setSendPause(true)
             Geom.geomWIW.style.visibility = "hidden"
         } else {
             Geom.geomWIW.style.visibility = "visible"
@@ -1129,8 +1170,9 @@ const Geom = {
             }
             o.setSendPause = function(pause) { 
                 Console.log("Send " + (pause ? 'paused' : 'play'), 'Geom')
-                if (!Geom.flags.mode) {
+                if (!Geom.flags.mode) {  // TODO: This is kind of a bad place to put the mode check, in the middle of someone else's setter.
                     o.sendPauser.style.backgroundImage = iconPlay
+                    Geom.flags.pause = true
                     return
                 } 
                 o.sendPauser.style.backgroundImage = pause ? iconPlay : iconPause
@@ -1200,7 +1242,7 @@ const Geom = {
             geomScreen2.body.style.display = 'none'; // TODO lazy init
             geomScreen3.body.style.display = 'none';
             // other stopping stuff
-            geomScreen2.setSendPause(false) 
+            geomScreen2.setSendPause(true) 
             clearTimeout(Geom.stepCallback)
         }
         function startGeometrize(files) { // [G1]

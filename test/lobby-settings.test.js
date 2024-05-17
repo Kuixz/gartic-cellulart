@@ -165,5 +165,5 @@ test('custom settings', () => {
     }]]])
     expect(Timer.parameters.write).toBe(80)
     expect(Timer.parameters.draw).toBe(300)
-    expect(Timer.parameters.turns(10)).not.toBe(10)
+    expect(Timer.parameters.turns(10)).toBe(6)
 })

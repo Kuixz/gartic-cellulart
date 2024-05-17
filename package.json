@@ -9,7 +9,8 @@
         "url": "ENTER GIT REPO URL"
     },
     "scripts": {
-        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
+        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+        "unit": "npm run test -t"
     },
     "babel": {
         "presets": [

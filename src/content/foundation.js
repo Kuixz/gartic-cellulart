@@ -21,17 +21,17 @@ const WIW = {
             <div class = "wiw-header">≡<div class = "wiw-close"></div></div>
             <div class = "wiw-body"></div>`
     },
-    newWIW(closeable, visible, ratio) {
+    newWIW(closeable, visible, ratio=(100/178)) {
         const newWIW = WIW.wiwNode.cloneNode(true)
         const v = visible ? "visible" : "hidden"
-        const r = ratio ? ratio : (100/178)
+        // const r = ratio ? ratio : (100/178)
         closeable
             ? newWIW.querySelector(".wiw-close").onmousedown = function() { newWIW.remove() }
             : newWIW.querySelector(".wiw-close").remove()
         WIW.initDragElement(newWIW)
-        WIW.initResizeElement(newWIW, r)
+        WIW.initResizeElement(newWIW, ratio)
         return setAttributes(newWIW, { 
-            style: "visibility:" + v + "; min-height:" + (178 * r + 40) + "px; height:" + (178 * r + 40) + "px; max-height:" + (536 * r + 40) + "px", 
+            style: "visibility:" + v + "; min-height:" + (178 * ratio + 40) + "px; height:" + (178 * ratio + 40) + "px; max-height:" + (536 * ratio + 40) + "px", 
             parent: document.body 
         })
     },
