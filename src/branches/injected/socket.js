@@ -7,157 +7,57 @@
   * currentWS :: WebSocket, the currently active WebSocket.
   * ---------------------------------------------------------------------- */
 
-//  (function() {
-//     // var wsSend = window.WebSocket.prototype.send;
-//     // wsSend = wsSend.apply.bind(wsSend);
-//     var wsSend = window.WebSocket.prototype.send;
-//     window.WebSocket.prototype.expressSend = function() {
-//         return wsSend.call(this, ...arguments); 
-//     }
-//     // Possibly bad and stupid convolution, just set expressSend to send, if I can get around the illegal invocation
-//     // window.WebSocket.prototype.expressSend = wsSend.bind(window.WebSocket.prototype);
-//     window.WebSocket.prototype.send = function(data) {
-//         Socket.registerWS(this)
-
-//         const modifiedData = Socket.interceptOutgoing(data)
-//         // console.log(modifiedData)
-//         if (!modifiedData) { return }
-//         const args = arguments
-//         args[0] = modifiedData
-
-//         return wsSend.call(this, ...args);
-//     }; 
-
-//     // console.log("[Cellulart] WebSocket proxified")   TODO: Uncomment this
-
-//         /* OrigWebSocket.prototype.send = new Proxy(OrigWebSocket.prototype.send, {
-//             apply: function(data) {
-//                 if (interceptOutgoing(data)) {return}
-//                 return Reflect.apply( ...arguments );
-//             }
-//         }) */
-
-//         /* window.WebSocket.prototype = new Proxy(window.WebSocket.prototype, {
-//             apply: function(target, thisArg, argumentsList) {
-//                 if (interceptOutgoing(argumentsList[0])) {return}
-//                 return Reflect.apply( ...arguments );
-//             }
-//         }) */
-// })(); 
-
-// (function() {
-//     var wsSend = window.WebSocket.prototype.send;
-//     window.WebSocket.prototype.expressSend = function() {
-//         return wsSend.call(this, ...arguments); 
-//     }
-//     window.WebSocket.prototype.send = function(data) {
-//         Socket.registerWS(this)
-
-//         const modifiedData = Socket.interceptOutgoing(data)
-//         if (!modifiedData) { return }
-//         const args = arguments
-//         args[0] = modifiedData
-
-//         return wsSend.call(this, ...args);
-//     }; 
-// })(); 
-
-
-/* wsHook.js
- * https://github.com/skepticfx/wshook
- * Reference: http://www.w3.org/TR/2011/WD-websockets-20110419/#websocket
- */
-var wsHook = {};
-(function () {
-  // Mutable MessageEvent.
-  // Subclasses MessageEvent and makes data, origin and other MessageEvent properites mutatble.
-  function MutableMessageEvent (o) {
-    this.bubbles = o.bubbles || false
-    this.cancelBubble = o.cancelBubble || false
-    this.cancelable = o.cancelable || false
-    this.currentTarget = o.currentTarget || null
-    this.data = o.data || null
-    this.defaultPrevented = o.defaultPrevented || false
-    this.eventPhase = o.eventPhase || 0
-    this.lastEventId = o.lastEventId || ''
-    this.origin = o.origin || ''
-    this.path = o.path || new Array(0)
-    this.ports = o.parts || new Array(0)
-    this.returnValue = o.returnValue || true
-    this.source = o.source || null
-    this.srcElement = o.srcElement || null
-    this.target = o.target || null
-    this.timeStamp = o.timeStamp || null
-    this.type = o.type || 'message'
-    this.__proto__ = o.__proto__ || MessageEvent.__proto__
-  }
-
-  var before = wsHook.before = function (data, url, wsObject) {
-    return data
-  }
-  var after = wsHook.after = function (e, url, wsObject) {
-    return e
-  }
-  var modifyUrl = wsHook.modifyUrl = function(url) {
-    return url
-  }
-  wsHook.resetHooks = function () {
-    wsHook.before = before
-    wsHook.after = after
-    wsHook.modifyUrl = modifyUrl
-  }
-
-  var _WS = WebSocket
-  WebSocket = function (url, protocols) {
-    var WSObject
-    url = wsHook.modifyUrl(url) || url
-    this.url = url
-    this.protocols = protocols
-    if (!this.protocols) { WSObject = new _WS(url) } else { WSObject = new _WS(url, protocols) }
-
-    var _send = WSObject.send
-    WSObject.expressSend = function() {
-        return _send.call(this, ...arguments); 
+(function() {
+    // var wsSend = window.WebSocket.prototype.send;
+    // wsSend = wsSend.apply.bind(wsSend);
+    var wsSend = window.WebSocket.prototype.send;
+    window.WebSocket.prototype.expressSend = function() {
+        return wsSend.call(this, ...arguments); 
     }
-    WSObject.send = function (data) {
-      arguments[0] = wsHook.before(data, WSObject.url, WSObject) || data
-      _send.apply(this, arguments)
-    }
+    // Possibly bad and stupid convolution, just set expressSend to send, if I can get around the illegal invocation
+    // window.WebSocket.prototype.expressSend = wsSend.bind(window.WebSocket.prototype);
+    window.WebSocket.prototype.send = function(data) {
+        Socket.registerWS(this)
 
-    // Events needs to be proxied and bubbled down.
-    WSObject._addEventListener = WSObject.addEventListener
-    WSObject.addEventListener = function () {
-      var eventThis = this
-      // if eventName is 'message'
-      if (arguments[0] === 'message') {
-        arguments[1] = (function (userFunc) {
-          return function instrumentAddEventListener () {
-            arguments[0] = wsHook.after(new MutableMessageEvent(arguments[0]), WSObject.url, WSObject)
-            if (arguments[0] === null) return
-            userFunc.apply(eventThis, arguments)
-          }
-        })(arguments[1])
-      }
-      return WSObject._addEventListener.apply(this, arguments)
-    }
+        const modifiedData = Socket.interceptOutgoing(data)
+        // console.log(modifiedData)
+        if (!modifiedData) { return }
+        const args = arguments
+        args[0] = modifiedData
 
-    Object.defineProperty(WSObject, 'onmessage', {
-      'set': function () {
-        var eventThis = this
-        var userFunc = arguments[0]
-        var onMessageHandler = function () {
-          arguments[0] = wsHook.after(new MutableMessageEvent(arguments[0]), WSObject.url, WSObject)
-          if (arguments[0] === null) return
-          userFunc.apply(eventThis, arguments)
-        }
-        WSObject._addEventListener.apply(this, ['message', onMessageHandler, false])
-      }
-    })
+        return wsSend.call(this, ...args);
+    }; 
 
-    return WSObject
-  }
-})()
+    // var wdAEL = window.WebSocket.prototype.addEventListener
+    // window.WebSocket.prototype.addEventListener = function(type, func) {
+    //     console.log(func)
+    //     return wdAEL.call(this, ...arguments)
+    // }
 
+    // Object.defineProperty(window.WebSocket.prototype, 'onmessage', {
+    //     set: function(f) { 
+    //         console.log(f)
+    //         this.chamberedCallback = f
+    //         this.addEventListener('message', f)
+    //     }
+    // })
+
+    // console.log("[Cellulart] WebSocket proxified")   TODO: Uncomment this
+
+        /* OrigWebSocket.prototype.send = new Proxy(OrigWebSocket.prototype.send, {
+            apply: function(data) {
+                if (interceptOutgoing(data)) {return}
+                return Reflect.apply( ...arguments );
+            }
+        }) */
+
+        /* window.WebSocket.prototype = new Proxy(window.WebSocket.prototype, {
+            apply: function(target, thisArg, argumentsList) {
+                if (interceptOutgoing(argumentsList[0])) {return}
+                return Reflect.apply( ...arguments );
+            }
+        }) */
+})(); 
 
 // [G3]
 
@@ -197,7 +97,7 @@ const Socket = {
         // console.log(data)
         // console.log(data.slice(0,8))
         // if (data.slice(0,8) != '42[2,11,') { return }
-        if (data.slice(0,5) != '42[2,') { return data }
+        if (data.slice(0,5) != '42[2,') { return }
         // Socket.post('gameEventScreenTransition', data)
         // if (data.indexOf('"draw":') == -1) { return }
 
@@ -222,18 +122,10 @@ const Socket = {
             }
         }
 
-        if (data == '42[2,26,3]') {
-            return
-        }
-        if (data == '42[2,18,{"visible":2}]' ) {
-            return '42[2,18,{"visible":1}]'
+        if (data == '42[2,26,3]' || data == '42[2,18,{"visible":2}]' ) {
+            Socket.currentWS.onmessage( {data:'42[2,18,{"visible":1}]'} )
             // this.currentWS.onmessage( {data:'42[2,5,1]'} )
         }
-        return data
-        // if (data == '42[2,26,3]' || data == '42[2,18,{"visible":2}]' ) {
-        //     Socket.currentWS.onmessage( {data:'42[2,18,{"visible":1}]'} )
-        //     // this.currentWS.onmessage( {data:'42[2,5,1]'} )
-        // }
 
         // console.log('has draw')
         // console.log(json.draw)
@@ -296,16 +188,6 @@ const Socket = {
     }
 }
 
-
-wsHook.before = function(data, url, wsObject) { Socket.registerWS(wsObject); return Socket.interceptOutgoing(data) }
-wsHook.after = function(event, url, wsObject) { 
-    const modified = Socket.interceptIncoming(event.data); 
-    if (!modified) { return null } 
-    event.data = modified; 
-    return event 
-}
-
-
 // window.addEventListener('beforeunload', (e) => {
 //     console.log(Socket.strokeCount)
 //     // e.returnValue = Socket.stroke
@@ -316,3 +198,30 @@ wsHook.after = function(event, url, wsObject) {
 if (typeof exports !== 'undefined') {
     module.exports = { Socket };
 }
+
+// Node.prototype.appendChild = new Proxy( Node.prototype.appendChild, {
+//     async apply (target, thisArg, [element]) {
+//       if (element.tagName == "SCRIPT") {
+//         if (element.src.indexOf('draw') != -1) {
+//           let text = await requestText(element.src)
+//           text = editScript(text)
+//           let blob = new Blob([text])
+//           element.src = URL.createObjectURL(blob)
+//         }
+//       }
+//       return Reflect.apply( ...arguments )
+//     }
+//   })
+   
+//   /* stroke configuration note */
+//   /* [toolID, strokeID, [color, 18, 0.6], [x0, y0]. [x1, y1], ..., [xn, yn]] */
+   
+//   function editScript (text) {
+//     // Find the final draw function
+//     // let functionFinalDraw = text.match(/function\s\w{1,}\(\w{0,}\){[^\{]+{[^\}]{0,}return\[\]\.concat\(Object\(\w{0,}\.*\w{0,}\)\(\w{0,}\),\[\w{0,}\]\)[^\}]{0,}}[^\}]{0,}}/g)[0]
+//     // find the variable that setData is part of
+//     // let setDataVar = functionFinalDraw.match(/\w{1,}(?=\.setData)/g)[0]
+//     // Expose setData to the script
+//     // text = text.replace(/\(\(function\(\){if\(!\w{1,}\.disabled\)/, `((function(){;window.setData = ${setDataVar}.setData;if(!${setDataVar}.disabled)`)
+//     return text.replace('e.hidden','false').replace('f.hidden','false')
+//   }
