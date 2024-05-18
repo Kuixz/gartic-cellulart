@@ -397,22 +397,22 @@ const Converter = {
     //     Converter.mode = str
     // },
     modeParameters: {
-        "NORMAL":        { write: 40,  draw: 150, decay: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 1 -> 1
-        "KNOCK-OFF":     { write: 90,  draw: 300, decay: (turns) => 1 / Math.exp(8 / turns), firstMultiplier: 1   , fallback: 1  }, // 2 -> 8
-        "SECRET":        { write: 20,  draw: 75,  decay: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 3 -> 3
-        "ANIMATION":     { write: 40,  draw: 150, decay: () => 0,                             firstMultiplier: 1   , fallback: 1  }, // 4 -> 11
-        "ICEBREAKER":    { write: 40,  draw: 150, decay: () => 0,                             firstMultiplier: 1.25, fallback: -1 }, // 5 -> 9
-        "COMPLEMENT":    { write: 40,  draw: 150, decay: () => 0,                             firstMultiplier: 0.2 , fallback: -1 }, // 6 -> 15
+        "NORMAL":        { write: 40,  draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 1 -> 1
+        "KNOCK-OFF":     { write: 90,  draw: 300, decayFunction: (turns) => 1 / Math.exp(8 / turns), firstMultiplier: 1   , fallback: 1  }, // 2 -> 8
+        "SECRET":        { write: 20,  draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 3 -> 3
+        "ANIMATION":     { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 1   , fallback: 1  }, // 4 -> 11
+        "ICEBREAKER":    { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: -1 }, // 5 -> 9
+        "COMPLEMENT":    { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 0.2 , fallback: -1 }, // 6 -> 15
         // speedrun is 7 (what? no it isn't???)
-        "MASTERPIECE":   { write: 2,   draw: 2,   decay: () => 0,                             firstMultiplier: 1   , fallback: 1  }, // 15 -> 20
-        "STORY":         { write: 40,  draw: 2,   decay: () => 0,                             firstMultiplier: 1.25, fallback: 1  },       // 17
-        "MISSING PIECE": { write: 2 ,  draw: 150, decay: () => 0,                             firstMultiplier: 1   , fallback: 1  },       // 21 
-        "CO-OP":         { write: 20,  draw: 75,  decay: () => 0,                             firstMultiplier: 1.25, fallback: 1  },       // 18
-        "SCORE":         { write: 40,  draw: 150, decay: () => 0,                             firstMultiplier: 1.25, fallback: 2  },       // 10
-        "SANDWICH":      { write: 40,  draw: 150, decay: () => 0,                             firstMultiplier: 1.25, fallback: 1  }, // 12 -> 5
-        "CROWD":         { write: 20,  draw: 75,  decay: () => 0,                             firstMultiplier: 1.25, fallback: 2  }, // 13 -> 7
-        "BACKGROUND":    { write: 40,  draw: 150, decay: () => 0,                             firstMultiplier: 2   , fallback: 1  }, // 14 -> 14
-        "SOLO":          { write: 2,   draw: 2,   decay: () => 0,                             firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
+        "MASTERPIECE":   { write: 2,   draw: 2,   decayFunction: () => 0,                             firstMultiplier: 1   , fallback: 1  }, // 15 -> 20
+        "STORY":         { write: 40,  draw: 2,   decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: 1  },       // 17
+        "MISSING PIECE": { write: 2 ,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 1   , fallback: 1  },       // 21 
+        "CO-OP":         { write: 20,  draw: 75,  decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: 1  },       // 18
+        "SCORE":         { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: 2  },       // 10
+        "SANDWICH":      { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: 1  }, // 12 -> 5
+        "CROWD":         { write: 20,  draw: 75,  decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: 2  }, // 13 -> 7
+        "BACKGROUND":    { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 2   , fallback: 1  }, // 14 -> 14
+        "SOLO":          { write: 2,   draw: 2,   decayFunction: () => 0,                             firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
     },
 
     getParameters(str) {
@@ -428,10 +428,10 @@ const Converter = {
     },
     timeStringToParameters(str) {
         switch (str) { // Setting custom game.parameters
-            case "SLOW":              return { "write": 80, "draw": 300, 'decay': 0, "firstMultiplier": 1.25 };
+            case "SLOW":              return { "write": 80, "draw": 300, 'decayFunction': () => 0, "firstMultiplier": 1.25 };
             case "NORMAL":            return Converter.getParameters(["NORMAL"]);
             case "FAST":              return Converter.getParameters(["SECRET"]);
-            case "PROGRESSIVE":       return { "write": 8, "draw": 30, "firstMultiplier": 1, "decay": (turns) => Math.exp(8 / turns)};
+            case "PROGRESSIVE":       return { "write": 8, "draw": 30, "firstMultiplier": 1, "decayFunction": (turns) => Math.exp(8 / turns)};
             case "REGRESSIVE":        return /*{ ...*/Converter.getParameters(['KNOCK-OFF']) /*, "decay": 1 / Math.exp(8 / game.turns) }*/;
             case "DYNAMIC":           return Converter.getParameters(["SOLO"]);
             case "INFINITE":          return Converter.getParameters(["SOLO"]);

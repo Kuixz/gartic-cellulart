@@ -135,9 +135,11 @@ const Timer = {
     parameters : {    
         players: 0,
         turns: 0,              // used by Timer 
+        turnsFunction: () => {},
         write: 40,             // used by Timer
         draw: 150,             // used by Timer
         decay: 0,              // used by Timer
+        decayFunction: () => {},
         firstMultiplier: 1.25, // used by Timer
     },
 
@@ -184,7 +186,7 @@ const Timer = {
         }
     },
     tweakParameters(config, midgame=false) {
-        if ('turns' in config) { Timer.parameters.turns = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns)) }  // (players) 
+        if ('turns' in config) { Timer.parameters.turnsFunction = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns)) }  // (players) 
         if ('speed' in config) { Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
     },
     finalizeTurns() {
@@ -200,7 +202,7 @@ const Timer = {
         // }
     // finalizeTurns(players) {
         // const t = Timer.parameters.turns; if (t instanceof Function) { Timer.parameters.turns = t(players) }
-            const d = Timer.parameters.decay; if (d instanceof Function) { Timer.parameters.decay = d(Timer.parameters.turns) }
+            Timer.parameters.decay = Timer.parameters.decayFunction(Timer.parameters.turns)
         }, 200);
     },
 
@@ -678,6 +680,7 @@ const Spotlight = { // [S1]
     // slideNum : -1,
     // keySlideNum : -3,
 
+    host : '',
     user : '',
     turns : 0,
     fallback : 0,
@@ -707,7 +710,7 @@ const Spotlight = { // [S1]
             ? Spotlight.compositedFrameDatas = new Array(Spotlight.turns - 1) 
             : Spotlight.compositedFrameDatas = {}
 
-        Spotlight.attachBookObserver();
+        // Spotlight.attachBookObserver();
     },
     
     backToLobby(oldPhase) {
@@ -726,6 +729,7 @@ const Spotlight = { // [S1]
         switch (type) {
             case 1: 
                 Spotlight.user = data.user.nick; 
+                Spotlight.host = data.users[0].nick;
                 Spotlight.fallback = Converter.flowStringToFallback(Converter.flowIndexToString(data.configs.first))
         
                 // Spotlight.players = data.users.length;
@@ -735,7 +739,8 @@ const Spotlight = { // [S1]
             // case 3: Spotlight.players -= 1; break;
             // case 5: 
             //     Spotlight.finalizeTurns(); break;
-
+            case 9:
+                if (Object.keys(data).length > 0) { break } else { Spotlight.writeResponseFrames() }
             // Spotlight can be a bit looser on its turn tracking, so we do just that.
         }
     },
@@ -784,7 +789,7 @@ const Spotlight = { // [S1]
         }
 
         const dlnode = WIW.newWIW(true, true)
-        const dlicon = setAttributes(new Image(), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/spotlight-1.png") })
+        const dlicon = setAttributes(new Image(), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/spotlight-on.png") })
         dlicon.onclick = function() {
             download(buffer, filename, { type: 'image/gif' });
             dlnode.remove();
@@ -838,7 +843,7 @@ const Spotlight = { // [S1]
         if (Spotlight.setting.current() == 'off') { return }
         const canvas = Spotlight.initFrom(Spotlight.bg)
         const context = canvas.context
-        Spotlight.drawText(context, "HOSTED BY " + Spotlight.names[0].toUpperCase(), 1206, 82, 50, 400, "M", "white")
+        Spotlight.drawText(context, "HOSTED BY " + Spotlight.host.toUpperCase(), 1206, 82, 50, 400, "M", "white")
         switch (Spotlight.setting.current()) {
             case 'on':
                 Spotlight.drawName(context, Spotlight.user.toUpperCase(), "R") 
@@ -856,28 +861,44 @@ const Spotlight = { // [S1]
         // setTimeout(preview, 1000)
         Spotlight.canbase = canvas.canvas;
     },
-    // determineResponseIndices() {
-    //     const slides = document.querySelector(".timeline").querySelectorAll(".item");
-    //     const keyIndex = slides.find((item) => findUsername(item) == Spotlight.user)
-    //     // if (keySlide < 0) { Console.log('Did not participate in this round; no frame will be saved') }
-    //     // const keySlide = slides[keyIndex]  // slides[Spotlight.keyIndex]
-    //     var prevIndex = indexOfPrevSlide(keySlide)
-    //     // if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return } //prevIndex += modeParameters[game.mode]["fallback"] }
-    //     // const prevSlide = slides[prevIndex]
-    //     // const prevUser = findUsername(prevSlide);
-    //     return { key:keyIndex, prev: prevIndex }
+    writeResponseFrames() {
+        var pairs = Spotlight.determineResponseIndices()
 
-    //     function indexOfPrevSlide(key) {
-    //         var i = Spotlight.fallback > 0 ? key - 1 : 0; 
-    //         /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
-    //         while (i >= 0 && slides[i].querySelector(".empty") != null) { 
-    //             i -= Spotlight.fallback; 
-    //             Console.log(`Could not find prompt frame, falling back by ${Spotlight.fallback}`, 'Spotlight')
-    //         }
-    //         return i
-    //     }
-    // },
-    compositeResponseFrame(/* keyIndex, prevIndex */) {  // TODO incorrectly grabbing the same image twice, wtf?
+        for (const indices of pairs) {
+            if (indices.key < 0) { Console.log('Did not participate in this round; no frame will be saved'); continue }
+            if (indices.prev < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); continue } //prevIndex += modeParameters[game.mode]["fallback"] }
+            Spotlight.compositeResponseFrame(indices.key, indices.prev)
+        }
+    },
+    determineResponseIndices() {
+        const slides = document.querySelector(".timeline").querySelectorAll(".item");
+        var toReturn = []
+        for (var keyIndex = 0; keyIndex < slides.length; keyIndex++) {
+            if (Spotlight.findUsername(slides[keyIndex]) != Spotlight.user) { continue }
+            var prevIndex = indexOfPrevSlide(keyIndex)
+            toReturn.push({ key:keyIndex, prev: prevIndex })
+        }
+        return toReturn
+        // const keyIndex = slides.find((item) => findUsername(item) == Spotlight.user)
+        // if (keySlide < 0) { Console.log('Did not participate in this round; no frame will be saved') }
+        // const keySlide = slides[keyIndex]  // slides[Spotlight.keyIndex]
+        // var prevIndex = indexOfPrevSlide(keySlide)
+        // if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return } //prevIndex += modeParameters[game.mode]["fallback"] }
+        // const prevSlide = slides[prevIndex]
+        // const prevUser = findUsername(prevSlide);
+        // return { key:keyIndex, prev: prevIndex }
+
+        function indexOfPrevSlide(key) {
+            var i = Spotlight.fallback > 0 ? key - 1 : 0; 
+            /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
+            while (i >= 0 && slides[i].querySelector(".empty") != null) { 
+                i -= Spotlight.fallback; 
+                Console.log(`Could not find prompt frame, falling back by ${Spotlight.fallback}`, 'Spotlight')
+            }
+            return i
+        }
+    },
+    compositeResponseFrame(keyIndex, prevIndex) {  // TODO incorrectly grabbing the same image twice, wtf?
         // todo: What to do if the one being spotlighted has an EMPTY?
         // TODO: Some rounds might loop back to the same person multiple times.
         if (Spotlight.setting.current() == 'off') { return }
@@ -888,14 +909,14 @@ const Spotlight = { // [S1]
         const side = { key:'R', other:'L' }
         
         // Determinine slides
-        const slides = document.querySelector(".timeline").querySelectorAll(".item");
-        const keyIndex = slides.find((item) => findUsername(item) == Spotlight.user)
-        if (keySlide < 0) { Console.log('Did not participate in this round; no frame will be saved') }
+        // const slides = document.querySelector(".timeline").querySelectorAll(".item");
+        // const keyIndex = slides.find((item) => findUsername(item) == Spotlight.user)
+        // if (keyIndex < 0) { Console.log('Did not participate in this round; no frame will be saved') }
         const keySlide = slides[keyIndex]  // slides[Spotlight.keyIndex]
-        var prevIndex = indexOfPrevSlide(keySlide)
-        if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return } //prevIndex += modeParameters[game.mode]["fallback"] }
+        // var prevIndex = indexOfPrevSlide(keySlide)
+        // if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return } //prevIndex += modeParameters[game.mode]["fallback"] }
         const prevSlide = slides[prevIndex]
-        const prevUser = findUsername(prevSlide);
+        const prevUser = Spotlight.findUsername(prevSlide);
         // const prevAvatar = Spotlight.avatars[Spotlight.names.indexOf(prevUser)]
         const prevAvatar = prevSlide.querySelector('avatar').firstChild.style.backgroundImage
     
@@ -912,19 +933,19 @@ const Spotlight = { // [S1]
         // setTimeout(function() { Spotlight.compositedFrameDatas[Spotlight.keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data }, 200) // TODO: Horrendously bad bodged solution to the pfp not yet being loaded
         // prevAvatar
 
-        function indexOfPrevSlide(key) {
-            var i = Spotlight.fallback > 0 ? key - 1 : 0; 
-            /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
-            while (i >= 0 && slides[i].querySelector(".empty") != null) { 
-                i -= Spotlight.fallback; 
-                Console.log(`Could not find prompt frame, falling back by ${Spotlight.fallback}`, 'Spotlight')
-            }
-            return i
-        }
-        function findUsername(element) {
-            return (element.querySelector(".nick") ?? element.querySelector("span")).textContent
-        }
+        // function indexOfPrevSlide(key) {
+        //     var i = Spotlight.fallback > 0 ? key - 1 : 0; 
+        //     /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
+        //     while (i >= 0 && slides[i].querySelector(".empty") != null) { 
+        //         i -= Spotlight.fallback; 
+        //         Console.log(`Could not find prompt frame, falling back by ${Spotlight.fallback}`, 'Spotlight')
+        //     }
+        //     return i
+        // }
     }, // [S3]
+    findUsername(element) {
+        return (element.querySelector(".nick") ?? element.querySelector("span")).textContent
+    },
     
     // Temporary preview function
     preview(intend) {
