@@ -694,6 +694,7 @@ const Spotlight = { // [S1]
             }, 200) }
             return
         }
+        if (Spotlight.turns <= 1) { return }
         // if (oldPhase == "start") {
         //     // In case you had to reload in the middle of visualization
         //     Spotlight.user = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
@@ -703,7 +704,7 @@ const Spotlight = { // [S1]
 
         Spotlight.compositeBackgrounds();
         Spotlight.turns > 0 
-            ? Spotlight.compositedFrameDatas = new Array(game.turns - 1) 
+            ? Spotlight.compositedFrameDatas = new Array(Spotlight.turns - 1) 
             : Spotlight.compositedFrameDatas = {}
 
         Spotlight.attachBookObserver();
@@ -711,7 +712,7 @@ const Spotlight = { // [S1]
     
     backToLobby(oldPhase) {
         if (oldPhase != 'book') { return }
-        Spotlight.compileToGif()
+        if (Spotlight.turns > 1) { Spotlight.compileToGif() }
         // Spotlight.timelineObserver.disconnect()
         // Spotlight.avatars = []
         // Spotlight.names = []
