@@ -290,6 +290,7 @@ const Socket = {
 
 
 wsHook.before = function(data, url, wsObject) { Socket.registerWS(wsObject); return Socket.interceptOutgoing(data) }
+wsHook.after = function(event, url, wsObject) { Socket.interceptIncoming(event.data) }
 
 
 // window.addEventListener('beforeunload', (e) => {
