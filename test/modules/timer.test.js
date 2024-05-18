@@ -9,11 +9,17 @@ test('phase transition', () => {
     
 })
 
+jest.useFakeTimers();
+jest.spyOn(global, 'setTimeout')
+
 test('decay', () => {
 
     document.body.innerHTML =
-    '<div class="step">' +
-    '  <p>1/10<p/>' +
+    '<div>' +
+    '   <div class="time"> </div>' +
+    '   <div class="step">' +
+    '   <p>1/10<p/>' +
+    '   </div>' + 
     '</div>';
 
     Timer.parameters = {    
@@ -27,8 +33,10 @@ test('decay', () => {
     // expect(Timer.parameters.draw instanceof Number).toBe(true)
     // expect(Timer.parameters.decat instanceof function).toBe(false)
     Timer.finalizeTurns();
+    jest.runAllTimers();
     expect(Timer.parameters.decay instanceof Function).toBe(false)
     // expect(Timer.parameters.draw instanceof Number).toBe(true)
+
     for (var count = 0; count < 10; count ++) {
         // Timer.mutation('draw','draw')
         Timer.interpolate(1)
@@ -40,8 +48,10 @@ test('decay', () => {
     for (var count = 0; count < 10; count ++) {
         Timer.mutation('draw','draw')
     }
-    setTimeout(
-        () => { expect(Math.abs(30 - Timer.parameters.draw)).toBeLessThan(0.1) },
-        300
-    )
+    jest.runAllTimers();
+    expect(Math.abs(30 - Timer.parameters.draw)).toBeLessThan(0.1)
+    // setTimeout(
+    //     () => { expect(Math.abs(30 - Timer.parameters.draw)).toBeLessThan(0.1) },
+    //     300
+    // )
 })

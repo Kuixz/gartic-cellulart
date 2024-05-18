@@ -494,7 +494,7 @@ class SettingsBelt { // derived from Circulator, derived from Iterator, trimmed
         this.index = defaultIndex || 0
         this.extension = extension
     }
-    current() { return this.items[this.index] }
+    current() { return this.items[this.index] }  // TODO: change this to get syntax
     next() { this.index = (this.index + 1              ) % this.length; return this.current()}
     prev() { this.index = (this.index + this.length - 1) % this.length; return this.current()} // Unused
 

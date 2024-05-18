@@ -165,7 +165,7 @@ const Timer = {
             // case 2: Timer.parameters.players += 1; break;
             // case 3: Timer.parameters.players -= 1; break;
             // case 5: Timer.finalizeTurns(); break;
-            case 18: Timer.tweakParameters(data)
+            case 18: Timer.tweakParameters(data); break;
         }
     },
 
@@ -189,16 +189,19 @@ const Timer = {
     },
     finalizeTurns() {
         // if (newPhase != 'book') { 
+            setTimeout(() => {
             // if (Timer.parameters.turns == 0) { 
         // const d = Timer.parameters.turns; if (t 
                 const indicator = document.querySelector('.step').querySelector('p').textContent
                 Timer.parameters.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
+            
             // }
             // return
         // }
     // finalizeTurns(players) {
         // const t = Timer.parameters.turns; if (t instanceof Function) { Timer.parameters.turns = t(players) }
-        const d = Timer.parameters.decay; if (d instanceof Function) { Timer.parameters.decay = d(Timer.parameters.turns) }
+            const d = Timer.parameters.decay; if (d instanceof Function) { Timer.parameters.decay = d(Timer.parameters.turns) }
+        }, 200);
     },
 
     placeTimer() {  // [T3]
@@ -683,11 +686,12 @@ const Spotlight = { // [S1]
         Spotlight.bg.src = chrome.runtime.getURL("assets/module-assets/spotlight-base.png");
     },
     mutation(oldPhase, newPhase) {
+        if (newPhase == 'start') { return }
         if (newPhase != 'book') { 
-            if (Spotlight.turns == 0) { 
+            if (Spotlight.turns == 0) { setTimeout(() => {
                 const indicator = document.querySelector('.step').querySelector('p').textContent
                 Spotlight.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
-            }
+            }, 200) }
             return
         }
         // if (oldPhase == "start") {
