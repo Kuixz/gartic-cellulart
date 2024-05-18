@@ -230,9 +230,9 @@ const Xhr = {
             Xhr.post('lobbySettings', gameDict/*['configs']*/)
             // console.log('succ')
         }
-        
-        const modifiedResponse = actualResponse && actualResponse.replace('"visible":1', '"visible":2');
-        return modifiedResponse
+
+        const modifiedText = text && text.replace('"visible":1', '"visible":2');
+        return modifiedText
     },
     post(purpose, data) {
         window.postMessage({
