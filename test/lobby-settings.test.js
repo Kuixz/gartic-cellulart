@@ -46,7 +46,7 @@ test('defaults', () => {
     }]])
     expect(Timer.parameters.write).toBe(40)
     expect(Timer.parameters.draw).toBe(150)
-    expect(Timer.parameters.decay(10)).toBe(0)
+    expect(Timer.parameters.decayFunction(10)).toBe(0)
     expect(Spotlight.user).toBe('belamy')
 
 
@@ -73,7 +73,7 @@ test('defaults', () => {
     }]])
     expect(Timer.parameters.write).toBe(20)
     expect(Timer.parameters.draw).toBe(75)
-    expect(Timer.parameters.decay(10)).toBe(0)
+    expect(Timer.parameters.decayFunction(10)).toBe(0)
     expect(Spotlight.user).toBe('stingy')
 
 
@@ -100,7 +100,7 @@ test('defaults', () => {
     }]])
     expect(Timer.parameters.write).toBe(90)
     expect(Timer.parameters.draw).toBe(300)
-    expect(Timer.parameters.decay(10)).not.toBe(0)
+    expect(Timer.parameters.decayFunction(10)).not.toBe(0)
     expect(Spotlight.user).toBe('shazam')
 })
 
@@ -165,5 +165,5 @@ test('custom settings', () => {
     }]]])
     expect(Timer.parameters.write).toBe(80)
     expect(Timer.parameters.draw).toBe(300)
-    expect(Timer.parameters.turns(10)).toBe(6)
+    expect(Timer.parameters.turnsFunction(10)).toBe(6)
 })

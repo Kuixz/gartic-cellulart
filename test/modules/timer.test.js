@@ -22,11 +22,12 @@ test('decay', () => {
     '   </div>' + 
     '</div>';
 
-    Timer.parameters = {    
+    Timer.parameters = { 
+        players: 10,   
         write: 90,          
         draw: 300,           
-        turns: (players) => players,
-        decay: (turns) => 1 / Math.exp(8 / turns),
+        turnsFunction: (players) => players,
+        decayFunction: (turns) => 1 / Math.exp(8 / turns),
         firstMultiplier: 1 
     }
     // Timer.finalizeTurns(10);
