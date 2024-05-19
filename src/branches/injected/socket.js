@@ -12,7 +12,7 @@
     // wsSend = wsSend.apply.bind(wsSend);
     var wsSend = window.WebSocket.prototype.send;
     window.WebSocket.prototype.expressSend = function() {
-        return wsSend.call(this, ...arguments); 
+        return wsSend.apply(this, arguments); 
     }
     // Possibly bad and stupid convolution, just set expressSend to send, if I can get around the illegal invocation
     // window.WebSocket.prototype.expressSend = wsSend.bind(window.WebSocket.prototype);
