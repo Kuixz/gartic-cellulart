@@ -6,7 +6,7 @@ Object.assign(global, socket)
 
 test('proxification', () => {
     expect(Socket).toBeDefined()
-    // expect(WebSocket.prototype.expressSend || wsHook).toBeDefined()
+    expect(WebSocket.prototype.expressSend).toBeDefined()
 });
 
 test ('intercept outgoing', () => {
