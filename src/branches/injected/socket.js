@@ -126,6 +126,7 @@ const Socket = {
             Socket.currentWS.onmessage( {data:'42[2,18,{"visible":1}]'} )
             // this.currentWS.onmessage( {data:'42[2,5,1]'} )
         }
+        // 42[2,18,{"speed":3, "first":1, "turns":3, "keep":2, "score":2, "visible":1, "animate":2, "mod":2}]
 
         // console.log('has draw')
         // console.log(json.draw)
