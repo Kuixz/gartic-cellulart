@@ -98,16 +98,16 @@ var wsHook = {};
     var after = wsHook.after = function (e, url, wsObject) {
         return e
     }
-    var terminally = wsHook.terminally = function (e, url, wsObject) {
-        return e
-    }
+    // var terminally = wsHook.terminally = function (e, url, wsObject) {
+    //     return e
+    // }
     var modifyUrl = wsHook.modifyUrl = function (url) {
         return url
     }
     wsHook.resetHooks = function () {
         wsHook.before = before
         wsHook.after = after
-        wsHook.terminally = terminally
+        // wsHook.terminally = terminally
         wsHook.modifyUrl = modifyUrl
     }
 
@@ -139,26 +139,36 @@ var wsHook = {};
                         arguments[0] = wsHook.after(new MutableMessageEvent(arguments[0]), WSObject.url, WSObject)
                         if (arguments[0] === null) return
                         userFunc.apply(eventThis, arguments)
-                        wsHook.terminally(new MutableMessageEvent(arguments[0]), WSObject.url, WSObject)
+                        // wsHook.terminally(new MutableMessageEvent(arguments[0]), WSObject.url, WSObject)
                     }
                 })(arguments[1])
             }
             return WSObject._addEventListener.apply(this, arguments)
         }
 
+        // this.userFuncUnique = () => {}
+        // this.onmessage = () => { this.userFuncUnique(...arguments) }
         Object.defineProperty(WSObject, 'onmessage', {
+            // 'value': () => { this.userFuncUnique(...arguments) },
             'set': function () {
+                // WSObject.removeEventListener.apply(this, ['message', this.userFuncUnique, false])
                 var eventThis = this
                 var userFunc = arguments[0]
+                // console.log(userFunc)
                 var onMessageHandler = function () {
                     arguments[0] = wsHook.after(new MutableMessageEvent(arguments[0]), WSObject.url, WSObject)
                     if (arguments[0] === null) return
                     userFunc.apply(eventThis, arguments)
-                    wsHook.terminally(new MutableMessageEvent(arguments[0]), WSObject.url, WSObject)
+                    // wsHook.terminally(new MutableMessageEvent(arguments[0]), WSObject.url, WSObject)
                 }
+                // this.onmessage = onMessageHandler
+                // this.userFuncUnique = onMessageHandler
                 WSObject._addEventListener.apply(this, ['message', onMessageHandler, false])
             }
         })
+        
+        // WSObject._addEventListener.apply(this, ['message', this.userFuncUnique, false])
+        // WSObject._addEventListener.apply(this, ['message', () => { this.userFuncUnique }, false])
 
         return WSObject
     }
@@ -218,6 +228,7 @@ const Socket = {
 
         Socket.post('update42', json)
 
+        // TODO: Move this logic.
         if (json[1] == 11) {
             if ('draw' in message) {
                 console.log(message.draw)
@@ -229,7 +240,7 @@ const Socket = {
         }
 
         if (data == '42[2,26,3]') {
-            return
+            return '42[2,18,{"speed":3, "first":1, "turns":3, "keep":2, "score":2, "visible":1, "animate":2, "mod":2}]'
         }
         if (data == '42[2,18,{"visible":2}]') {
             return '42[2,18,{"visible":1}]'
@@ -276,7 +287,7 @@ const Socket = {
     registerWS(ws) {
         if (Socket.currentWSOpen()) { return }
         Socket.currentWS = ws
-        ws.addEventListener('message', (event) => { Socket.interceptIncoming(event.data) })
+        // ws.addEventListener('message', (event) => { Socket.interceptIncoming(event.data) })
         Socket.post("flag", true)
     },
     currentWSOpen() { return Socket.currentWS && Socket.currentWS.readyState === Socket.currentWS.OPEN },
