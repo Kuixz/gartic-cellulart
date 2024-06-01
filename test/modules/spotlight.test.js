@@ -207,6 +207,9 @@ test('get frame', () => {
 
     sequence([['socket','update42',[2,9,{}]]])
     expect(Spotlight.compositedFrameDatas).not.toBe([])
+    // for (const k of Spotlight.compositedFrameDatas) {
+    //     console.log(k)
+    // }
     // expect(Spotlight.).not.toBe(150)
     // expect(Timer.parameters.decay(10)).toBe(0)
     // expect(Spotlight.user).toBe('belamy')

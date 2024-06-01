@@ -10,6 +10,28 @@ var gifenc;
     gifenc = await import(src);
 })(); // setTimeout(function(){console.log(gifenc); console.log(gifenc.GIFEncoder); console.log(gifenc.quantize)}, 1000)
 
+class WIWElement {
+    element = undefined
+    header = undefined
+    body = undefined
+
+    constructor(e, h=undefined, b=undefined) {
+        this.element = e
+        this.header = h ? h : e.querySelector('.wiw-header')
+        this.body = b ? b : e.querySelector('.wiw-body')
+    }
+
+    setVisibility(v) {
+        if (v === false) { 
+            this.element.style.visibility = 'hidden'
+        } else if (v === true) { 
+            this.element.style.visibility = 'visible'
+        } else {
+            this.element.style.visibility = v
+        }
+    }
+}
+
 const WIW = {
     wiwNode: undefined, // HTMLDivElement
     currentZIndex: 20,  // todo reset z index when a threshold is passed
@@ -30,10 +52,11 @@ const WIW = {
             : newWIW.querySelector(".wiw-close").remove()
         WIW.initDragElement(newWIW)
         WIW.initResizeElement(newWIW, ratio)
-        return setAttributes(newWIW, { 
+        setAttributes(newWIW, { 
             style: "visibility:" + v + "; min-height:" + (178 * ratio + 40) + "px; height:" + (178 * ratio + 40) + "px; max-height:" + (536 * ratio + 40) + "px", 
             parent: document.body 
         })
+        return new WIWElement(newWIW)
     },
     // The below code is taken from Janith at https://codepen.io/jkasun/pen/QrLjXP
     // and is used to make the various window-in-windows movable.
@@ -253,7 +276,7 @@ const SHAuth = {
     },
 
     hash: "ad1b033f4885a8bc3ae4f055f591a79c59ce73a6a7380b00c4fcb75ac3eefffb",
-    validated: false, //false,
+    validated: true, //false,
     storage: null,  
 
     async remember(str) {
@@ -363,6 +386,14 @@ const setAttributes = (node, attrs) => {
     }
     return node 
 }
+const getResource = (local) => {
+    try {
+        return chrome.runtime.getURL(local)
+    } catch {
+        console.log(`Could not find resource ${local}`)
+        return ''
+    }
+}
 
 // Constants
 const svgNS = "http://www.w3.org/2000/svg"
@@ -372,16 +403,16 @@ const configChildTrunk = { childList: true };
 
 
 // Global variables
-const game = {
+// const game = {
     // user: "Joyce Moore", // used by Spotlight
-    turns: 0,            // used by Timer and Spotlight
+    // turns: 0,            // used by Timer and Spotlight
     // The NORMAL settings follow
     // write: 40,             // used by Timer
     // draw: 150,             // used by Timer
     // decay: () => 0,                                          // used by Timer
     // firstMultiplier: 1.25, // used by Timer
-    fallback: 2            // used by Spotlight
-}
+    // fallback: 2            // used by Spotlight
+// }
 const Converter = {
     // user: 'Joyce Moore',
     // turns: 0,
@@ -397,22 +428,23 @@ const Converter = {
     //     Converter.mode = str
     // },
     modeParameters: {
-        "NORMAL":        { write: 40,  draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 1 -> 1
-        "KNOCK-OFF":     { write: 90,  draw: 300, decayFunction: (turns) => 1 / Math.exp(8 / turns), firstMultiplier: 1   , fallback: 1  }, // 2 -> 8
-        "SECRET":        { write: 20,  draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 3 -> 3
-        "ANIMATION":     { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 1   , fallback: 1  }, // 4 -> 11
-        "ICEBREAKER":    { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: -1 }, // 5 -> 9
-        "COMPLEMENT":    { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 0.2 , fallback: -1 }, // 6 -> 15
+        "NORMAL":           { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 1 -> 1
+        "KNOCK-OFF":        { write: 90, draw: 300, decayFunction: (turns) => 1 / Math.exp(8 / turns), firstMultiplier: 1   , fallback: 1  }, // 2 -> 8
+        "SECRET":           { write: 20, draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 3 -> 3
+        "ANIMATION":        { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 4 -> 11
+        "ICEBREAKER":       { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: -1 }, // 5 -> 9
+        "COMPLEMENT":       { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 0.2 , fallback: -1 }, // 6 -> 15
         // speedrun is 7 (what? no it isn't???)
-        "MASTERPIECE":   { write: 2,   draw: 2,   decayFunction: () => 0,                             firstMultiplier: 1   , fallback: 1  }, // 15 -> 20
-        "STORY":         { write: 40,  draw: 2,   decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: 1  },       // 17
-        "MISSING PIECE": { write: 2 ,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 1   , fallback: 1  },       // 21 
-        "CO-OP":         { write: 20,  draw: 75,  decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: 1  },       // 18
-        "SCORE":         { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: 2  },       // 10
-        "SANDWICH":      { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: 1  }, // 12 -> 5
-        "CROWD":         { write: 20,  draw: 75,  decayFunction: () => 0,                             firstMultiplier: 1.25, fallback: 2  }, // 13 -> 7
-        "BACKGROUND":    { write: 40,  draw: 150, decayFunction: () => 0,                             firstMultiplier: 2   , fallback: 1  }, // 14 -> 14
-        "SOLO":          { write: 2,   draw: 2,   decayFunction: () => 0,                             firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
+        "MASTERPIECE":      { write: 2,  draw: 2,   decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 15 -> 20
+        "STORY":            { write: 40, draw: 2,   decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 1  },       // 17
+        "MISSING PIECE":    { write: 2 , draw: 150, decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  },       // 21 
+        "CO-OP":            { write: 20, draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 1  },       // 18
+        "SCORE":            { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  },       // 10
+        "SANDWICH":         { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 1  }, // 12 -> 5
+        "CROWD":            { write: 20, draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 13 -> 7
+        "BACKGROUND":       { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 2   , fallback: 1  }, // 14 -> 14
+        "SOLO":             { write: 2,  draw: 2,   decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
+        "EXQUISITE CORPSE": { write: 90, draw: 300, decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }
     },
 
     getParameters(str) {
@@ -420,7 +452,7 @@ const Converter = {
     },
 
     modeIndexToString(index) {
-        return ([0,'NORMAL',2,'SECRET',4,'SANDWICH',6,'CROWD','KNOCK-OFF','ICEBREAKER','SCORE','ANIMATION',12,'SOLO','BACKGROUND','COMPLEMENT',16,'STORY','CO-OP',19,'MASTERPIECE', 'MISSING PIECE'])[index]
+        return ([0,'NORMAL',2,'SECRET',4,'SANDWICH',6,'CROWD','KNOCK-OFF','ICEBREAKER','SCORE','ANIMATION',12,'SOLO','BACKGROUND','COMPLEMENT',16,'STORY','CO-OP',19,'MASTERPIECE', 'MISSING PIECE',22,23,'EXQUISITE CORPSE'])[index]
     },
 
     timeIndexToString(index) {
@@ -532,7 +564,7 @@ class Keybind {
 
 // module.exports = { this.wdinwos }
 if (typeof exports !== 'undefined') {
-    module.exports = { gifenc, WIW, Console, Shelf, Keybinder, SHAuth, Socket, Xhr, clamp, preventDefaults, setAttributes, svgNS, configChildTrunk, game, Converter, SettingsBelt, WhiteSettingsBelt, RedSettingsBelt, Keybind };
+    module.exports = { gifenc, WIW, Console, Shelf, Keybinder, SHAuth, Socket, Xhr, clamp, preventDefaults, setAttributes, svgNS, configChildTrunk, Converter, SettingsBelt, WhiteSettingsBelt, RedSettingsBelt, Keybind };
     // module.exports = { ...Object.entries(this) }
     // module.exports = { ...Object.entries(window) }
     // module.exports = { ...Object.values(this) }

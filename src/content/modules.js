@@ -37,7 +37,7 @@ const CellulartModule = { // [F2]
     // These functions receive messages from the in-window menu and are generally shared between modules.
     menuStep() { const c = this.setting.current(); const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this.name); return n },
     togglePlus(plus) { if (plus) { this.setting.extend() } else { this.setting.retract() } },
-    current() { return this.setting.current() }
+    // current() { return this.setting.current() }
     // An unstated assumption is that the following is always equal to 0 or 1:
     // the number of times togglePlus(true) is called minus the number of times togglePlus(false) is called.
 }
@@ -59,12 +59,12 @@ const Debug = {
 
     init(modules) {
         const debugWIW = WIW.newWIW(false, false, 0.2)
-        const body = setAttributes(debugWIW.querySelector(".wiw-body"), { id:"debug-body" });
+        const body = setAttributes(debugWIW.body, { id:"debug-body" });
         const iconSelect = setAttributes(document.createElement("div"), { id: 'debug-header', parent: body })
 
         // const preactivated = [ Observer ]
         modules.concat([Socket, Xhr, { name:"Worker" }, Observer]).forEach((mod) => {
-            const modIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/" + mod.name.toLowerCase() + "_on" + ".png"), parent: iconSelect })
+            const modIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/" + mod.name.toLowerCase() + "_on" + ".png"), parent: iconSelect })
             modIcon.addEventListener("click", toggle)
             if (Console.enabled.has(mod.name)) { 
                 modIcon.classList.add("debug-selected")
@@ -79,9 +79,9 @@ const Debug = {
     },
     adjustSettings(previous, current) {
         if (current == 'on') { 
-            Debug.debugWIW.style.visibility = 'initial'; return 
+            Debug.debugWIW.setVisibility('initial'); return 
         }
-        Debug.debugWIW.style.visibility = 'hidden'
+        Debug.debugWIW.setVisibility('hidden')
     },
 }; 
 Object.setPrototypeOf(Debug, CellulartModule)
@@ -168,15 +168,20 @@ const Timer = {
             // case 3: Timer.parameters.players -= 1; break;
             // case 5: Timer.finalizeTurns(); break;
             case 18: Timer.tweakParameters(data); break;
+            case 26: Timer.templateParameters(data); break;
         }
     },
 
+    templateParameters(data) {
+        Object.assign(Timer.parameters, Converter.getParameters(Converter.modeIndexToString(data)))
+    },
     adjustParameters(parameters) {
         const config = parameters.configs
-        const midgame = parameters.turnMax > 0
+        // const midgame = parameters.turnMax > 0
 
         // Timer.parameters.players = parameters.users.length;
-        Timer.tweakParameters(config, midgame)
+        if ('speed' in config) { Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
+        // Timer.tweakParameters(config, midgame)
 
         if (midgame) {
             // todo: in theory we should pass these through to all the modules, but ehh.
@@ -185,10 +190,10 @@ const Timer = {
             // Timer.finalizeTurns(Timer.parameters.players)
         }
     },
-    tweakParameters(config, midgame=false) {
-        if ('turns' in config) { Timer.parameters.turnsFunction = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns)) }  // (players) 
-        if ('speed' in config) { Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
-    },
+    // tweakParameters(config, midgame=false) {
+    //     // if ('turns' in config) { Timer.parameters.turnsFunction = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns)) }  // (players) 
+    //     if ('speed' in config) { Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
+    // },
     finalizeTurns() {
         // if (newPhase != 'book') { 
             setTimeout(() => {
@@ -302,12 +307,12 @@ const Koss = { // [K1]
 
     init(modules) {
         Koss.kossWIW = WIW.newWIW(false, false);
-        Koss.kossWIW.querySelector('.wiw-body').style.position = 'relative';
+        Koss.kossWIW.body.style.position = 'relative';  // TODO: Too many dots
         Koss.kossImage = setAttributes(new Image(), { style: "position: absolute", class:"wiw-img" })
     },
     mutation(oldPhase, newPhase) { 
         // ssView.childNodes[1].appendChild(kossImage);
-        const wiwBody = Koss.kossWIW.querySelector(".wiw-body")
+        const wiwBody = Koss.kossWIW.body
         if (wiwBody.firstChild) { wiwBody.removeChild(wiwBody.firstChild) }
         if (newPhase == 'memory') {
             setTimeout(() => { Koss.kossCanvas = document.querySelector(".core").querySelector("canvas") }, 10)
@@ -337,18 +342,18 @@ const Koss = { // [K1]
         // alert(current)
         switch (current) {
             case 'off':
-                Koss.kossWIW.style.visibility = "hidden";
-                if (Koss.kossCanvas) { Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas); }
+                Koss.kossWIW.setVisibility("hidden");
+                if (Koss.kossCanvas) { Koss.kossWIW.body.appendChild(Koss.kossCanvas); }
                 break;
             case 'on':
-                Koss.kossWIW.style.visibility = "visible";
+                Koss.kossWIW.setVisibility("visible");
                 if (Koss.kossCanvas) { 
                     Koss.kossCanvas.style.opacity = "1"; 
-                    Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas); 
+                    Koss.kossWIW.body.appendChild(Koss.kossCanvas); 
                 }
                 break;
             case 'red':
-                Koss.kossWIW.style.visibility = "hidden";
+                Koss.kossWIW.setVisibility("visible");
                 if (Koss.kossCanvas) { 
                     Koss.kossCanvas.style.opacity = "0.25"; 
                     Koss.tryUnderlayKossImage();
@@ -364,10 +369,10 @@ const Koss = { // [K1]
        /* if (Koss.kossCanvas) { */ Koss.kossCanvas.classList.add('koss-canvas') // }
         switch (Koss.setting.current()) {
             case 'off':
-                Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas);
+                Koss.kossWIW.body.appendChild(Koss.kossCanvas);
                 break;
             case 'on':
-                Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossCanvas);
+                Koss.kossWIW.body.appendChild(Koss.kossCanvas);
                 break;
             case 'red':
                 setTimeout(Koss.tryUnderlayKossImage, 1000);
@@ -446,12 +451,12 @@ const Refdrop = { // [R1]
             case 'on':
                 Refdrop.refUpload.style.visibility = "visible"
                 Refdrop.onSocketClick = Refdrop.seFunctions.clickBridge;
-                Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ul.png") + ")";
+                Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")";
                 return;
             case 'red':
                 Refdrop.refCtrl.style.visibility = "visible";
                 Refdrop.onSocketClick = Refdrop.seFunctions.screenshot;
-                Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ss.png") + ")";
+                Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")";
                 return;
         }
     },
@@ -462,23 +467,23 @@ const Refdrop = { // [R1]
         Refdrop.refUpload = setAttributes(document.createElement("div"), { style: "display: none", class: "ref-square", id: "ref-se",    parent: document.body });
         const refForm = setAttributes(document.createElement("form"),    { class: "upload-form",                 parent: Refdrop.refUpload });  
         const refBridge = setAttributes(document.createElement("input"), { class: "upload-bridge", type: "file", parent: refForm });
-        Refdrop.refSocket = setAttributes(document.createElement("div"),   { class: "ref-border upload-socket hover-button", style: "background-image:url(" + chrome.runtime.getURL("assets/module-assets/ref-ul.png") + ")", parent: refForm });
+        Refdrop.refSocket = setAttributes(document.createElement("div"),   { class: "ref-border upload-socket hover-button", style: "background-image:url(" + getResource("assets/module-assets/ref-ul.png") + ")", parent: refForm });
 
         window.addEventListener("dragenter", function(e){
             // Console.log("dragenter", Refdrop)
             // Console.log(e.relatedTarget, Refdrop)
-            Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ul.png") + ")"; 
+            Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")"; 
         })
         window.addEventListener("dragleave", function(e){
             // Console.log("dragleave", Refdrop)
             // Console.log(e.relatedTarget, Refdrop)
             if (e.fromElement || e.relatedTarget !== null) { return }
             Console.log("Dragging back to OS", 'Refdrop')
-            if (Refdrop.setting.current() == 'red') { Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ss.png") + ")"; }
+            if (Refdrop.setting.current() == 'red') { Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
         })
         window.addEventListener("drop", function(e){
             Console.log("drop", 'Refdrop')
-            if (Refdrop.setting.current() == 'red') { Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ss.png") + ")"; }
+            if (Refdrop.setting.current() == 'red') { Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
         }, true)
         window.addEventListener("dragover", function(e){
             e.preventDefault()
@@ -646,7 +651,7 @@ const Refdrop = { // [R1]
         const i = setAttributes(new Image(), { class: "wiw-img", src: URL.createObjectURL(object) })
         i.onload = function(){
             const newRefWIW = WIW.newWIW(true, true, i.height / i.width);
-            newRefWIW.children[1].appendChild(i)
+            newRefWIW.body.appendChild(i)
         }
         /*
         const newRefWIWImg = new Image();
@@ -686,7 +691,7 @@ const Spotlight = { // [S1]
     fallback : 0,
     
     init(modules) {
-        Spotlight.bg.src = chrome.runtime.getURL("assets/module-assets/spotlight-base.png");
+        Spotlight.bg.src = getResource("assets/module-assets/spotlight-base.png");
     },
     mutation(oldPhase, newPhase) {
         if (newPhase == 'start') { return }
@@ -712,7 +717,6 @@ const Spotlight = { // [S1]
 
         // Spotlight.attachBookObserver();
     },
-    
     backToLobby(oldPhase) {
         if (oldPhase != 'book') { return }
         if (Spotlight.turns > 1) { Spotlight.compileToGif() }
@@ -789,12 +793,12 @@ const Spotlight = { // [S1]
         }
 
         const dlnode = WIW.newWIW(true, true)
-        const dlicon = setAttributes(new Image(), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/spotlight-on.png") })
+        const dlicon = setAttributes(new Image(), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/spotlight-on.png") })
         dlicon.onclick = function() {
             download(buffer, filename, { type: 'image/gif' });
             dlnode.remove();
         }
-        dlnode.children[1].appendChild(dlicon)
+        dlnode.body.appendChild(dlicon)
         document.body.appendChild(dlnode)
     },
     // These four determine when things should fire.
@@ -1115,16 +1119,17 @@ const Geom = {
         // hide or show Geom window without stopping web worker (just like Koss)
         if (current == 'off') {
             Geom.setSendPause(true)
-            Geom.geomWIW.style.visibility = "hidden"
+            Geom.geomWIW.setVisibility("hidden");
         } else {
-            Geom.geomWIW.style.visibility = "visible"
+            Geom.geomWIW.setVisibility("visible");
         }
     },
     // update42(type, data) {},
 
     initGeomWIW() { // [G8]
-        const newWIW = setAttributes(WIW.newWIW(false, false, 1), { "id":"geom-wiw" })
-        const body = newWIW.querySelector(".wiw-body")
+        const newWIW = WIW.newWIW(false, false, 1)
+        setAttributes(newWIW.element, { "id":"geom-wiw" })
+        const body = newWIW.body
 
         const geomScreen1 = constructScreen1();
         var geomScreen2 = undefined;
@@ -1136,7 +1141,7 @@ const Geom = {
             o.body = setAttributes(document.createElement("div"),     { class: "geom-carpet", parent: body });
             o.form = setAttributes(document.createElement("form"),    { class: "upload-form",                 parent: o.body });
             o.bridge = setAttributes(document.createElement("input"), { class: "upload-bridge", type: "file", parent: o.form });
-            o.socket = setAttributes(document.createElement("div"),   { id: "geom-socket", class: "geom-border upload-socket hover-button", style: "background-image:url(" + chrome.runtime.getURL("assets/module-assets/geom-ul.png") + ")", parent: o.form })
+            o.socket = setAttributes(document.createElement("div"),   { id: "geom-socket", class: "geom-border upload-socket hover-button", style: "background-image:url(" + getResource("assets/module-assets/geom-ul.png") + ")", parent: o.form })
             
             ;['dragenter'].forEach(eventName => {
                 o.socket.addEventListener(eventName, function(e) {
@@ -1167,8 +1172,8 @@ const Geom = {
 
             var configActive = false;
 
-            const iconPause = "url(" + chrome.runtime.getURL("assets/module-assets/geom-pause.png") + ")"
-            const iconPlay = "url(" + chrome.runtime.getURL("assets/module-assets/geom-play.png") + ")"
+            const iconPause = "url(" + getResource("assets/module-assets/geom-pause.png") + ")"
+            const iconPlay = "url(" + getResource("assets/module-assets/geom-play.png") + ")"
             const o = {};
 
             o.body = setAttributes(document.createElement("div"),  { class: "geom-carpet", style: "display: none;", parent: body })
@@ -1231,7 +1236,7 @@ const Geom = {
             o.maxIcon = setAttributes(document.createElement("img"),     { class: "geom-3-icon", parent: o.maxEntry  })
             o.maxInput = setAttributes(document.createElement("input"), { class: "geom-3-input", parent: o.maxEntry  })
     
-            o.distIcon.src = chrome.runtime.getURL("assets/module-assets/geom-3d.png")
+            o.distIcon.src = getResource("assets/module-assets/geom-3d.png")
             o.distInput.value = Geom.config.distance
             o.distInput.addEventListener("blur", () => { 
                 const newValue = +o.distInput.value
@@ -1239,7 +1244,7 @@ const Geom = {
                 Geom.config.distance = newValue;
                 Console.log("Config dist set to " + newValue, 'Geom')
             })
-            o.maxIcon.src = chrome.runtime.getURL("assets/module-assets/geom-3m.png")
+            o.maxIcon.src = getResource("assets/module-assets/geom-3m.png")
             o.maxInput.value = Geom.config.max
             o.maxInput.addEventListener("blur", () => { 
                 const newValue = +o.maxInput.value
@@ -1496,6 +1501,8 @@ Object.setPrototypeOf(Triangle, CellulartModule)
   *                               Reveal (WIP)
   * ---------------------------------------------------------------------- */
 /** Reveal uncovers the secrets of the Secret mode. Considered a "cheat". 
+  * Current implementation requires invasive XHR patching 
+  * and can't be turned off, so I'm working on a softer one.
   * (WIP) This module is not initialized by Controller.
   * ---------------------------------------------------------------------- */
 const Reveal = {
@@ -1540,7 +1547,7 @@ const Reveal = {
         Reveal.hiddenCanvases = document.querySelector(".drawingContainer").querySelectorAll("canvas");
         Reveal.hiddenCanvases[1].addEventListener("mouseup", e => {
             const newwiw = WIW.newWIW(true, true);
-            setAttributes(new Image(), { class: "wiw-img", parent: newwiw.children[1], src: Reveal.hiddenCanvases[0].toDataURL() })
+            setAttributes(new Image(), { class: "wiw-img", parent: newwiw.body, src: Reveal.hiddenCanvases[0].toDataURL() })
         })
         // [V3]
     },
@@ -1553,10 +1560,100 @@ const Reveal = {
 }
 Object.setPrototypeOf(Reveal, CellulartModule)
 
+
+
+ /* ----------------------------------------------------------------------
+  *                               Scry (WIP)
+  * ---------------------------------------------------------------------- */
+/** Scry helps keep the game moving by telling you who has and hasn't
+  * hit the "Done" button.
+  * ---------------------------------------------------------------------- */
+const Scry = { // [F2]
+    name : "Scry",          // All modules have a name property
+    hasMenuButton : true,   // Some modules aren't directly controllable
+    setting : new SettingsBelt(['off','windowed','sleek'], 2),    // All modules have a SettingsBelt
+    keybinds : [
+        // This keybind turns off when Scry does, because maybe people use tab as part of their drawing workflow.
+        new Keybind((e) => Scry.setting.current() != 'off' && e.code == "Tab" , (e) => { console.log("tab"); preventDefaults(e) })
+    ],
+
+    activeIndices: new Set(),
+    playerDict: {},
+    // Initialization. 
+    // To be overridden by each module.
+    init(modules) {},
+
+    // This function is called whenever the game transitions to a new phase.
+    // To be overridden by each module.
+    mutation(oldPhase, newPhase) {
+        if (oldPhase != 'lobby') { return }
+        Scry.prune()
+    },
+
+    // This function "cleans the slate" when a game ends. 
+    // To be overridden by each module.
+    backToLobby(oldPhase) {
+        Scry.prune()
+    }, 
+
+    // This function makes required changes when switching between settings. 
+    // To be overridden by each (controllable) module.
+    adjustSettings(previous, current) {},
+
+    // This function should set internal states based on the game config
+    // depending on the needs of the module.
+    // To be overridden by each module that requires more than marginal state knowledge.
+    update42(type, data) {
+        switch (type) {
+            case 2: {       // new player joins            42[2,2,{"id":3,"nick":"CoolNickname4534","avatar":21,"owner":false,"viewer":false,"points":0,"change":0,"alert":false},false]
+                // const d = Scry.trim(data)
+                Scry.playerDict[data.id] = Scry.trim(data)
+                Scry.activeIndices.add(data.id)
+                break;  
+            }
+            case 3: {       // player leaves               42[2,3,{"userLeft":2,"newOwner":null},false]
+                Scry.activeIndices.remove(data.userLeft)
+                break;
+            }
+            case 15: {
+                console.log(data);
+                console.log(Scry.playerDict[data.user])
+                console.log(data.ready)
+                break;
+            }
+            case 21: {      // player leaves               42[2,21,{"userLeft":3,"newOwner":null}]
+                Scry.activeIndices.remove(data.userLeft)
+                break;
+            }
+            case 22: {      // player rejoins / reconnects 42[2,22,3] 
+                Scry.activeIndices.add(data)
+                break;  
+            }
+            // (TODO: study the way the ids are shuffled/reassigned at start of new turn. It seems like they completely aren't. Memory leak possible?)
+            // (i think) there is a memory leak in gartic involving the lack of reassignment of user IDs when people leave, meaning that if you start a lobby and a total of 9 quadrillion people join and leave, things might start going wrong
+        }
+    },
+
+    trim(dict) {
+        const d = {}
+        // d.id = dict.id
+        d.nick = dict.nick
+        d.avatar = dict.avatar
+    },
+    prune() {
+        for (const key of Object.keys(Scry.playerDict)) {
+            if (!Scry.activeIndices.includes(key)) {
+                delete Scry.playerDict.key
+            }
+        }
+    },
+}
+Object.setPrototypeOf(Scry, CellulartModule)
+
 // #endregion
 
 
 // console.log(Object.keys(window))
 if (typeof exports !== 'undefined') {
-    module.exports = { Debug, Red, Timer, Koss, Refdrop, Spotlight, Geom, Triangle, Reveal };
+    module.exports = { Debug, Red, Timer, Koss, Refdrop, Spotlight, Geom, Triangle, Reveal, Scry };
 }

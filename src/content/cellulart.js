@@ -7,7 +7,7 @@
 const Controller = { 
     
     menu: null, // [C1]
-    modules: [Timer, Koss, Refdrop, Spotlight, Geom, Red, Debug], //, Reveal]
+    modules: [Timer, Koss, Refdrop, Spotlight, Geom, Scry, Red, Debug], //, Reveal]
     auth: SHAuth.using(Shelf),
 
     init() {
@@ -71,10 +71,10 @@ const Controller = {
         }
         function createButton(defaultPicture, onclick, hidden){
             const item = setAttributes(document.createElement("div"), { class: "cellulart-menu-item" })
-            const itemIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/" + defaultPicture + ".png"), parent: item })
+            const itemIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/" + defaultPicture + ".png"), parent: item })
             item.addEventListener("click", () => { 
                 const res = onclick(); 
-                itemIcon.src = chrome.runtime.getURL("assets/menu-icons/" + res + ".png") 
+                itemIcon.src = getResource("assets/menu-icons/" + res + ".png")
             })
             if (hidden) { hiddenButtons.push(item); item.style.display = "none" } 
             Controller.menu.appendChild(item)
