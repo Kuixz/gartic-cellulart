@@ -1,5 +1,5 @@
  /* ----------------------------------------------------------------------
-  *                         Cellulart BETA 1.1.3
+  *                           Cellulart 1.1.3
   *                           Created by Quoi3
   * Please send any concerns, errors, reviews, and feedback to Quixz#0033 
   *    And please don't stare like that!! It's embarrassing (,,>﹏<,,) 
