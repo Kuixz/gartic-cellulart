@@ -272,7 +272,7 @@ const SHAuth = {
         const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer)
         const hashString = Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('')
         SHAuth.remember(hashString)
-        alert(hashString)
+        // alert(hashString)
         return SHAuth.validate(hashString)
     }
 }

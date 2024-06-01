@@ -34,8 +34,7 @@
         "https://garticphone.com/*"
     ],
     "permissions": [
-        "storage",
-        "webRequest"
+        "storage"
     ],
     "web_accessible_resources": [
         {
