@@ -356,6 +356,7 @@ const modeParameters =
     "CROWD":         { write: 20,  draw: 75,  decay: 0, firstMultiplier: 1.25, fallback: 2  }, // 13
     "BACKGROUND":    { write: 40,  draw: 150, decay: 0, firstMultiplier: 2   , fallback: 1  }, // 14
     "SOLO":          { write: 2,   draw: 2,   decay: 0, firstMultiplier: 1   , fallback: 1  }, // 15
+    "EXQUISITE CORPSE": { write: 90,  draw: 300, decay: 0, firstMultiplier: 1   , fallback: 1  }, // 15
 }
 
 // Global variables
