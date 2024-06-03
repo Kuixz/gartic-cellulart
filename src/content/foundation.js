@@ -217,7 +217,7 @@ const Shelf = { // FAKE SHELF - REMOVE THIS WHEN PUSHING BETA
         Shelf.dict = { }
     },
     async retrieveOrElse(key, defaultValue, write = false) {
-        if (key in Shelf.dict) { return data[key] }
+        if (key in Shelf.dict) { return Shelf.data[key] }
         if (write) { Shelf[key] = defaultValue }
         return defaultValue
     }
@@ -280,7 +280,7 @@ const SHAuth = {
     storage: null,  
 
     async remember(str) {
-        _ = await SHAuth.storage.set({"auth":str})
+        await SHAuth.storage.set({"auth":str})
     },
     validate(str) {
         const correct = str === SHAuth.hash
