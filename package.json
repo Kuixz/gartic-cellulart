@@ -28,6 +28,8 @@
     },
     "devDependencies": {
         "jest": "^29.7.0",
-        "jest-environment-jsdom": "^29.7.0"
+        "jest-environment-jsdom": "^29.7.0",
+        "webpack": "^5.91.0",
+        "webpack-cli": "^5.1.4"
     }
 }
