@@ -1654,6 +1654,6 @@ Object.setPrototypeOf(Scry, CellulartModule)
 
 
 // console.log(Object.keys(window))
-if (typeof exports !== 'undefined') {
+// if (typeof exports !== 'undefined') {
     module.exports = { Debug, Red, Timer, Koss, Refdrop, Spotlight, Geom, Triangle, Reveal, Scry };
-}
+// }

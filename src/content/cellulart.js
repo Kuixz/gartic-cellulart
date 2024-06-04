@@ -1,4 +1,7 @@
- /* ----------------------------------------------------------------------
+
+// import { getResource } from "./foundation";
+
+/* ----------------------------------------------------------------------
   *                         Cellulart BETA 1.2.0
   *                           Created by Quoi3
   * Please send any concerns, errors, reviews, and feedback to Quixz#0033 

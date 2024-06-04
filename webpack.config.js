@@ -19,18 +19,18 @@ module.exports = {
             //     use: ['style-loader', 'css-loader', 'sass-loader' ]
             // },
             {
-              test: /\.(png|svg|jpg|jpeg|gif)$/i,
-              type: 'asset/resource',
+                test: /\.(png|svg|jpg|jpeg|gif)$/i,
+                type: 'asset/resource',
             },
         ]
     },
     plugins: [
-        new CopyPlugin({
-            patterns: [
-                    { from: "src/branches/injected", to: "injected" },
-                    { from: "src/branches/worker.js", to: "worker.js"}
-                    // { from: "other", to: "public" },
-                ],
-            }),
+        // new CopyPlugin({
+        //     patterns: [
+        //             { from: "src/branches/injected", to: "injected" },
+        //             { from: "src/branches/worker.js", to: "worker.js"}
+        //             // { from: "other", to: "public" },
+        //         ],
+        //     }),
     ]
 }
