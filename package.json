@@ -9,6 +9,7 @@
         "url": "ENTER GIT REPO URL"
     },
     "scripts": {
+        "build": "node_modules/webpack/bin/webpack.js",
         "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
         "unit": "npm run test -t"
     },
