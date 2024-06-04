@@ -1,5 +1,14 @@
 
 // import { getResource } from "./foundation";
+import { 
+    Inwindow, Keybinder, Socket, Xhr, Console, Shelf, SHAuth,
+    configChildTrunk, setAttributes
+} from './foundation.js'
+import { Timer, Koss, Refdrop, Spotlight, Geom, Scry, 
+         Red, Debug } from './modules'
+import * as menu_icons from './modules/menu-icons'
+
+import './cellulart.css'
 
 /* ----------------------------------------------------------------------
   *                         Cellulart BETA 1.2.0
@@ -14,7 +23,7 @@ const Controller = {
     auth: SHAuth.using(Shelf),
 
     init() {
-        WIW.constructWIWNode();
+        Inwindow.constructNode();
         Keybinder.init()
         Socket.init()
         Xhr.init()
@@ -50,7 +59,7 @@ const Controller = {
     async createMenu() {
         var hiddenButtons = []
 
-        green = !(await Controller.auth.tryLogin())
+        const green = !(await Controller.auth.tryLogin())
         createMenuButtons(green)
         if (green) { Controller.unhide = unhide }
 
@@ -74,10 +83,10 @@ const Controller = {
         }
         function createButton(defaultPicture, onclick, hidden){
             const item = setAttributes(document.createElement("div"), { class: "cellulart-menu-item" })
-            const itemIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/" + defaultPicture + ".png"), parent: item })
+            const itemIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: menu_icons[defaultPicture + ".png"], parent: item })
             item.addEventListener("click", () => { 
                 const res = onclick(); 
-                itemIcon.src = getResource("assets/menu-icons/" + res + ".png")
+                itemIcon.src = menu_icons[res + ".png"]
             })
             if (hidden) { hiddenButtons.push(item); item.style.display = "none" } 
             Controller.menu.appendChild(item)

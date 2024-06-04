@@ -125,6 +125,7 @@
     var oldXMLHttpRequest = XMLHttpRequest;
     
     // define constructor for my proxy object
+    // eslint-disable-next-line no-global-assign
     XMLHttpRequest = function() {
         var actual = new oldXMLHttpRequest();
         var self = this;

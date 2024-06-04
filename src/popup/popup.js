@@ -1,3 +1,6 @@
+import bg from './popup-bg.png'
+import './popup.css'
+
 document.addEventListener('DOMContentLoaded', function () {
     const input = document.querySelector("input")
     const label = document.querySelector("label")
