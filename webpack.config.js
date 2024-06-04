@@ -53,7 +53,8 @@ module.exports = {
                 // { from: "src/content/cellulart.js", to: "injected" },
                 { from: "src/branches/injected", to: "injected" },
                 // { from: "src/branches/injected.js", to: "injected.js" },
-                { from: "src/branches/worker.js", to: "worker.js"}
+                { from: "src/branches/worker.js", to: "worker.js"},
+                { from: "src/icons", to: "icons" },
                 // { from: "other", to: "public" },
             ],
         }),
