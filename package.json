@@ -28,6 +28,7 @@
         "xhook": "^1.6.0"
     },
     "devDependencies": {
+        "copy-webpack-plugin": "^12.0.2",
         "jest": "^29.7.0",
         "jest-environment-jsdom": "^29.7.0",
         "webpack": "^5.91.0",
