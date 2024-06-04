@@ -76,7 +76,7 @@ const Socket = {
     strokeCount: 0,
 
     backToLobby() {
-        currentWS = null
+        Socket.currentWS = null
         Socket.clearStrokes()
     },
     clearStrokes() {
