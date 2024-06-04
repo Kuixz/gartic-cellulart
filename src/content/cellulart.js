@@ -11,7 +11,7 @@ const Controller = {
     auth: SHAuth.using(Shelf),
 
     init() {
-        WIW.constructWIWNode();
+        WIW.constructNode();
         Keybinder.init()
         Socket.init()
         Xhr.init()
@@ -47,7 +47,7 @@ const Controller = {
     async createMenu() {
         var hiddenButtons = []
 
-        green = !(await Controller.auth.tryLogin())
+        const green = !(await Controller.auth.tryLogin())
         createMenuButtons(green)
         if (green) { Controller.unhide = unhide }
 

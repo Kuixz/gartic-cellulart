@@ -1,3 +1,5 @@
+// import { Socket, preventDefaults, clamp, gifenc, WhiteSettingsBelt, RedSettingsBelt, SettingsBelt, Console, Inwindow, setAttributes, svgNS, getResource, Converter, Keybind } from 'bleh'
+
 /* ----------------------------------------------------------------------
   *                            CellulartModule 
   * ---------------------------------------------------------------------- */
@@ -58,20 +60,20 @@ const Debug = {
     debugWIW : undefined,
 
     init(modules) {
-        const debugWIW = WIW.newWIW(false, false, 0.2)
+        const debugWIW =Inwindow.new(false, false, 0.2)
         const body = setAttributes(debugWIW.body, { id:"debug-body" });
         const iconSelect = setAttributes(document.createElement("div"), { id: 'debug-header', parent: body })
 
         // const preactivated = [ Observer ]
-        modules.concat([Socket, Xhr, { name:"Worker" }, Observer]).forEach((mod) => {
-            const modIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/" + mod.name.toLowerCase() + "_on" + ".png"), parent: iconSelect })
+        modules.map(mod => mod.name).concat(["Socket", "Xhr", "Worker", "Observer"]).forEach((mod) => {
+            const modIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/" + mod.toLowerCase() + "_on" + ".png"), parent: iconSelect })
             modIcon.addEventListener("click", toggle)
-            if (Console.enabled.has(mod.name)) { 
+            if (Console.enabled.has(mod)) { 
                 modIcon.classList.add("debug-selected")
             }
             function toggle() {
                 modIcon.classList.toggle("debug-selected")
-                Console.toggle(mod.name)
+                Console.toggle(mod)
             }
         }) 
 
@@ -183,7 +185,8 @@ const Timer = {
         if ('speed' in config) { Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
         // Timer.tweakParameters(config, midgame)
 
-        if (midgame) {
+        if (parameters.turnMax > 0) {
+        // if (midgame) {
             // todo: in theory we should pass these through to all the modules, but ehh.
             // Timer.parameters.turns = parameters.turnMax
             Timer.interpolate(parameters.turnNum)
@@ -306,7 +309,7 @@ const Koss = { // [K1]
     kossCanvas : undefined, // HTMLCanvasElement
 
     init(modules) {
-        Koss.kossWIW = WIW.newWIW(false, false);
+        Koss.kossWIW =Inwindow.new(false, false);
         Koss.kossWIW.body.style.position = 'relative';  // TODO: Too many dots
         Koss.kossImage = setAttributes(new Image(), { style: "position: absolute", class:"wiw-img" })
     },
@@ -650,7 +653,7 @@ const Refdrop = { // [R1]
     newRefimgWIW(object) {
         const i = setAttributes(new Image(), { class: "wiw-img", src: URL.createObjectURL(object) })
         i.onload = function(){
-            const newRefWIW = WIW.newWIW(true, true, i.height / i.width);
+            const newRefWIW =Inwindow.new(true, true, i.height / i.width);
             newRefWIW.body.appendChild(i)
         }
         /*
@@ -792,7 +795,7 @@ const Spotlight = { // [S1]
             anchor.click();
         }
 
-        const dlnode = WIW.newWIW(true, true)
+        const dlnode =Inwindow.new(true, true)
         const dlicon = setAttributes(new Image(), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/spotlight-on.png") })
         dlicon.onclick = function() {
             download(buffer, filename, { type: 'image/gif' });
@@ -866,16 +869,16 @@ const Spotlight = { // [S1]
         Spotlight.canbase = canvas.canvas;
     },
     writeResponseFrames() {
-        var pairs = Spotlight.determineResponseIndices()
+        const slides = document.querySelector(".timeline").querySelectorAll(".item");
+        const pairs = Spotlight.determineResponseIndices(slides)
 
         for (const indices of pairs) {
             if (indices.key < 0) { Console.log('Did not participate in this round; no frame will be saved'); continue }
             if (indices.prev < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); continue } //prevIndex += modeParameters[game.mode]["fallback"] }
-            Spotlight.compositeResponseFrame(indices.key, indices.prev)
+            Spotlight.compositeResponseFrame(slides, indices.key, indices.prev)
         }
     },
-    determineResponseIndices() {
-        const slides = document.querySelector(".timeline").querySelectorAll(".item");
+    determineResponseIndices(slides) {
         var toReturn = []
         for (var keyIndex = 0; keyIndex < slides.length; keyIndex++) {
             if (Spotlight.findUsername(slides[keyIndex]) != Spotlight.user) { continue }
@@ -902,7 +905,7 @@ const Spotlight = { // [S1]
             return i
         }
     },
-    compositeResponseFrame(keyIndex, prevIndex) {  // TODO incorrectly grabbing the same image twice, wtf?
+    compositeResponseFrame(slides, keyIndex, prevIndex) {  // TODO incorrectly grabbing the same image twice, wtf?
         // todo: What to do if the one being spotlighted has an EMPTY?
         // TODO: Some rounds might loop back to the same person multiple times.
         if (Spotlight.setting.current() == 'off') { return }
@@ -1127,7 +1130,7 @@ const Geom = {
     // update42(type, data) {},
 
     initGeomWIW() { // [G8]
-        const newWIW = WIW.newWIW(false, false, 1)
+        const newWIW =Inwindow.new(false, false, 1)
         setAttributes(newWIW.element, { "id":"geom-wiw" })
         const body = newWIW.body
 
@@ -1352,7 +1355,7 @@ const Geom = {
         // }
         async function step() {
             if (!Geom.flags.generate || Geom.counters.created >= Geom.config.max || Geom.counters.created - Geom.counters.sent >= Geom.config.distance) { 
-                _ = await Geom.queryGW(2)
+                await Geom.queryGW(2)
                 Geom.stepCallback = setTimeout(step, 250); 
                 return 
             }
@@ -1427,10 +1430,10 @@ const Geom = {
         Geom.flags.interval = false
         setTimeout(() => { Geom.flags.interval = true; Geom.trySend() }, 125)
         
-        shape = Geom.shapeQueue.shift()
+        const shape = Geom.shapeQueue.shift()
         if(Geom.shapeQueue.length == 0) { Geom.flags.queue = false }
-        packet = gartic_format(shape)
-        svg = svg_format(shape)
+        const packet = gartic_format(shape)
+        const svg = svg_format(shape)
         
         Socket.post('sendGeomShape', packet)
         Geom.counters.sent += 1
@@ -1546,7 +1549,7 @@ const Reveal = {
     revealDrawing() {
         Reveal.hiddenCanvases = document.querySelector(".drawingContainer").querySelectorAll("canvas");
         Reveal.hiddenCanvases[1].addEventListener("mouseup", e => {
-            const newwiw = WIW.newWIW(true, true);
+            const newwiw =Inwindow.new(true, true);
             setAttributes(new Image(), { class: "wiw-img", parent: newwiw.body, src: Reveal.hiddenCanvases[0].toDataURL() })
         })
         // [V3]

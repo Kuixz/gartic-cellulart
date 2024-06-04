@@ -10,7 +10,7 @@ var gifenc;
     gifenc = await import(src);
 })(); // setTimeout(function(){console.log(gifenc); console.log(gifenc.GIFEncoder); console.log(gifenc.quantize)}, 1000)
 
-class WIWElement {
+class InwindowElement {
     element = undefined
     header = undefined
     body = undefined
@@ -32,31 +32,31 @@ class WIWElement {
     }
 }
 
-const WIW = {
+const Inwindow = {
     wiwNode: undefined, // HTMLDivElement
     currentZIndex: 20,  // todo reset z index when a threshold is passed
 
-    constructWIWNode(customNode) {
-        if (customNode) { WIW.wiwNode = customNode; return }
-        WIW.wiwNode = setAttributes(document.createElement("div"), { style: "visibility: hidden", class: "window-in-window" })
-        WIW.wiwNode.innerHTML = `
+    constructNode(customNode) {
+        if (customNode) { Inwindow.wiwNode = customNode; return }
+        Inwindow.wiwNode = setAttributes(document.createElement("div"), { style: "visibility: hidden", class: "window-in-window" })
+        Inwindow.wiwNode.innerHTML = `
             <div class = "wiw-header">≡<div class = "wiw-close"></div></div>
             <div class = "wiw-body"></div>`
     },
-    newWIW(closeable, visible, ratio=(100/178)) {
-        const newWIW = WIW.wiwNode.cloneNode(true)
+    new(closeable, visible, ratio=(100/178)) {
+        const newWIW = Inwindow.wiwNode.cloneNode(true)
         const v = visible ? "visible" : "hidden"
         // const r = ratio ? ratio : (100/178)
         closeable
             ? newWIW.querySelector(".wiw-close").onmousedown = function() { newWIW.remove() }
             : newWIW.querySelector(".wiw-close").remove()
-        WIW.initDragElement(newWIW)
-        WIW.initResizeElement(newWIW, ratio)
+        Inwindow.initDragElement(newWIW)
+        Inwindow.initResizeElement(newWIW, ratio)
         setAttributes(newWIW, { 
             style: "visibility:" + v + "; min-height:" + (178 * ratio + 40) + "px; height:" + (178 * ratio + 40) + "px; max-height:" + (536 * ratio + 40) + "px", 
             parent: document.body 
         })
-        return new WIWElement(newWIW)
+        return new InwindowElement(newWIW)
     },
     // The below code is taken from Janith at https://codepen.io/jkasun/pen/QrLjXP
     // and is used to make the various window-in-windows movable.
@@ -66,7 +66,7 @@ const WIW = {
         var header = getHeader(element);
         
         element.onmousedown = function() {
-            this.style.zIndex = String(++WIW.currentZIndex);
+            this.style.zIndex = String(++Inwindow.currentZIndex);
         }
         if (header) {
             header.parentWindow = element;
@@ -564,7 +564,7 @@ class Keybind {
 
 // module.exports = { this.wdinwos }
 if (typeof exports !== 'undefined') {
-    module.exports = { gifenc, WIW, Console, Shelf, Keybinder, SHAuth, Socket, Xhr, clamp, preventDefaults, setAttributes, svgNS, configChildTrunk, Converter, SettingsBelt, WhiteSettingsBelt, RedSettingsBelt, Keybind };
+    module.exports = { gifenc, Inwindow, Console, Shelf, Keybinder, SHAuth, Socket, Xhr, clamp, preventDefaults, setAttributes, svgNS, configChildTrunk, Converter, SettingsBelt, WhiteSettingsBelt, RedSettingsBelt, Keybind };
     // module.exports = { ...Object.entries(this) }
     // module.exports = { ...Object.entries(window) }
     // module.exports = { ...Object.values(this) }
