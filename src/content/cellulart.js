@@ -1,3 +1,4 @@
+
  /* ----------------------------------------------------------------------
   *                         Cellulart BETA 1.2.0
   *                           Created by Quoi3
@@ -11,7 +12,7 @@ const Controller = {
     auth: SHAuth.using(Shelf),
 
     init() {
-        WIW.constructNode();
+        Inwindow.constructNode();
         Keybinder.init()
         Socket.init()
         Xhr.init()
@@ -33,8 +34,8 @@ const Controller = {
         Controller.modules.forEach(mod => mod.backToLobby(oldPhase))
     },
     // adjustSettings(previous, current) {},
-    update42(type, data) {
-        Controller.modules.forEach(mod => mod.update42(type, data))
+    updateLobbySettings(type, data) {
+        Controller.modules.forEach(mod => mod.updateLobbySettings(type, data))
     },
 
     initPopupAuth() {
@@ -197,7 +198,7 @@ const Observer = {
         Observer.attachContentObserver(); 
         // Socket.addMessageListener('gameEvent', Observer.deduceSettingsFromSocket)
         // Socket.addMessageListener('gameEventScreenTransition', Observer.deduceSettingsFromSocket)
-        Socket.addMessageListener('update42', Observer.deduceSettingsFromSocket)
+        Socket.addMessageListener('updateLobbySettings', Observer.deduceSettingsFromSocket)
         Xhr.addMessageListener('lobbySettings', Observer.deduceSettingsFromXHR)
         // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     },
@@ -209,6 +210,7 @@ const Observer = {
         // Handle special cases
         if (newPhase == "waiting") { Observer.waiting(); return; } 
         if (newPhase == "lobby")   { Observer.backToLobby(oldPhase); return; } 
+        // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
 
         Controller.mutation(oldPhase, newPhase)
     },
@@ -218,6 +220,9 @@ const Observer = {
     },
 
     waiting() { Console.log("Waiting", Observer) }, // [C4]
+    // reconnect() {
+        
+    // },
 
     // adjustSettings(data) {
     // },
@@ -248,65 +253,61 @@ const Observer = {
         Observer.content = frame;
     },
 
+
+    // Due to possible instability, I have judged that "perfect" settings tracking is infeasible.
+    // Thus, the below two functions will primarily find use under Scry and Spotlight.
     deduceSettingsFromXHR(data) {
-        Console.log(data, 'Observer')
-        // const config = data.configs
+        // Console.log(data, 'Observer')
 
-        // if (config.tab == 1) { 
-        //     Console.log("XHR can use presets", 'Observer')
-        //     try {
-        //         const preset = Converter.modeIndexToString(config.mode)
-        //         Object.assign(game, modeParameters[preset]);
-        //         Timer.rejoinInterpolate(data.turnNum)
-        //         return
-        //     } catch {
-        //         Console.alert('This is an unknown preset, defaulting to piecewise assignment', 'Observer')
-        //     }
-        // }
-        // Console.log("XHR can't use presets", 'Observer')
-        // data.configs.mode = Converter.modeIndexToString(data.configs.mode)
-        // data.configs.first = Converter.flowIndexToString(data.configs.first)
-        // Converter.setMode('CUSTOM')
-        // TODO: add piecewise assignment here
-        // game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
-        // Object.assign(game, Converter.timeStringToParameters(gameConfig[0]))
-        // game.fallback = Converter.flowStringToFallback(gameConfig[1])
-
-        if (data.turnMax > 0) {
+        // if (data.turnMax > 0) {
             // todo: in theory we should pass these through to all the modules, but ehh.
             // game.turns = data.turnMax
             // Timer.interpolate(data.turnNum)
-            Socket.post('setStrokeStack', data.draw)
-        }
-        Controller.update42(1, data)
-        // Controller.update42(data[0], data[1])
+        //     Socket.post('setStrokeStack', data.draw)
+        // }
+        // Controller.updateLobbySettings(1, data)
+        // Controller.updateLobbySettings(data[0], data[1])
+        const configs = data.configs
+        Controller.updateLobbySettings({
+            "custom": [Converter.timeIndexToString(configs.speed), Converter.flowIndexToString(configs.first), Converter.turnsIndexToString(configs.turns)],
+            "self": data.user,
+            "usersIn": data.users
+        })
     },
     deduceSettingsFromSocket(data) {
         // console.log(data)
-        Controller.update42(data[1], data[2])
+        // Controller.updateLobbySettings(data[1], data[2])
         // if (data[1] == 5) {
             // game.turns = data[2]  // it's not that easy...
         //     game.turns = Converter.turnsStringToFunction(/* TODO TODO TODO */)(data[2])
         // }
+        // if (data[1] == 1) {
+        var dict = {}
+        switch (data[1]) {
+            case 2: dict["usersIn"] = [data[2]]; break;
+            case 3: dict["userOut"] = data[2]; break;
+        }
+        Controller.updateLobbySettings(dict)
+        // }
     },
-    // deduceSettingsFromDocument() {
+    deduceSettingsFromDocument() {
         // TODO: move as much of this as possible to Converter / Timer.
 
-        // const left = document.querySelector(".left")
-        // const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
+        const left = document.querySelector(".left")
+        const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
         
-        /*
         try {
             // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
             const mode = document.querySelector(".checked").querySelector("h4").textContent;
-            Object.assign(game, Converter.getParameters(mode));
-            switch (mode) {
-                case "ICEBREAKER":  game.turns = players + 1; break;
-                case "MASTERPIECE": game.turns = 1;           break;
-                case "CROWD":       game.turns = players / 2; break;
-                case "KNOCK-OFF":   game.decay = Math.exp(8 / players); game.turns = players; break;
-                default:            game.turns = players;     break;
-            }
+            Controller.updateLobbySettings({"default": mode})
+            // Object.assign(game, Converter.getParameters(mode));
+            // switch (mode) {
+            //     case "ICEBREAKER":  game.turns = players + 1; break;
+            //     case "MASTERPIECE": game.turns = 1;           break;
+            //     case "CROWD":       game.turns = players / 2; break;
+            //     case "KNOCK-OFF":   game.decay = Math.exp(8 / players); game.turns = players; break;
+            //     default:            game.turns = players;     break;
+            // }
         } catch { 
             // if the current gamemode variable is not found by searching for .checked, then each piece must be assigned separately.
             const gameConfig = {};
@@ -317,12 +318,12 @@ const Observer = {
                         gameConfig[num] = select.childNodes[select.selectedIndex].textContent; }
                 catch { gameConfig[num] = gameEncodedConfig[num].childNodes[0].textContent;    }
             })
-            game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
-            Object.assign(game, Converter.timeStringToParameters(gameConfig[0]))
-            game.fallback = Converter.flowStringToFallback(gameConfig[1])
+            Controller.updateLobbySettings({"custom": gameConfig/*, "players": players*/})
+            // game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
+            // Object.assign(game, Converter.timeStringToParameters(gameConfig[0]))
+            // game.fallback = Converter.flowStringToFallback(gameConfig[1])
         }
-        */
-    // },
+    },
     // TODO: Get phase transition data from Socket
 }
 

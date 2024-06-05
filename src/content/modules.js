@@ -34,7 +34,7 @@ const CellulartModule = { // [F2]
     // This function should set internal states based on the game config
     // depending on the needs of the module.
     // To be overridden by each module that requires more than marginal state knowledge.
-    update42(type, data) {},
+    updateLobbySettings(dict) {},
 
     // These functions receive messages from the in-window menu and are generally shared between modules.
     menuStep() { const c = this.setting.current(); const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this.name); return n },
@@ -137,7 +137,7 @@ const Timer = {
     parameters : {    
         players: 0,
         turns: 0,              // used by Timer 
-        turnsFunction: () => {},
+        // turnsFunction: () => {},
         write: 40,             // used by Timer
         draw: 150,             // used by Timer
         decay: 0,              // used by Timer
@@ -163,20 +163,22 @@ const Timer = {
         if (Timer.display == undefined) { return }
         if (current == "on") { Timer.display.style.visibility = "visible" } else { Timer.display.style.visibility = "hidden" }
     },
-    update42(type, data) {
-        switch (type) {
-            case 1: Timer.adjustParameters(data); break;
-            // case 2: Timer.parameters.players += 1; break;
-            // case 3: Timer.parameters.players -= 1; break;
-            // case 5: Timer.finalizeTurns(); break;
-            case 18: Timer.tweakParameters(data); break;
-            case 26: Timer.templateParameters(data); break;
+    updateLobbySettings(dict) {
+        if ("default" in dict) {
+            const data = dict.default
+            Object.assign(Timer.parameters, Converter.getParameters(Converter.modeIndexToString(data)))
+        }
+        if ("custom" in dict) {
+            const data = dict.custom
+            const players = "players" in dict ? dict.players : 1
+            // Timer.parameters.turnsFunction = Converter.turnsStringToFunction(data[2]) // (players) 
+            Object.assign(Timer.parameters, Converter.timeStringToParameters(data[0]))
         }
     },
 
-    templateParameters(data) {
-        Object.assign(Timer.parameters, Converter.getParameters(Converter.modeIndexToString(data)))
-    },
+    // templateParameters(data) {
+    //     Object.assign(Timer.parameters, Converter.getParameters(Converter.modeIndexToString(data)))
+    // },
     adjustParameters(parameters) {
         const config = parameters.configs
         // const midgame = parameters.turnMax > 0
@@ -198,20 +200,22 @@ const Timer = {
     //     if ('speed' in config) { Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
     // },
     finalizeTurns() {
+        const step = document.querySelector('.step')
+        if (!step) { setTimeout(Timer.finalizeTurns, 200)}
         // if (newPhase != 'book') { 
-            setTimeout(() => {
+            // setTimeout(() => {
             // if (Timer.parameters.turns == 0) { 
         // const d = Timer.parameters.turns; if (t 
-                const indicator = document.querySelector('.step').querySelector('p').textContent
-                Timer.parameters.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
+        const indicator = step.querySelector('p').textContent
+        Timer.parameters.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
             
             // }
             // return
         // }
     // finalizeTurns(players) {
         // const t = Timer.parameters.turns; if (t instanceof Function) { Timer.parameters.turns = t(players) }
-            Timer.parameters.decay = Timer.parameters.decayFunction(Timer.parameters.turns)
-        }, 200);
+        Timer.parameters.decay = Timer.parameters.decayFunction(Timer.parameters.turns)
+        // }, 200);
     },
 
     placeTimer() {  // [T3]
@@ -365,7 +369,7 @@ const Koss = { // [K1]
             default: Console.alert("KOSS location not recognised", 'Koss')
         }
     },
-    // update42(type, data) {},
+    // updateLobbySettings(dict) {},
 
     placeCanvas() {
         if (!Koss.kossCanvas) { return }
@@ -463,7 +467,7 @@ const Refdrop = { // [R1]
                 return;
         }
     },
-    // update42(type, data) {},
+    // updateLobbySettings(dict) {},
 
     initRefdrop() {
         Refdrop.refImage = setAttributes(document.createElement("img"),  { class: "bounded",    id: "ref-img"    })
@@ -699,10 +703,7 @@ const Spotlight = { // [S1]
     mutation(oldPhase, newPhase) {
         if (newPhase == 'start') { return }
         if (newPhase != 'book') { 
-            if (Spotlight.turns == 0) { setTimeout(() => {
-                const indicator = document.querySelector('.step').querySelector('p').textContent
-                Spotlight.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
-            }, 200) }
+            if (Spotlight.turns == 0) { Spotlight.finalizeTurns() }
             return
         }
         if (Spotlight.turns <= 1) { return }
@@ -732,24 +733,53 @@ const Spotlight = { // [S1]
         // We can actually override menuStep to prevent this to begin with.
         if (Spotlight.compositedFrameDatas != []) { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
     },
-    update42(type, data) {
-        switch (type) {
-            case 1: 
-                Spotlight.user = data.user.nick; 
-                Spotlight.host = data.users[0].nick;
-                Spotlight.fallback = Converter.flowStringToFallback(Converter.flowIndexToString(data.configs.first))
-        
-                // Spotlight.players = data.users.length;
-                if (data.turnMax > 0) { Spotlight.turns = data.turnMax }
-                break;
-            // case 2: Spotlight.players += 1; break;
-            // case 3: Spotlight.players -= 1; break;
-            // case 5: 
-            //     Spotlight.finalizeTurns(); break;
-            case 9:
-                if (Object.keys(data).length > 0) { break } else { Spotlight.writeResponseFrames() }
-            // Spotlight can be a bit looser on its turn tracking, so we do just that.
+    updateLobbySettings(dict) {
+        if ('default' in dict) {
+            Spotlight.fallback = Converter.getParameters(dict.default).fallback
+        } 
+        if ('custom' in dict) {
+            Spotlight.fallback = Converter.getParameters(dict[1]).fallback
         }
+
+        if ("self" in dict) {
+            Spotlight.user = dict.self.nick
+        }
+        if ("usersIn" in dict) {
+            Spotlight.players += dict.usersIn.length
+        }
+        if ("userOut" in dict) {
+            Spotlight.players -= 1
+            // null
+        }
+        // switch (type) {
+        //     case "default": 
+        //         break;
+        //     case "custom":
+        //         fallback = Converter.flowStringToFallback(data[1])
+        //         break;
+        //     // case 2: Timer.parameters.players += 1; break;
+        //     // case 3: Timer.parameters.players -= 1; break;
+        //     // case 5: Timer.finalizeTurns(); break;
+        //     // case 18: Timer.tweakParameters(data); break;
+        //     // case 26: Timer.templateParameters(data); break;
+        // }
+        // switch (type) {
+        //     case 1: 
+        //         Spotlight.user = data.user.nick; 
+        //         Spotlight.host = data.users[0].nick;
+        //         Spotlight.fallback = Converter.flowStringToFallback(Converter.flowIndexToString(data.configs.first))
+        
+        //         // Spotlight.players = data.users.length;
+        //         if (data.turnMax > 0) { Spotlight.turns = data.turnMax }
+        //         break;
+        //     // case 2: Spotlight.players += 1; break;
+        //     // case 3: Spotlight.players -= 1; break;
+        //     // case 5: 
+        //     //     Spotlight.finalizeTurns(); break;
+        //     case 9:
+        //         if (Object.keys(data).length > 0) { break } else { Spotlight.writeResponseFrames() }
+        //     // Spotlight can be a bit looser on its turn tracking, so we do just that.
+        // }
     },
 
     // finalizeTurns(players) {
@@ -757,6 +787,12 @@ const Spotlight = { // [S1]
     // },
 
     // Compiles an array of ImageData into a GIF.
+    finalizeTurns() {
+        const step = document.querySelector('.step')
+        if (!step) { setTimeout(Spotlight.finalizeTurns, 200)}
+        const indicator = step.querySelector('p').textContent
+        Spotlight.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
+    },
     compileToGif() {
         if( Spotlight.setting.current() == 'off' || Spotlight.compositedFrameDatas.length == 0) { return }
         Console.log('Now compiling to GIF', 'Spotlight');
@@ -1127,7 +1163,7 @@ const Geom = {
             Geom.geomWIW.setVisibility("visible");
         }
     },
-    // update42(type, data) {},
+    // updateLobbySettings(dict) {},
 
     initGeomWIW() { // [G8]
         const newWIW =Inwindow.new(false, false, 1)
@@ -1482,7 +1518,7 @@ const Triangle = { // [F2]
         }
         // Isoceles and 3-point have entirely different control schemes.
     },
-    // update42(type, data) {},
+    // updateLobbySettings(dict) {},
 
     beginDrawingFullTriangle() {
 
@@ -1540,7 +1576,7 @@ const Reveal = {
             case "ALL": Reveal.revealDrawing(); break;
         }
     },
-    // update42(type, data) {},
+    // updateLobbySettings(dict) {},
 
     revealPrompt() {
         Reveal.hiddenElements = document.querySelector(".center").querySelectorAll(".hiddenMode")
@@ -1606,7 +1642,7 @@ const Scry = { // [F2]
     // This function should set internal states based on the game config
     // depending on the needs of the module.
     // To be overridden by each module that requires more than marginal state knowledge.
-    update42(type, data) {
+    updateLobbySettings(dict) {
         switch (type) {
             case 2: {       // new player joins            42[2,2,{"id":3,"nick":"CoolNickname4534","avatar":21,"owner":false,"viewer":false,"points":0,"change":0,"alert":false},false]
                 // const d = Scry.trim(data)

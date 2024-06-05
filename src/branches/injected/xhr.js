@@ -125,6 +125,7 @@
     var oldXMLHttpRequest = XMLHttpRequest;
     
     // define constructor for my proxy object
+    // eslint-disable-next-line no-global-assign
     XMLHttpRequest = function() {
         var actual = new oldXMLHttpRequest();
         var self = this;
@@ -231,7 +232,7 @@ const Xhr = {
             // console.log('succ')
         }
 
-        const modifiedText = text && text.replace('"visible":1', '"visible":2');
+        const modifiedText = text // && text.replace('"visible":1', '"visible":2');
         return modifiedText
     },
     post(purpose, data) {

@@ -360,15 +360,15 @@ const Xhr = {
             if (handler.filter == purp) { handler.handle(data) }
         })
     },
-    post(purp, data) {
-        Console.log(`outgoing (${purp}, ${data})`, 'XHR')
+    // post(purp, data) {
+    //     Console.log(`outgoing (${purp}, ${data})`, 'XHR')
         
-        window.postMessage({
-            direction: "toXHR",
-            purpose: purp,
-            data: data
-        }, 'https://garticphone.com')
-    },
+    //     window.postMessage({
+    //         direction: "toXHR",
+    //         purpose: purp,
+    //         data: data
+    //     }, 'https://garticphone.com')
+    // },
     addMessageListener(purp, handler) {
         Xhr.handlers.push({ filter:purp, handle:handler });
     }
