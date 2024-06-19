@@ -35,7 +35,7 @@
     "web_accessible_resources": [
         {
             "matches": [ "https://garticphone.com/*" ],
-            "resources": [ "dist/injected/*" ]
+            "resources": [ "dist/injected.js" ]
         }
     ]
 }

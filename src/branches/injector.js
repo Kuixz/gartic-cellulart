@@ -5,11 +5,11 @@
 // var s2 = document.createElement('script');
 // s2.src = chrome.runtime.getURL('src/branches/injected/xhr.js');
 // (document.head || document.documentElement).appendChild(s2);
-import injectedScript from 'src/branches/injected'
+// import injectedScript from './injected'
 
 var ds
 // for (const script of [/*'src/lib/wsHook.js',*//*'src/lib/xhook.min.js',*/'src/branches/injected/socket.js', 'src/branches/injected/xhr.js']) {
     ds = document.createElement('script');
-    ds.src = chrome.runtime.getURL(injectedScript);
+    ds.src = chrome.runtime.getURL('./injected.js');
     (document.head || document.documentElement).appendChild(ds);
 // }

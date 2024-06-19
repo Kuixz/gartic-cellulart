@@ -1,9 +1,11 @@
 const path = require('path')
 const CopyPlugin = require("copy-webpack-plugin");
-const HTMLWebpackPlugin = require("html-webpack-plugin")
+// const { EvalDevToolModulePlugin } = require('webpack');
+// const HTMLWebpackPlugin = require("html-webpack-plugin")
 
 module.exports = {
     mode: 'development',
+
     entry: {
         // injector: path.resolve(__dirname, 'src/branches/injector.js'),
         cellulart: path.resolve(__dirname, 'src/content/cellulart.js'),
@@ -51,8 +53,9 @@ module.exports = {
         new CopyPlugin({
             patterns: [
                 // { from: "src/content/cellulart.js", to: "injected" },
-                { from: "src/branches/injected", to: "injected" },
-                // { from: "src/branches/injected.js", to: "injected.js" },
+                // { from: "src/branches/injected", to: "injected" },
+                { from: "src/branches/injected.js", to: "injected.js" },
+                { from: "src/branches/injector.js", to: "injector.js" },
                 { from: "src/branches/worker.js", to: "worker.js"},
                 { from: "src/icons", to: "icons" },
                 // { from: "other", to: "public" },

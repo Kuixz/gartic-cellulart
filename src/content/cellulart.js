@@ -83,7 +83,7 @@ const Controller = {
         }
         function createButton(defaultPicture, onclick, hidden){
             const item = setAttributes(document.createElement("div"), { class: "cellulart-menu-item" })
-            const itemIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: menu_icons[defaultPicture + ".png"], parent: item })
+            const itemIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: menu_icons[defaultPicture], parent: item })
             item.addEventListener("click", () => { 
                 const res = onclick(); 
                 itemIcon.src = menu_icons[res + ".png"]
