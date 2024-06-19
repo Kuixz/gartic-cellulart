@@ -36,10 +36,56 @@ const CellulartModule = { // [F2]
     // To be overridden by each module that requires more than marginal state knowledge.
     updateLobbySettings(dict) {},
 
+    // These three functions handle the retrieval of settings between sessions.
+    // Long term storage: recurrent
+    // Short term storage: transient
+    // saveRecurrentState() { return {} },
+    // saveTransientState() { return {} },
+    // saveRecurrentState() { Shelf.set({ [this.name + '_recurrent_state']: {} }) },
+    // saveTransientState() { Shelf.set({ [this.name + '_transient_state']: {} }) },
+
+
+
+    //  Loading from storage (this function is generally shared between modules):
+    // loadState() {
+    //     const dict = {}
+    //     Object.assign(this, dict)
+    //     // if ('recurrent' in dict) {
+    //     //     // if ('setting' in dict.recurrent) {
+    //     //     //    this.setting.jump(dict.recurrent.setting)
+    //     //     //    delete dict.recurrent.setting
+    //     //     // }
+    //     //     Object.assign(this, dict.recurrent)
+    //     // }
+    //     // if ('transient' in dict) {
+    //     //     Object.assign(this, dict.transient)
+    //     // }
+    // },
+    // loadState(dict, transient) {
+    //     if (!(this.name in dict)) { return }
+    //     const data = dict[this.name]
+    //     // if ('recurrent' in dict) {
+    //     //     // if ('setting' in dict.recurrent) {
+    //     //     //    this.setting.jump(dict.recurrent.setting)
+    //     //     //    delete dict.recurrent.setting
+    //     //     // }
+    //     //     Object.assign(this, dict.recurrent)
+    //     // }
+    //     // if (transient && 'transient' in dict) {
+    //     //     Object.assign(this, dict.transient)
+    //     // }
+    // },
+    // loadTransientState() {
+
+    // }
+
+    // Syntactic getter for the setting. Generally shared between modules.
+    isSetTo(thing) { return this.setting.isSetTo(thing) },
+
     // These functions receive messages from the in-window menu and are generally shared between modules.
-    menuStep() { const c = this.setting.current(); const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this.name); return n },
+    menuStep() { const c = this.setting.current; const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this.name); return n },
     togglePlus(plus) { if (plus) { this.setting.extend() } else { this.setting.retract() } },
-    // current() { return this.setting.current() }
+    // current() { return this.setting.current }
     // An unstated assumption is that the following is always equal to 0 or 1:
     // the number of times togglePlus(true) is called minus the number of times togglePlus(false) is called.
 }
@@ -110,7 +156,9 @@ const Red = {
     },
     adjustSettings(previous, current) {
         this.modules.forEach((mod) => { mod.togglePlus(current == 'red') })
-    }
+    },
+    // saveRecurrentState() { return { setting: this.setting.current } }
+    // saveTransientState() { return {} },
 }; 
 Object.setPrototypeOf(Red, CellulartModule)
 
@@ -134,87 +182,90 @@ const Timer = {
     display : undefined, // HTMLDivElement
     countdown : undefined, // timeoutID
 
-    parameters : {    
-        players: 0,
-        turns: 0,              // used by Timer 
-        // turnsFunction: () => {},
-        write: 40,             // used by Timer
-        draw: 150,             // used by Timer
-        decay: 0,              // used by Timer
-        decayFunction: () => {},
-        firstMultiplier: 1.25, // used by Timer
-    },
+    // parameters : {    
+    players: 0,
+    turns: 0,              // used by Timer 
+    // turnsFunction: () => {},
+    write: 40,             // used by Timer
+    draw: 150,             // used by Timer
+    decay: 0,              // used by Timer
+    decayFunction: () => {},
+    firstMultiplier: 1.25, // used by Timer
+    // },
 
     // init(modules) {}, // Empty.
     mutation(oldPhase, newPhase) {
         if (["book", "start"].includes(newPhase)) { return }
-        if (Timer.parameters.turns == 0) { Timer.finalizeTurns() }
-        setTimeout(Timer.placeTimer, 200)
+        if (this.turns == 0) { this.finalizeTurns() }
+        setTimeout(() => { this.placeTimer() }, 200)
 
         // If we changed from a phase that warrants a reset in the timer, reset the timer.
         if (oldPhase == "memory" && newPhase != "memory") { return } // !["lobby", "write", "draw", "first"].includes(phase) && newPhase != "memory") { return }
-        clearTimeout(Timer.countdown)
-        setTimeout(Timer.restartTimer, 200, newPhase)
+        clearTimeout(this.countdown)
+        setTimeout((x) => { this.restartTimer(x) }, 200, newPhase)
     },
     backToLobby(oldPhase) {
-        Timer.parameters.turns = 0
+        this.turns = 0
     }, // Empty.
     adjustSettings(previous, current) {
-        if (Timer.display == undefined) { return }
-        if (current == "on") { Timer.display.style.visibility = "visible" } else { Timer.display.style.visibility = "hidden" }
+        if (this.display == undefined) { return }
+        if (current == "on") { this.display.style.visibility = "visible" } else { this.display.style.visibility = "hidden" }
     },
     updateLobbySettings(dict) {
         if ("default" in dict) {
             const data = dict.default
-            Object.assign(Timer.parameters, Converter.getParameters(Converter.modeIndexToString(data)))
+            const parameters = Converter.getParameters(data)
+            Object.assign(this, parameters)  // TODO: unsafe and unscalable
+            // console.log(g)
         }
         if ("custom" in dict) {
             const data = dict.custom
-            const players = "players" in dict ? dict.players : 1
-            // Timer.parameters.turnsFunction = Converter.turnsStringToFunction(data[2]) // (players) 
-            Object.assign(Timer.parameters, Converter.timeStringToParameters(data[0]))
+            // const players = "players" in dict ? dict.players : 1
+            // this.turnsFunction = Converter.turnsStringToFunction(data[2]) // (players) 
+            const parameters = Converter.timeStringToParameters(data[0])
+            Object.assign(this, parameters)  // TODO: unsafe and unscalable
         }
     },
 
     // templateParameters(data) {
-    //     Object.assign(Timer.parameters, Converter.getParameters(Converter.modeIndexToString(data)))
+    //     Object.assign(this.parameters, Converter.getParameters(Converter.modeIndexToString(data)))
     // },
-    adjustParameters(parameters) {
-        const config = parameters.configs
-        // const midgame = parameters.turnMax > 0
+    // adjustParameters(parameters) {
+    //     const config = parameters.configs
+    //     // const midgame = parameters.turnMax > 0
 
-        // Timer.parameters.players = parameters.users.length;
-        if ('speed' in config) { Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
-        // Timer.tweakParameters(config, midgame)
+    //     // Timer.parameters.players = parameters.users.length;
+    //     if ('speed' in config) { Object.assign(this, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }  // TODO: unsafe and unscalable
+    //     // Timer.tweakParameters(config, midgame)
 
-        if (parameters.turnMax > 0) {
-        // if (midgame) {
-            // todo: in theory we should pass these through to all the modules, but ehh.
-            // Timer.parameters.turns = parameters.turnMax
-            Timer.interpolate(parameters.turnNum)
-            // Timer.finalizeTurns(Timer.parameters.players)
-        }
-    },
+    //     if (parameters.turnMax > 0) {
+    //     // if (midgame) {
+    //         // todo: in theory we should pass these through to all the modules, but ehh.
+    //         // Timer.parameters.turns = parameters.turnMax
+    //         Timer.interpolate(parameters.turnNum)
+    //         // Timer.finalizeTurns(Timer.parameters.players)
+    //     }
+    // },
     // tweakParameters(config, midgame=false) {
     //     // if ('turns' in config) { Timer.parameters.turnsFunction = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns)) }  // (players) 
-    //     if ('speed' in config) { Object.assign(Timer.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
+    //     if ('speed' in config) { Object.assign(this.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
     // },
     finalizeTurns() {
         const step = document.querySelector('.step')
-        if (!step) { setTimeout(Timer.finalizeTurns, 200)}
+        if (!step) { setTimeout(() => { this.finalizeTurns() }, 200)}
         // if (newPhase != 'book') { 
             // setTimeout(() => {
-            // if (Timer.parameters.turns == 0) { 
-        // const d = Timer.parameters.turns; if (t 
+            // if (this.parameters.turns == 0) { 
+        // const d = this.parameters.turns; if (t 
         const indicator = step.querySelector('p').textContent
-        Timer.parameters.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
+        this.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
             
             // }
             // return
         // }
     // finalizeTurns(players) {
         // const t = Timer.parameters.turns; if (t instanceof Function) { Timer.parameters.turns = t(players) }
-        Timer.parameters.decay = Timer.parameters.decayFunction(Timer.parameters.turns)
+        this.decay = this.decayFunction(this.turns)
         // }, 200);
     },
 
@@ -230,7 +281,7 @@ const Timer = {
 
         const timerHolder = setAttributes(document.createElement("div"), { id: "timerHolder", parent: holder })
 
-        Timer.display = setAttributes(document.createElement("div"), { id: "timer", style: "visibility:" + Timer.setting.current() == 'off' ? "hidden" : "visible", parent: timerHolder })
+        this.display = setAttributes(document.createElement("div"), { id: "timer", style: "visibility:" + this.isSetTo('off') ? "hidden" : "visible", parent: timerHolder })
 
         const p = clock.querySelector('p'); if (p) { p.remove() }
     },
@@ -238,12 +289,12 @@ const Timer = {
         const clock = document.querySelector(".time")
         if (clock.classList.contains("lock")) {
             const p = clock.querySelector("p"); if(p) { p.style.visibility = "hidden" } // Prevents clashing with SillyV's extension
-            Timer.tick(1, 1)
+            this.tick(1, 1)
         } else {
-            Timer.tick(Timer.getSecondsForPhase(newPhase) - 1, -1)
+            this.tick(this.getSecondsForPhase(newPhase) - 1, -1)
         }
         // if (game.parameters["timerCurve"] != 0) { 
-        Timer.interpolate(1); 
+        this.interpolate(1); 
         // }
     },
     getSecondsForPhase(newPhase) {
@@ -252,13 +303,13 @@ const Timer = {
         switch (newPhase) {
             case 'draw': case 'memory': 
                 // Checks if first turn && the firstMultiplier is so extreme that it must be either FASTER FIRST or SLOWER FIRST
-                if (![1,1.25].includes(Timer.parameters.firstMultiplier) && document.querySelector(".step").textContent.slice(0, 2) == "1/") {
-                    toReturn = 150 * Timer.parameters.firstMultiplier;  // Experimental optimization replacing Timer.parameters.draw with flat 150
+                if (![1,1.25].includes(this.firstMultiplier) && document.querySelector(".step").textContent.slice(0, 2) == "1/") {
+                    toReturn = 150 * this.firstMultiplier;  // Experimental optimization replacing this.draw with flat 150
                 } else { 
-                    toReturn = Timer.parameters.draw;
+                    toReturn = this.draw;
                 } break;
-            case 'write': toReturn = Timer.parameters.write; break;
-            case 'first': toReturn = Timer.parameters.write * Timer.parameters.firstMultiplier; break;
+            case 'write': toReturn = this.write; break;
+            case 'first': toReturn = this.write * this.firstMultiplier; break;
             case 'mod':   return 25 // 10 // [T2]
             default:
                 Console.alert("Could not determine duration of phase " + newPhase, 'Timer')
@@ -271,16 +322,16 @@ const Timer = {
         const m = String(Math.floor(seconds / 60)) + ":"
         var s = String(seconds % 60);
         if (s.length < 2) { s = 0 + s }
-        Timer.display.textContent = h == "0:" ? m + s : h + m + s
+        this.display.textContent = h == "0:" ? m + s : h + m + s
 
-        if (seconds <= 0 || !Timer.display) { Console.log("Countdown ended", 'Timer'); return }
-        Timer.countdown = setTimeout(Timer.tick, 1000, seconds + direction, direction)
+        if (seconds <= 0 || !this.display) { Console.log("Countdown ended", 'Timer'); return }
+        this.countdown = setTimeout((s,d) => { this.tick(s,d) }, 1000, seconds + direction, direction)
     },
     interpolate(times) {
-        if (Timer.parameters.decay != 0) {
+        if (this.decay != 0) {
             Console.log("Interpolating regressive/progressive timer", 'Timer')
-            Timer.parameters.write = (Timer.parameters.write - 8) * (Timer.parameters.decay ** times) + 8
-            Timer.parameters.draw = (Timer.parameters.draw - 30) * (Timer.parameters.decay ** times) + 30
+            this.write = (this.write - 8) * (this.decay ** times) + 8
+            this.draw = (this.draw - 30) * (this.decay ** times) + 30
         } 
     },
 
@@ -313,57 +364,57 @@ const Koss = { // [K1]
     kossCanvas : undefined, // HTMLCanvasElement
 
     init(modules) {
-        Koss.kossWIW =Inwindow.new(false, false);
-        Koss.kossWIW.body.style.position = 'relative';  // TODO: Too many dots
-        Koss.kossImage = setAttributes(new Image(), { style: "position: absolute", class:"wiw-img" })
+        this.kossWIW = Inwindow.new(false, false);
+        this.kossWIW.body.style.position = 'relative';  // TODO: Too many dots
+        this.kossImage = setAttributes(new Image(), { style: "position: absolute", class:"wiw-img" })
     },
     mutation(oldPhase, newPhase) { 
         // ssView.childNodes[1].appendChild(kossImage);
-        const wiwBody = Koss.kossWIW.body
+        const wiwBody = this.kossWIW.body
         if (wiwBody.firstChild) { wiwBody.removeChild(wiwBody.firstChild) }
         if (newPhase == 'memory') {
-            setTimeout(() => { Koss.kossCanvas = document.querySelector(".core").querySelector("canvas") }, 10)
+            setTimeout(() => { this.kossCanvas = document.querySelector(".core").querySelector("canvas") }, 10)
         }
         else if (newPhase == 'draw') {
             // document.querySelector(".core").querySelector("canvas")
-            // Koss.kossCanvas
-            Koss.placeCanvas()
+            // this.kossCanvas
+            this.placeCanvas()
         }
         // If the new phase is "memory", schedule a screenshot to be taken of the canvas approximately when it's done drawing.
         // if (newPhase == "memory") {
         //     // Recover the kossImage from the overlay position so that we don't lose track of it.
-        //     Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossImage);
-        //     setTimeout(Koss.screenshot, 1500);
-        // } else if (newPhase == "draw" && Koss.setting.current() == 'red') {
-        //     setTimeout(Koss.tryUnderlayKossImage, 1000)
+        //     this.kossWIW.querySelector(".wiw-body").appendChild(this.kossImage);
+        //     setTimeout(this.screenshot, 1500);
+        // } else if (newPhase == "draw" && this.setting.current == 'red') {
+        //     setTimeout(this.tryUnderlayKossImage, 1000)
         // }
     },
     backToLobby(oldPhase) {
-        // Koss.kossImage.src = "";
-        if (Koss.kossCanvas) {
-            Koss.kossCanvas.remove();
-            Koss.kossCanvas = undefined;
+        // this.kossImage.src = "";
+        if (this.kossCanvas) {
+            this.kossCanvas.remove();
+            this.kossCanvas = undefined;
         }
     },
     adjustSettings(previous, current) {
         // alert(current)
         switch (current) {
             case 'off':
-                Koss.kossWIW.setVisibility("hidden");
-                if (Koss.kossCanvas) { Koss.kossWIW.body.appendChild(Koss.kossCanvas); }
+                this.kossWIW.setVisibility("hidden");
+                if (this.kossCanvas) { this.kossWIW.body.appendChild(this.kossCanvas); }
                 break;
             case 'on':
-                Koss.kossWIW.setVisibility("visible");
-                if (Koss.kossCanvas) { 
-                    Koss.kossCanvas.style.opacity = "1"; 
-                    Koss.kossWIW.body.appendChild(Koss.kossCanvas); 
+                this.kossWIW.setVisibility("visible");
+                if (this.kossCanvas) { 
+                    this.kossCanvas.style.opacity = "1"; 
+                    this.kossWIW.body.appendChild(this.kossCanvas); 
                 }
                 break;
             case 'red':
-                Koss.kossWIW.setVisibility("visible");
-                if (Koss.kossCanvas) { 
-                    Koss.kossCanvas.style.opacity = "0.25"; 
-                    Koss.tryUnderlayKossImage();
+                this.kossWIW.setVisibility("visible");
+                if (this.kossCanvas) { 
+                    this.kossCanvas.style.opacity = "0.25"; 
+                    this.tryUnderlayKossImage();
                 }
                 break;
             default: Console.alert("KOSS location not recognised", 'Koss')
@@ -372,25 +423,25 @@ const Koss = { // [K1]
     // updateLobbySettings(dict) {},
 
     placeCanvas() {
-        if (!Koss.kossCanvas) { return }
-       /* if (Koss.kossCanvas) { */ Koss.kossCanvas.classList.add('koss-canvas') // }
-        switch (Koss.setting.current()) {
+        if (!this.kossCanvas) { return }
+       /* if (this.kossCanvas) { */ this.kossCanvas.classList.add('koss-canvas') // }
+        switch (this.setting.current) {
             case 'off':
-                Koss.kossWIW.body.appendChild(Koss.kossCanvas);
+                this.kossWIW.body.appendChild(this.kossCanvas);
                 break;
             case 'on':
-                Koss.kossWIW.body.appendChild(Koss.kossCanvas);
+                this.kossWIW.body.appendChild(this.kossCanvas);
                 break;
             case 'red':
-                setTimeout(Koss.tryUnderlayKossImage, 1000);
+                setTimeout(() => { this.tryUnderlayKossImage() }, 1000);
                 break;
             default: Console.alert("KOSS location not recognised", 'Koss')
         }
     },
     tryUnderlayKossImage() {
-        Koss.kossCanvas.style.opacity = "0.25";
+        this.kossCanvas.style.opacity = "0.25";
         try { 
-            document.querySelector(".drawingContainer").insertAdjacentElement("beforebegin", Koss.kossCanvas);
+            document.querySelector(".drawingContainer").insertAdjacentElement("beforebegin", this.kossCanvas);
             Console.log("Koss image underlaid", 'Koss')
         } catch {
             Console.log("Koss image NOT underlaid, no place found : not on draw mode?", 'Koss')
@@ -412,10 +463,10 @@ const Refdrop = { // [R1]
     name : "Refdrop",
     setting : new RedSettingsBelt('on'),
     keybinds : [
-        new Keybind((e) => e.code == "ArrowLeft" , (e) => { Refdrop.refImage.style.left = parseInt(Refdrop.refImage.style.left) - e.shiftKey ? 0.5 : 2 + "px" }),
-        new Keybind((e) => e.code == "ArrowUp"   , (e) => { Refdrop.refImage.style.top  = parseInt(Refdrop.refImage.style.top)  - e.shiftKey ? 0.5 : 2 + "px" }),
-        new Keybind((e) => e.code == "ArrowRight", (e) => { Refdrop.refImage.style.left = parseInt(Refdrop.refImage.style.left) + e.shiftKey ? 0.5 : 2 + "px" }),
-        new Keybind((e) => e.code == "ArrowDown" , (e) => { Refdrop.refImage.style.top  = parseInt(Refdrop.refImage.style.top)  + e.shiftKey ? 0.5 : 2 + "px" }),
+        new Keybind((e) => e.code == "ArrowLeft" , (e) => { this.refImage.style.left = parseInt(this.refImage.style.left) - e.shiftKey ? 0.5 : 2 + "px" }),
+        new Keybind((e) => e.code == "ArrowUp"   , (e) => { this.refImage.style.top  = parseInt(this.refImage.style.top)  - e.shiftKey ? 0.5 : 2 + "px" }),
+        new Keybind((e) => e.code == "ArrowRight", (e) => { this.refImage.style.left = parseInt(this.refImage.style.left) + e.shiftKey ? 0.5 : 2 + "px" }),
+        new Keybind((e) => e.code == "ArrowDown" , (e) => { this.refImage.style.top  = parseInt(this.refImage.style.top)  + e.shiftKey ? 0.5 : 2 + "px" }),
                 ],
     // Refdrop variables
     refUpload : undefined, // HTMLDivElement
@@ -425,93 +476,93 @@ const Refdrop = { // [R1]
     seFunctions : null,    // { clickBridge: function, screenshot: function }
 
     init(modules) {
-        Refdrop.seFunctions = Refdrop.initRefdrop();
-        Refdrop.onSocketClick = Refdrop.seFunctions.clickBridge;
-        Refdrop.initRefctrl()
+        this.seFunctions = this.initRefdrop();
+        this.onSocketClick = this.seFunctions.clickBridge;
+        this.initRefctrl()
     },
     mutation(oldPhase, newPhase) {
         // Recover the ref controls from the lower corners so that we don't lose track of them.
-        document.body.appendChild(Refdrop.refUpload);
-        document.body.appendChild(Refdrop.refCtrl)
+        document.body.appendChild(this.refUpload);
+        document.body.appendChild(this.refCtrl)
         // Recover the refimg from the overlay position so that we don't lose track of it.
-        Refdrop.refUpload.appendChild(Refdrop.refImage);
-        Refdrop.refImage.style.visibility = "hidden";
+        this.refUpload.appendChild(this.refImage);
+        this.refImage.style.visibility = "hidden";
     
         if (newPhase == "draw") {
-            setTimeout(Refdrop.placeRefdropControls, 200)
+            setTimeout(() => { this.placeRefdropControls() }, 200)
         } else {
-            Refdrop.refUpload.style.display = "none";
-            Refdrop.refCtrl.style.display = "none";
+            this.refUpload.style.display = "none";
+            this.refCtrl.style.display = "none";
         }
     },
     backToLobby(oldPhase) {
-        Refdrop.refImage.src = "";
+        this.refImage.src = "";
     },
     adjustSettings(previous, current) {
         switch (current) {
             case 'off': 
                 document.querySelectorAll(".wiw-close").forEach(v => v.parentNode.parentNode.remove()) // This closes all references, forcing you to drag them in again.
-                Refdrop.refImage.src = "";
-                Refdrop.refUpload.style.visibility = "hidden";
-                Refdrop.refCtrl.style.visibility = "hidden";
+                this.refImage.src = "";
+                this.refUpload.style.visibility = "hidden";
+                this.refCtrl.style.visibility = "hidden";
                 return;
             case 'on':
-                Refdrop.refUpload.style.visibility = "visible"
-                Refdrop.onSocketClick = Refdrop.seFunctions.clickBridge;
-                Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")";
+                this.refUpload.style.visibility = "visible"
+                this.onSocketClick = this.seFunctions.clickBridge;
+                this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")";
                 return;
             case 'red':
-                Refdrop.refCtrl.style.visibility = "visible";
-                Refdrop.onSocketClick = Refdrop.seFunctions.screenshot;
-                Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")";
+                this.refCtrl.style.visibility = "visible";
+                this.onSocketClick = this.seFunctions.screenshot;
+                this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")";
                 return;
         }
     },
     // updateLobbySettings(dict) {},
 
     initRefdrop() {
-        Refdrop.refImage = setAttributes(document.createElement("img"),  { class: "bounded",    id: "ref-img"    })
-        Refdrop.refUpload = setAttributes(document.createElement("div"), { style: "display: none", class: "ref-square", id: "ref-se",    parent: document.body });
-        const refForm = setAttributes(document.createElement("form"),    { class: "upload-form",                 parent: Refdrop.refUpload });  
+        this.refImage = setAttributes(document.createElement("img"),  { class: "bounded",    id: "ref-img"    })
+        this.refUpload = setAttributes(document.createElement("div"), { style: "display: none", class: "ref-square", id: "ref-se",    parent: document.body });
+        const refForm = setAttributes(document.createElement("form"),    { class: "upload-form",                 parent: this.refUpload });  
         const refBridge = setAttributes(document.createElement("input"), { class: "upload-bridge", type: "file", parent: refForm });
-        Refdrop.refSocket = setAttributes(document.createElement("div"),   { class: "ref-border upload-socket hover-button", style: "background-image:url(" + getResource("assets/module-assets/ref-ul.png") + ")", parent: refForm });
+        this.refSocket = setAttributes(document.createElement("div"),   { class: "ref-border upload-socket hover-button", style: "background-image:url(" + getResource("assets/module-assets/ref-ul.png") + ")", parent: refForm });
 
         window.addEventListener("dragenter", function(e){
             // Console.log("dragenter", Refdrop)
             // Console.log(e.relatedTarget, Refdrop)
-            Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")"; 
+            this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")"; 
         })
         window.addEventListener("dragleave", function(e){
             // Console.log("dragleave", Refdrop)
             // Console.log(e.relatedTarget, Refdrop)
             if (e.fromElement || e.relatedTarget !== null) { return }
             Console.log("Dragging back to OS", 'Refdrop')
-            if (Refdrop.setting.current() == 'red') { Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
+            if (this.isSetTo('red')) { this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
         })
         window.addEventListener("drop", function(e){
             Console.log("drop", 'Refdrop')
-            if (Refdrop.setting.current() == 'red') { Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
+            if (this.isSetTo('red')) { this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
         }, true)
         window.addEventListener("dragover", function(e){
             e.preventDefault()
         })
-        Refdrop.refSocket.addEventListener("dragenter", function(e) {
+        this.refSocket.addEventListener("dragenter", function(e) {
             preventDefaults(e)
-            Refdrop.refSocket.classList.add('highlight')
+            this.refSocket.classList.add('highlight')
         }, false)
         ;['dragleave', 'drop'].forEach(eventName => {
-            Refdrop.refSocket.addEventListener(eventName, function(e) {
+            this.refSocket.addEventListener(eventName, function(e) {
                 preventDefaults(e)
-                Refdrop.refSocket.classList.remove('highlight')
+                this.refSocket.classList.remove('highlight')
             }, false)
         })
-        Refdrop.refSocket.addEventListener("click", function() {
-            Refdrop.onSocketClick();
+        this.refSocket.addEventListener("click", function() {
+            this.onSocketClick();
         })
         refBridge.addEventListener("change", () => { handleFiles(refBridge.files) })
-        Refdrop.refSocket.addEventListener('drop', handleDrop, false)
+        this.refSocket.addEventListener('drop', handleDrop, false)
 
-        Refdrop.refUpload.style.visibility = "hidden";
+        this.refUpload.style.visibility = "hidden";
 
         return { clickBridge: () => { refBridge.click() }, screenshot: () => screenshot() };
 
@@ -524,15 +575,15 @@ const Refdrop = { // [R1]
         function handleFiles(files) {
             document.querySelector(".core").classList.remove("watermark")
     
-            switch (Refdrop.setting.current()) {
+            switch (this.setting.current) {
                 case 'on':
-                    Refdrop.newRefimgWIW(files.item(0));
+                    this.newRefimgWIW(files.item(0));
                     break;
                 case 'red':
-                    Refdrop.refImage.style.visibility = "visible";
-                    Refdrop.refImage.src = URL.createObjectURL(files.item(0))
+                    this.refImage.style.visibility = "visible";
+                    this.refImage.src = URL.createObjectURL(files.item(0))
     
-                    document.querySelector(".core").insertAdjacentElement("afterbegin", Refdrop.refImage);
+                    document.querySelector(".core").insertAdjacentElement("afterbegin", this.refImage);
                     break;
                 default:
                     Console.alert("Intended refimg location not recognised", 'Refdrop')
@@ -540,26 +591,26 @@ const Refdrop = { // [R1]
             } 
         }    
         function screenshot() {
-            Refdrop.refImage.src = document.querySelector(".core").querySelector("canvas").toDataURL();
-            document.querySelector(".core").insertAdjacentElement("afterbegin", Refdrop.refImage);
-            Refdrop.refImage.style.visibility = "visible";
+            this.refImage.src = document.querySelector(".core").querySelector("canvas").toDataURL();
+            document.querySelector(".core").insertAdjacentElement("afterbegin", this.refImage);
+            this.refImage.style.visibility = "visible";
             Console.log("Screenshot taken", 'Refdrop')
         }
     },
     initRefctrl() {
-        Refdrop.refCtrl  = setAttributes(document.createElement("div"),    { id: "ref-sw", class: "ref-square" })
-        const refpos = setAttributes(document.createElement("div"),        { class: "ref-border canvas-in-square", parent: Refdrop.refCtrl })
+        this.refCtrl  = setAttributes(document.createElement("div"),    { id: "ref-sw", class: "ref-square" })
+        const refpos = setAttributes(document.createElement("div"),        { class: "ref-border canvas-in-square", parent: this.refCtrl })
         const refdot = setAttributes(document.createElement("div"),        { id: "ref-dot", class: "ref-border bounded", parent: refpos })
-        const reflower = setAttributes(document.createElement("div"),      { class: "canvas-square-lower-tray", parent: Refdrop.refCtrl })
+        const reflower = setAttributes(document.createElement("div"),      { class: "canvas-square-lower-tray", parent: this.refCtrl })
         const refz = setAttributes(document.createElement("div"),          { class : "ref-border ref-tray-button hover-button", /*style: "background-image:url(" + chrome.runtime.getURL("assets/downz.png") + ")",*/ parent: reflower })
         const refc = setAttributes(document.createElement("div"),          { class : "ref-border ref-tray-button hover-button", parent: reflower })
         const refoholder = setAttributes(document.createElement("div"),    { class : "ref-border ref-tray-button hover-button", parent: reflower })
         const refo = setAttributes(document.createElement("input"),        { id: "refo", type: "range", value: "25", parent: refoholder })
 
-        initPantograph(refdot, Refdrop.refImage); 
-        initZ         (refz,   Refdrop.refImage);
-        initCenter    (refc,   Refdrop.refImage);
-        initOpacity   (refo,   Refdrop.refImage);
+        initPantograph(refdot, this.refImage); 
+        initZ         (refz,   this.refImage);
+        initCenter    (refc,   this.refImage);
+        initOpacity   (refo,   this.refImage);
         function initPantograph(small, large) {
             var parentCoords = {}; var ratio = 1; const parent = small.parentElement
             small.onmousedown = dragMouseDown;
@@ -641,23 +692,23 @@ const Refdrop = { // [R1]
             })
         }
 
-        Refdrop.refCtrl.style.visibility = "hidden";
+        this.refCtrl.style.visibility = "hidden";
     }, // [R6]
     onSocketClick() { }, // Dynamically set
     placeRefdropControls() {
-        document.querySelector(".tools").insertAdjacentElement("beforebegin", Refdrop.refUpload);
-        document.querySelector(".tools").insertAdjacentElement("afterend", Refdrop.refCtrl);
-        Refdrop.refUpload.style.display = "initial";
-        Refdrop.refCtrl.style.display = "initial";
+        document.querySelector(".tools").insertAdjacentElement("beforebegin", this.refUpload);
+        document.querySelector(".tools").insertAdjacentElement("afterend", this.refCtrl);
+        this.refUpload.style.display = "initial";
+        this.refCtrl.style.display = "initial";
         
-        Refdrop.refUpload.style.visibility = "visible";
-        if (Refdrop.setting.current() == 'red') { Refdrop.refCtrl.style.visibility = "visible" }
+        this.refUpload.style.visibility = "visible";
+        if (this.isSetTo('red')) { this.refCtrl.style.visibility = "visible" }
         //Debug.log(Refdrop, "Refdrop placed")
     }, // [R5]
     newRefimgWIW(object) {
         const i = setAttributes(new Image(), { class: "wiw-img", src: URL.createObjectURL(object) })
-        i.onload = function(){
-            const newRefWIW =Inwindow.new(true, true, i.height / i.width);
+        i.onload = function() {
+            const newRefWIW = Inwindow.new(true, true, i.height / i.width);
             newRefWIW.body.appendChild(i)
         }
         /*
@@ -698,59 +749,59 @@ const Spotlight = { // [S1]
     fallback : 0,
     
     init(modules) {
-        Spotlight.bg.src = getResource("assets/module-assets/spotlight-base.png");
+        this.bg.src = getResource("assets/module-assets/spotlight-base.png");
     },
     mutation(oldPhase, newPhase) {
         if (newPhase == 'start') { return }
         if (newPhase != 'book') { 
-            if (Spotlight.turns == 0) { Spotlight.finalizeTurns() }
+            if (this.turns == 0) { this.finalizeTurns() }
             return
         }
-        if (Spotlight.turns <= 1) { return }
+        if (this.turns <= 1) { return }
         // if (oldPhase == "start") {
         //     // In case you had to reload in the middle of visualization
-        //     Spotlight.user = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
+        //     this.user = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
         // }
-        // Spotlight.avatars = Array.from(document.querySelectorAll(".avatar")).map(element => window.getComputedStyle(element.childNodes[0]).backgroundImage.slice(5, -2));//.slice(13, -2) );//.slice(29, -2));
-        // Spotlight.names = Array.from(document.querySelectorAll(".nick")).map(element => element.textContent);
+        // this.avatars = Array.from(document.querySelectorAll(".avatar")).map(element => window.getComputedStyle(element.childNodes[0]).backgroundImage.slice(5, -2));//.slice(13, -2) );//.slice(29, -2));
+        // this.names = Array.from(document.querySelectorAll(".nick")).map(element => element.textContent);
 
-        Spotlight.compositeBackgrounds();
-        Spotlight.turns > 0 
-            ? Spotlight.compositedFrameDatas = new Array(Spotlight.turns - 1) 
-            : Spotlight.compositedFrameDatas = {}
+        this.compositeBackgrounds();
+        this.turns > 0 
+            ? this.compositedFrameDatas = new Array(this.turns - 1) 
+            : this.compositedFrameDatas = {}
 
-        // Spotlight.attachBookObserver();
+        // this.attachBookObserver();
     },
     backToLobby(oldPhase) {
         if (oldPhase != 'book') { return }
-        if (Spotlight.turns > 1) { Spotlight.compileToGif() }
-        // Spotlight.timelineObserver.disconnect()
-        // Spotlight.avatars = []
-        // Spotlight.names = []
-        Spotlight.turns = 0
+        if (this.turns > 1) { this.compileToGif() }
+        // this.timelineObserver.disconnect()
+        // this.avatars = []
+        // this.names = []
+        this.turns = 0
     },
     adjustSettings(previous, current) {
         // We can actually override menuStep to prevent this to begin with.
-        if (Spotlight.compositedFrameDatas != []) { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
+        if (this.compositedFrameDatas != []) { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
     },
     updateLobbySettings(dict) {
         if ('default' in dict) {
-            Spotlight.fallback = Converter.getParameters(dict.default).fallback
+            this.fallback = Converter.getParameters(dict.default).fallback
         } 
         if ('custom' in dict) {
-            Spotlight.fallback = Converter.getParameters(dict[1]).fallback
+            this.fallback = Converter.getParameters(dict.custom[1])
         }
 
         if ("self" in dict) {
-            Spotlight.user = dict.self.nick
+            this.user = dict.self.nick
         }
-        if ("usersIn" in dict) {
-            Spotlight.players += dict.usersIn.length
-        }
-        if ("userOut" in dict) {
-            Spotlight.players -= 1
-            // null
-        }
+        // if ("usersIn" in dict) {
+        //     this.players += dict.usersIn.length
+        // }
+        // if ("userOut" in dict) {
+        //     this.players -= 1
+        //     // null
+        // }
         // switch (type) {
         //     case "default": 
         //         break;
@@ -765,47 +816,47 @@ const Spotlight = { // [S1]
         // }
         // switch (type) {
         //     case 1: 
-        //         Spotlight.user = data.user.nick; 
-        //         Spotlight.host = data.users[0].nick;
-        //         Spotlight.fallback = Converter.flowStringToFallback(Converter.flowIndexToString(data.configs.first))
+        //         this.user = data.user.nick; 
+        //         this.host = data.users[0].nick;
+        //         this.fallback = Converter.flowStringToFallback(Converter.flowIndexToString(data.configs.first))
         
-        //         // Spotlight.players = data.users.length;
-        //         if (data.turnMax > 0) { Spotlight.turns = data.turnMax }
+        //         // this.players = data.users.length;
+        //         if (data.turnMax > 0) { this.turns = data.turnMax }
         //         break;
-        //     // case 2: Spotlight.players += 1; break;
-        //     // case 3: Spotlight.players -= 1; break;
+        //     // case 2: this.players += 1; break;
+        //     // case 3: this.players -= 1; break;
         //     // case 5: 
-        //     //     Spotlight.finalizeTurns(); break;
+        //     //     this.finalizeTurns(); break;
         //     case 9:
-        //         if (Object.keys(data).length > 0) { break } else { Spotlight.writeResponseFrames() }
+        //         if (Object.keys(data).length > 0) { break } else { this.writeResponseFrames() }
         //     // Spotlight can be a bit looser on its turn tracking, so we do just that.
         // }
     },
 
     // finalizeTurns(players) {
-    //     const t = Spotlight.parameters.turns; if (t instanceof Function) { Spotlight.parameters.turns = t(players) }
+    //     const t = this.parameters.turns; if (t instanceof Function) { this.parameters.turns = t(players) }
     // },
 
     // Compiles an array of ImageData into a GIF.
     finalizeTurns() {
         const step = document.querySelector('.step')
-        if (!step) { setTimeout(Spotlight.finalizeTurns, 200)}
+        if (!step) { setTimeout(() => { this.finalizeTurns() }, 200)}
         const indicator = step.querySelector('p').textContent
-        Spotlight.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
+        this.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
     },
     compileToGif() {
-        if( Spotlight.setting.current() == 'off' || Spotlight.compositedFrameDatas.length == 0) { return }
+        if( this.isSetTo('off') || this.compositedFrameDatas.length == 0) { return }
         Console.log('Now compiling to GIF', 'Spotlight');
         const gif = gifenc.GIFEncoder();
         
         var index = 0;
         // Console.log(compositedFrameDatas.length, Spotlight)
-        while (index < Spotlight.compositedFrameDatas.length) {
+        while (index < this.compositedFrameDatas.length) {
             Console.log("Queueing frame " + index, 'Spotlight');
             /*const canvasElement = compositedFrames[index];
             if (canvasElement != null) { gif.addFrame(canvasElement, {delay: 400}) };
             index += 1;*/
-            const data = Spotlight.compositedFrameDatas[index];
+            const data = this.compositedFrameDatas[index];
             index += 1
             if (!data) { continue }
             const format = "rgb444";
@@ -821,7 +872,7 @@ const Spotlight = { // [S1]
         const today = new Date();
         const day = today.getDate() + "-" + (today.getMonth() + 1) + '-' + today.getFullYear()
         const time = today.getHours() + ":" + today.getMinutes()
-        const filename = "Spotlight " + Spotlight.user + " " + day + " " + time + ".gif"
+        const filename = "Spotlight " + this.user + " " + day + " " + time + ".gif"
         function download (buf, filename, type) {
             const blob = buf instanceof Blob ? buf : new Blob([buf], { type });
             const url = URL.createObjectURL(blob);
@@ -844,87 +895,87 @@ const Spotlight = { // [S1]
     // attachBookObserver() { // [S2]
     //     var frame = document.querySelector(".timeline")//.previousSibling//.parentElement;
     //     if (!frame) {
-    //         setTimeout(Spotlight.attachBookObserver, 500);
+    //         setTimeout(this.attachBookObserver, 500);
     //         return
     //     }
-    //     Spotlight.bookObserver.observe(frame, configChildTrunk);// { characterData: true });
+    //     this.bookObserver.observe(frame, configChildTrunk);// { characterData: true });
     // },
     // bookObserver : new MutationObserver(() => {
     //     // console.log("timline obse fired; attaching book obse"); 
-    //     Spotlight.attachTimelineObserver(); 
-    //     Spotlight.bookObserver.disconnect();
+    //     this.attachTimelineObserver(); 
+    //     this.bookObserver.disconnect();
     // }),
     // attachTimelineObserver() {
     //     var frame = document.querySelector(".timeline").childNodes[0].childNodes[0];
     //     if (!frame) {
-    //         setTimeout(Spotlight.attachTimelineObserver, 500);
+    //         setTimeout(this.attachTimelineObserver, 500);
     //         return
     //     }
-    //     Spotlight.timelineObserver.observe(frame, configChildTrunk);
+    //     this.timelineObserver.observe(frame, configChildTrunk);
     // },
     // timelineObserver : new MutationObserver((records) => { // Catch errors when the NEXT button shows up / the next round begins to load
     //     // console.log("book obse fired")
     //     if (records[0].removedNodes.length > 0) {
     //         // console.log("New timeline entered; resetting slideNums")
-    //         Spotlight.slideNum = -1;
-    //         Spotlight.keySlideNum = -2;
+    //         this.slideNum = -1;
+    //         this.keySlideNum = -2;
     //         return;
     //     }
     //     // what if an EMPTY response? Sometimes backtrack two steps, sometimes one. Hence modeParameters now has fallback values.
-    //     Spotlight.slideNum += 1
+    //     this.slideNum += 1
     //     const currentSlide = records[0].addedNodes[0];
-    //     if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == Spotlight.user) {
-    //         Spotlight.keySlideNum = Spotlight.slideNum
-    //     } else if (Spotlight.slideNum == Spotlight.turns) {//currentSlide.querySelector(".download") != null) {
+    //     if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == this.user) {
+    //         this.keySlideNum = this.slideNum
+    //     } else if (this.slideNum == this.turns) {//currentSlide.querySelector(".download") != null) {
     //         // console.log("Stepped over. Compositing response")
-    //         Spotlight.compositeResponseFrame()
+    //         this.compositeResponseFrame()
     //     }
     // }),
 
     // These functions manage the compositing of timelines into ImageDatas.
     compositeBackgrounds() {
-        if (Spotlight.setting.current() == 'off') { return }
-        const canvas = Spotlight.initFrom(Spotlight.bg)
+        if (this.isSetTo('off')) { return }
+        const canvas = this.initFrom(this.bg)
         const context = canvas.context
-        Spotlight.drawText(context, "HOSTED BY " + Spotlight.host.toUpperCase(), 1206, 82, 50, 400, "M", "white")
-        switch (Spotlight.setting.current()) {
+        this.drawText(context, "HOSTED BY " + this.host.toUpperCase(), 1206, 82, 50, 400, "M", "white")
+        switch (this.setting.current) {
             case 'on':
-                Spotlight.drawName(context, Spotlight.user.toUpperCase(), "R") 
-                // Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(Spotlight.user)], "R")
+                this.drawName(context, this.user.toUpperCase(), "R") 
+                // this.drawPFP(context, this.avatars[this.names.indexOf(this.user)], "R")
                 // TODO TODO TODO 
                 break;
             // case 1:
-            //     Spotlight.drawName(context, Spotlight.user.toUpperCase(), "L") 
-            //     Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(Spotlight.user)], "L")
+            //     this.drawName(context, this.user.toUpperCase(), "L") 
+            //     this.drawPFP(context, this.avatars[this.names.indexOf(this.user)], "L")
             //     break;
             default:
                 Console.alert("Spotlight setting not recognized", 'Spotlight')
         }
         // intendurl = canvas;
         // setTimeout(preview, 1000)
-        Spotlight.canbase = canvas.canvas;
+        this.canbase = canvas.canvas;
     },
     writeResponseFrames() {
         const slides = document.querySelector(".timeline").querySelectorAll(".item");
-        const pairs = Spotlight.determineResponseIndices(slides)
+        const pairs = this.determineResponseIndices(slides)
 
         for (const indices of pairs) {
             if (indices.key < 0) { Console.log('Did not participate in this round; no frame will be saved'); continue }
             if (indices.prev < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); continue } //prevIndex += modeParameters[game.mode]["fallback"] }
-            Spotlight.compositeResponseFrame(slides, indices.key, indices.prev)
+            this.compositeResponseFrame(slides, indices.key, indices.prev)
         }
     },
     determineResponseIndices(slides) {
         var toReturn = []
         for (var keyIndex = 0; keyIndex < slides.length; keyIndex++) {
-            if (Spotlight.findUsername(slides[keyIndex]) != Spotlight.user) { continue }
+            if (this.findUsername(slides[keyIndex]) != this.user) { continue }
             var prevIndex = indexOfPrevSlide(keyIndex)
             toReturn.push({ key:keyIndex, prev: prevIndex })
         }
         return toReturn
-        // const keyIndex = slides.find((item) => findUsername(item) == Spotlight.user)
+        // const keyIndex = slides.find((item) => findUsername(item) == this.user)
         // if (keySlide < 0) { Console.log('Did not participate in this round; no frame will be saved') }
-        // const keySlide = slides[keyIndex]  // slides[Spotlight.keyIndex]
+        // const keySlide = slides[keyIndex]  // slides[this.keyIndex]
         // var prevIndex = indexOfPrevSlide(keySlide)
         // if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return } //prevIndex += modeParameters[game.mode]["fallback"] }
         // const prevSlide = slides[prevIndex]
@@ -932,11 +983,11 @@ const Spotlight = { // [S1]
         // return { key:keyIndex, prev: prevIndex }
 
         function indexOfPrevSlide(key) {
-            var i = Spotlight.fallback > 0 ? key - 1 : 0; 
+            var i = this.fallback > 0 ? key - 1 : 0; 
             /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
             while (i >= 0 && slides[i].querySelector(".empty") != null) { 
-                i -= Spotlight.fallback; 
-                Console.log(`Could not find prompt frame, falling back by ${Spotlight.fallback}`, 'Spotlight')
+                i -= this.fallback; 
+                Console.log(`Could not find prompt frame, falling back by ${this.fallback}`, 'Spotlight')
             }
             return i
         }
@@ -944,44 +995,44 @@ const Spotlight = { // [S1]
     compositeResponseFrame(slides, keyIndex, prevIndex) {  // TODO incorrectly grabbing the same image twice, wtf?
         // todo: What to do if the one being spotlighted has an EMPTY?
         // TODO: Some rounds might loop back to the same person multiple times.
-        if (Spotlight.setting.current() == 'off') { return }
-        const canvas = Spotlight.initFrom(Spotlight.canbase)
+        if (this.isSetTo('off')) { return }
+        const canvas = this.initFrom(this.canbase)
         const context = canvas.context
 
-        // const side = Spotlight.setting.current() == 'on' ? { key:'R', other: 'L' } : { key:'L', other: 'R' }
+        // const side = this.setting.current == 'on' ? { key:'R', other: 'L' } : { key:'L', other: 'R' }
         const side = { key:'R', other:'L' }
         
         // Determinine slides
         // const slides = document.querySelector(".timeline").querySelectorAll(".item");
-        // const keyIndex = slides.find((item) => findUsername(item) == Spotlight.user)
+        // const keyIndex = slides.find((item) => findUsername(item) == this.user)
         // if (keyIndex < 0) { Console.log('Did not participate in this round; no frame will be saved') }
-        const keySlide = slides[keyIndex]  // slides[Spotlight.keyIndex]
+        const keySlide = slides[keyIndex]  // slides[this.keyIndex]
         // var prevIndex = indexOfPrevSlide(keySlide)
         // if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return } //prevIndex += modeParameters[game.mode]["fallback"] }
         const prevSlide = slides[prevIndex]
-        const prevUser = Spotlight.findUsername(prevSlide);
-        // const prevAvatar = Spotlight.avatars[Spotlight.names.indexOf(prevUser)]
+        const prevUser = this.findUsername(prevSlide);
+        // const prevAvatar = this.avatars[this.names.indexOf(prevUser)]
         const prevAvatar = prevSlide.querySelector('avatar').firstChild.style.backgroundImage
     
         // Draw everything
-        Spotlight.drawName(context, prevUser.toUpperCase(), side.other)
-        const bottleneck = Spotlight.drawPFP(context, prevAvatar, side.other)  // This smells !!!
-        try { Spotlight.drawDrawing(context, prevSlide.querySelector("canvas"), side.other) } catch { Spotlight.drawPrompt(context, prevSlide.querySelector(".balloon").textContent, side.other) }
-        try { Spotlight.drawDrawing(context,  keySlide.querySelector("canvas"), side.key  ) } catch { Spotlight.drawPrompt(context,  keySlide.querySelector(".balloon").textContent, side.key  ) }
-        Spotlight.drawTurnsCounter(context, Spotlight.keyIndex, Spotlight.turns - 1);
+        this.drawName(context, prevUser.toUpperCase(), side.other)
+        const bottleneck = this.drawPFP(context, prevAvatar, side.other)  // This smells !!!
+        try { this.drawDrawing(context, prevSlide.querySelector("canvas"), side.other) } catch { this.drawPrompt(context, prevSlide.querySelector(".balloon").textContent, side.other) }
+        try { this.drawDrawing(context,  keySlide.querySelector("canvas"), side.key  ) } catch { this.drawPrompt(context,  keySlide.querySelector(".balloon").textContent, side.key  ) }
+        this.drawTurnsCounter(context, this.keyIndex, this.turns - 1);
         // TODO being on a different tab causes image grabs to fail
     
-        // setTimeout(Spotlight.preview, 500, canvas.canvas) // Temporary
-        (() => { const b = bottleneck.onload; bottleneck.onload = () => { b(); Spotlight.compositedFrameDatas[Spotlight.keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data }})()  // This stinks to high heaven!
-        // setTimeout(function() { Spotlight.compositedFrameDatas[Spotlight.keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data }, 200) // TODO: Horrendously bad bodged solution to the pfp not yet being loaded
+        // setTimeout(this.preview, 500, canvas.canvas) // Temporary
+        (() => { const b = bottleneck.onload; bottleneck.onload = () => { b(); this.compositedFrameDatas[this.keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data }})()  // This stinks to high heaven!
+        // setTimeout(function() { this.compositedFrameDatas[this.keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data }, 200) // TODO: Horrendously bad bodged solution to the pfp not yet being loaded
         // prevAvatar
 
         // function indexOfPrevSlide(key) {
-        //     var i = Spotlight.fallback > 0 ? key - 1 : 0; 
+        //     var i = this.fallback > 0 ? key - 1 : 0; 
         //     /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
         //     while (i >= 0 && slides[i].querySelector(".empty") != null) { 
-        //         i -= Spotlight.fallback; 
-        //         Console.log(`Could not find prompt frame, falling back by ${Spotlight.fallback}`, 'Spotlight')
+        //         i -= this.fallback; 
+        //         Console.log(`Could not find prompt frame, falling back by ${this.fallback}`, 'Spotlight')
         //     }
         //     return i
         // }
@@ -1019,7 +1070,7 @@ const Spotlight = { // [S1]
         context.roundRect(startingx + 5, 208, 748, 414, [95]);
         context.fill();
     
-        Spotlight.drawText(context, prompt, (side == "L" ? 412 : 1204), 423, 60, 748, "M", "#180454");
+        this.drawText(context, prompt, (side == "L" ? 412 : 1204), 423, 60, 748, "M", "#180454");
     },
     drawTurnsCounter(context, elapsed, total) {
         // console.log(elapsed); console.log(total)
@@ -1128,18 +1179,18 @@ const Geom = {
 
     init(modules) {
         Socket.addMessageListener('flag', (data) => {
-            Geom.flags.ws = data
+            this.flags.ws = data
         })
 
-        const initializedFunctions = Geom.initGeomWIW()
-        Geom.setSendPause = initializedFunctions.pause
-        Geom.stopGeometrize = initializedFunctions.stop
-        Geom.updateLabel = initializedFunctions.label
+        const initializedFunctions = this.initGeomWIW()
+        this.setSendPause = initializedFunctions.pause
+        this.stopGeometrize = initializedFunctions.stop
+        this.updateLabel = initializedFunctions.label
     },
     mutation(oldPhase, newPhase) {
-        Geom.setSendPause(true)
+        this.setSendPause(true)
         if (newPhase != 'draw') { 
-            Geom.flags.mode = false; 
+            this.flags.mode = false; 
             return 
         }
         // if (oldPhase == 'start') {
@@ -1147,20 +1198,20 @@ const Geom = {
         // } else {
         //     Socket.post('clearStrokes')
         // }
-        Geom.flags.mode = true
-        Geom.geomPreview = setAttributes(document.createElementNS(svgNS, "svg"), { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424", parent: document.querySelector(".core") })
+        this.flags.mode = true
+        this.geomPreview = setAttributes(document.createElementNS(svgNS, "svg"), { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424", parent: document.querySelector(".core") })
     },
     backToLobby(oldPhase) {
-        Geom.flags.mode = false; 
-        if (oldPhase != 'start') { Geom.stopGeometrize() }
+        this.flags.mode = false; 
+        if (oldPhase != 'start') { this.stopGeometrize() }
     }, 
     adjustSettings(previous, current) { 
         // hide or show Geom window without stopping web worker (just like Koss)
         if (current == 'off') {
-            Geom.setSendPause(true)
-            Geom.geomWIW.setVisibility("hidden");
+            this.setSendPause(true)
+            this.geomWIW.setVisibility("hidden");
         } else {
-            Geom.geomWIW.setVisibility("visible");
+            this.geomWIW.setVisibility("visible");
         }
     },
     // updateLobbySettings(dict) {},
@@ -1226,35 +1277,35 @@ const Geom = {
             o.genLabel = setAttributes(document.createElement("label"),  { id: "geom-total", class: "geom-status", parent: o.genStack })
             o.genPauser = setAttributes(document.createElement("button"),  { class: "geom-border geom-tray-button hover-button", parent: o.genStack })
 
-            o.sendPauser.addEventListener("click", () => { o.setSendPause(!Geom.flags.pause) })
+            o.sendPauser.addEventListener("click", () => { o.setSendPause(!this.flags.pause) })
             o.sendPauser.style.backgroundImage = iconPlay;
             o.back.addEventListener("click", () => { stopGeometrize() }) // TODO put a semi-transparent negative space cancel icon instead of hover-button
-            o.genPauser.addEventListener("click", () => { o.setGenPause(Geom.flags.generate) })
+            o.genPauser.addEventListener("click", () => { o.setGenPause(this.flags.generate) })
             o.genPauser.style.backgroundImage = iconPause;
             o.genLabel.addEventListener("click", () => { o.setGeomConfigWindow(!configActive) })
 
-            o.updateLabel = function(which, newValue) {
+            o.updateLabel = (which, newValue) => {
                 if (which == 'total') { o.genLabel.textContent = newValue }
                 else if (which == 'sent') { o.sendLabel.textContent = newValue }
                 else if (which == 'both') { o.genLabel.textContent = newValue; o.sendLabel.textContent = newValue }
             }
-            o.setSendPause = function(pause) { 
+            o.setSendPause = (pause) => { 
                 Console.log("Send " + (pause ? 'paused' : 'play'), 'Geom')
-                if (!Geom.flags.mode) {  // TODO: This is kind of a bad place to put the mode check, in the middle of someone else's setter.
+                if (!this.flags.mode) {  // TODO: This is kind of a bad place to put the mode check, in the middle of someone else's setter.
                     o.sendPauser.style.backgroundImage = iconPlay
-                    Geom.flags.pause = true
+                    this.flags.pause = true
                     return
                 } 
                 o.sendPauser.style.backgroundImage = pause ? iconPlay : iconPause
-                Geom.flags.pause = pause
-                if (!pause) { Geom.trySend() }
+                this.flags.pause = pause
+                if (!pause) { this.trySend() }
             }
-            o.setGenPause = function(pause) {
+            o.setGenPause = (pause) => {
                 Console.log("Gen " + (pause ? 'paused' : 'play'), 'Geom')
                 o.genPauser.style.backgroundImage = pause ? iconPlay : iconPause
-                Geom.flags.generate = !pause
+                this.flags.generate = !pause
             }
-            o.setGeomConfigWindow = function(active) {
+            o.setGeomConfigWindow = (active) => {
                 configActive = active
                 geomScreen3 = geomScreen3 || constructScreen3()
                 geomScreen3.body.style.display = active ? 'flex' : 'none';
@@ -1276,27 +1327,27 @@ const Geom = {
             o.maxInput = setAttributes(document.createElement("input"), { class: "geom-3-input", parent: o.maxEntry  })
     
             o.distIcon.src = getResource("assets/module-assets/geom-3d.png")
-            o.distInput.value = Geom.config.distance
+            o.distInput.value = this.config.distance
             o.distInput.addEventListener("blur", () => { 
                 const newValue = +o.distInput.value
-                if (isNaN(newValue) || newValue < 1) { o.distInput.value = Geom.config.distance; return }
-                Geom.config.distance = newValue;
+                if (isNaN(newValue) || newValue < 1) { o.distInput.value = this.config.distance; return }
+                this.config.distance = newValue;
                 Console.log("Config dist set to " + newValue, 'Geom')
             })
             o.maxIcon.src = getResource("assets/module-assets/geom-3m.png")
-            o.maxInput.value = Geom.config.max
+            o.maxInput.value = this.config.max
             o.maxInput.addEventListener("blur", () => { 
                 const newValue = +o.maxInput.value
-                if (isNaN(newValue) || newValue < 1) { o.maxInput.value = Geom.config.max; return }
-                if (newValue < Geom.counters.created) { o.maxInput.value = Geom.counters.created; /* return; */}
-                Geom.config.max = newValue;
+                if (isNaN(newValue) || newValue < 1) { o.maxInput.value = this.config.max; return }
+                if (newValue < this.counters.created) { o.maxInput.value = this.counters.created; /* return; */}
+                this.config.max = newValue;
                 Console.log("Config max set to " + newValue, 'Geom')
             })
 
             return o;
         }
 
-        Geom.geomWIW = newWIW
+        this.geomWIW = newWIW
 
         return { 
             pause: (newState) => { if (geomScreen2) { geomScreen2.setSendPause(newState) } }, 
@@ -1313,7 +1364,7 @@ const Geom = {
             geomScreen3.body.style.display = 'none';
             // other stopping stuff
             geomScreen2.setSendPause(true) 
-            clearTimeout(Geom.stepCallback)
+            clearTimeout(this.stepCallback)
         }
         function startGeometrize(files) { // [G1]
             geomScreen2 = geomScreen2 || constructScreen2()
@@ -1325,14 +1376,14 @@ const Geom = {
 
             geomScreen2.setGenPause(false)
             geomScreen2.updateLabel('both', 0)
-            Geom.counters = { created:0, sent:0 }
-            Geom.shapeQueue = [];
-            Geom.flags.queue = false;
+            this.counters = { created:0, sent:0 }
+            this.shapeQueue = [];
+            this.flags.queue = false;
 
             const img = new Image();
             img.src = dataURL;
             img.onload = function() {
-                Geom.geometrize(img)
+                this.geometrize(img)
             };
         }
     },
@@ -1344,7 +1395,7 @@ const Geom = {
         context.drawImage(img, resizedDimensions.margin.x / 2, resizedDimensions.margin.y / 2, resizedDimensions.x, resizedDimensions.y);
         const imgdata = context.getImageData(0, 0, 758, 424)
 
-        Geom.queryGW("set", { width: 758, height: 424, data: imgdata.data }).then((response) => {
+        this.queryGW("set", { width: 758, height: 424, data: imgdata.data }).then((response) => {
             if (response.status != 200) { Console.log("Could not recognise imagedata", 'Geom'); return; }
             Console.log("Image processed successfully. Beginning Geometrize", 'Geom');
             step()
@@ -1390,15 +1441,15 @@ const Geom = {
         //     }
         // }
         async function step() {
-            if (!Geom.flags.generate || Geom.counters.created >= Geom.config.max || Geom.counters.created - Geom.counters.sent >= Geom.config.distance) { 
-                await Geom.queryGW(2)
-                Geom.stepCallback = setTimeout(step, 250); 
+            if (!this.flags.generate || this.counters.created >= this.config.max || this.counters.created - this.counters.sent >= this.config.distance) { 
+                await this.queryGW(2)
+                this.stepCallback = setTimeout(step, 250); 
                 return 
             }
-            const shape = await Geom.queryGW("step")
+            const shape = await this.queryGW("step")
             if (shape === undefined) { Console.alert("Mysterious error, no shape was produced; terminating", 'Geom'); return }     
             Console.log(shape, 'Worker')       
-            Geom.queueShape(shape)
+            this.queueShape(shape)
             step() 
         }
     },
@@ -1406,12 +1457,12 @@ const Geom = {
     stopGeometrize() {},                // Dynamically initialized
     updateLabel(which, newValue) {},    // Dynamically initialized
     queueShape(shape) {
-        Geom.counters.created += 1
-        Geom.shapeQueue.push(shape)
-        Geom.flags.queue = true
-        Geom.updateLabel('total', Geom.counters.created)
+        this.counters.created += 1
+        this.shapeQueue.push(shape)
+        this.flags.queue = true
+        this.updateLabel('total', this.counters.created)
       
-        setTimeout(Geom.trySend, 0) // Maybe an overcomplication
+        setTimeout(() => { this.trySend() }, 0) // Maybe an overcomplication
     },
     trySend() {
         function gartic_format(shape) {
@@ -1460,21 +1511,21 @@ const Geom = {
             return setAttributes(document.createElementNS(svgNS, type), { ...coords, fill: color, "fill-opacity": "0.5" })
         }
 
-        // console.log(Geom.flags)
+        // console.log(this.flags)
 
-        if(Geom.flags.notClearToSend()) { return }
-        Geom.flags.interval = false
-        setTimeout(() => { Geom.flags.interval = true; Geom.trySend() }, 125)
+        if(this.flags.notClearToSend()) { return }
+        this.flags.interval = false
+        setTimeout(() => { this.flags.interval = true; this.trySend() }, 125)
         
-        const shape = Geom.shapeQueue.shift()
-        if(Geom.shapeQueue.length == 0) { Geom.flags.queue = false }
+        const shape = this.shapeQueue.shift()
+        if(this.shapeQueue.length == 0) { this.flags.queue = false }
         const packet = gartic_format(shape)
         const svg = svg_format(shape)
         
         Socket.post('sendGeomShape', packet)
-        Geom.counters.sent += 1
-        Geom.geomPreview.appendChild(svg)
-        Geom.updateLabel('sent', Geom.counters.sent)
+        this.counters.sent += 1
+        this.geomPreview.appendChild(svg)
+        this.updateLabel('sent', this.counters.sent)
     },
     async queryGW(purpose, data=undefined) {
         const message = (data === undefined) ? { function: purpose } : { function: purpose, data: data } 
@@ -1498,8 +1549,8 @@ const Triangle = { // [F2]
     name : "Triangle",          // All modules have a name property
     setting : new SettingsBelt(['isoceles','3point'],),    // All modules have a SettingsBelt
     // keybinds : [
-    //     new Keybind((e) => e.code == "T" , (e) => { Triangle.beginDrawingFullTriangle() }),
-    //     new Keybind((e) => e.code == "K" , (e) => { Triangle.beginDrawingFrameTriangle() }),
+    //     new Keybind((e) => e.code == "T" , (e) => { this.beginDrawingFullTriangle() }),
+    //     new Keybind((e) => e.code == "K" , (e) => { this.beginDrawingFrameTriangle() }),
     //             ],
     // previewCanvas : undefined, 
 
@@ -1554,11 +1605,11 @@ const Reveal = {
 
     // init(modules) {}, // Empty.
     mutation(oldPhase, newPhase) {
-        if (Reveal.setting.current() == "OFF") { return; }
+        if (this.isSetTo("OFF")) { return; }
         if (newPhase == "write" || newPhase == "first") {
-            Reveal.revealPrompt()
-        } else if (Reveal.setting.current() == "ALL" && newPhase == "draw") {
-            Reveal.revealDrawing()
+            this.revealPrompt()
+        } else if (this.itSetTo("ALL") && newPhase == "draw") {
+            this.revealDrawing()
         }
     },
     /*
@@ -1571,27 +1622,28 @@ const Reveal = {
     // These functions receive messages from the in-window menu
     adjustSettings(previous, current) {
         switch (current) {
-            case "OFF": Reveal.rehide(); break;
-            case "TEXT": Reveal.revealPrompt(); break;
-            case "ALL": Reveal.revealDrawing(); break;
+            case "OFF": this.rehide(); break;
+            case "TEXT": this.revealPrompt(); break;
+            case "ALL": this.revealDrawing(); break;
         }
     },
     // updateLobbySettings(dict) {},
 
     revealPrompt() {
-        Reveal.hiddenElements = document.querySelector(".center").querySelectorAll(".hiddenMode")
-        Reveal.hiddenElements.forEach(n => n.style.cssText = "font-family:Bold; -webkit-text-security: none")
+        // TODO: Can't I use an enable/disable CSS or CSS variable thing instead?
+        this.hiddenElements = document.querySelector(".center").querySelectorAll(".hiddenMode")
+        this.hiddenElements.forEach(n => n.style.cssText = "font-family:Bold; -webkit-text-security: none")
     },
     revealDrawing() {
-        Reveal.hiddenCanvases = document.querySelector(".drawingContainer").querySelectorAll("canvas");
-        Reveal.hiddenCanvases[1].addEventListener("mouseup", e => {
-            const newwiw =Inwindow.new(true, true);
-            setAttributes(new Image(), { class: "wiw-img", parent: newwiw.body, src: Reveal.hiddenCanvases[0].toDataURL() })
-        })
+        // this.hiddenCanvases = document.querySelector(".drawingContainer").querySelectorAll("canvas");
+        // this.hiddenCanvases[1].addEventListener("mouseup", () => {
+        //     const newwiw = Inwindow.new(true, true);
+        //     setAttributes(new Image(), { class: "wiw-img", parent: newwiw.body, src: this.hiddenCanvases[0].toDataURL() })
+        // })
         // [V3]
     },
     rehide() {
-        Reveal.hiddenElements.forEach(n => n.style.cssText = "");
+        this.hiddenElements.forEach(n => n.style.cssText = "");
         // [V3]
     }
 
@@ -1613,7 +1665,7 @@ const Scry = { // [F2]
     setting : new SettingsBelt(['off','windowed','sleek'], 2),    // All modules have a SettingsBelt
     keybinds : [
         // This keybind turns off when Scry does, because maybe people use tab as part of their drawing workflow.
-        new Keybind((e) => Scry.setting.current() != 'off' && e.code == "Tab" , (e) => { console.log("tab"); preventDefaults(e) })
+        new Keybind((e) => { return Scry.setting.current != 'off' && e.code == "Tab" }, (e) => { console.log("tab"); preventDefaults(e); /*this.show something or other*/ })
     ],
 
     activeIndices: new Set(),
@@ -1626,13 +1678,13 @@ const Scry = { // [F2]
     // To be overridden by each module.
     mutation(oldPhase, newPhase) {
         if (oldPhase != 'lobby') { return }
-        Scry.prune()
+        this.prune()
     },
 
     // This function "cleans the slate" when a game ends. 
     // To be overridden by each module.
     backToLobby(oldPhase) {
-        Scry.prune()
+        this.prune()
     }, 
 
     // This function makes required changes when switching between settings. 
@@ -1643,34 +1695,34 @@ const Scry = { // [F2]
     // depending on the needs of the module.
     // To be overridden by each module that requires more than marginal state knowledge.
     updateLobbySettings(dict) {
-        switch (type) {
-            case 2: {       // new player joins            42[2,2,{"id":3,"nick":"CoolNickname4534","avatar":21,"owner":false,"viewer":false,"points":0,"change":0,"alert":false},false]
-                // const d = Scry.trim(data)
-                Scry.playerDict[data.id] = Scry.trim(data)
-                Scry.activeIndices.add(data.id)
-                break;  
-            }
-            case 3: {       // player leaves               42[2,3,{"userLeft":2,"newOwner":null},false]
-                Scry.activeIndices.remove(data.userLeft)
-                break;
-            }
-            case 15: {
-                console.log(data);
-                console.log(Scry.playerDict[data.user])
-                console.log(data.ready)
-                break;
-            }
-            case 21: {      // player leaves               42[2,21,{"userLeft":3,"newOwner":null}]
-                Scry.activeIndices.remove(data.userLeft)
-                break;
-            }
-            case 22: {      // player rejoins / reconnects 42[2,22,3] 
-                Scry.activeIndices.add(data)
-                break;  
-            }
-            // (TODO: study the way the ids are shuffled/reassigned at start of new turn. It seems like they completely aren't. Memory leak possible?)
-            // (i think) there is a memory leak in gartic involving the lack of reassignment of user IDs when people leave, meaning that if you start a lobby and a total of 9 quadrillion people join and leave, things might start going wrong
-        }
+        // switch (type) {
+        //     case 2: {       // new player joins            42[2,2,{"id":3,"nick":"CoolNickname4534","avatar":21,"owner":false,"viewer":false,"points":0,"change":0,"alert":false},false]
+        //         // const d = this.trim(data)
+        //         this.playerDict[data.id] = this.trim(data)
+        //         this.activeIndices.add(data.id)
+        //         break;  
+        //     }
+        //     case 3: {       // player leaves               42[2,3,{"userLeft":2,"newOwner":null},false]
+        //         this.activeIndices.remove(data.userLeft)
+        //         break;
+        //     }
+        //     case 15: {
+        //         console.log(data);
+        //         console.log(this.playerDict[data.user])
+        //         console.log(data.ready)
+        //         break;
+        //     }
+        //     case 21: {      // player leaves               42[2,21,{"userLeft":3,"newOwner":null}]
+        //         this.activeIndices.remove(data.userLeft)
+        //         break;
+        //     }
+        //     case 22: {      // player rejoins / reconnects 42[2,22,3] 
+        //         this.activeIndices.add(data)
+        //         break;  
+        //     }
+        //     // (TODO: study the way the ids are shuffled/reassigned at start of new turn. It seems like they completely aren't. Memory leak possible?)
+        //     // (i think) there is a memory leak in gartic involving the lack of reassignment of user IDs when people leave, meaning that if you start a lobby and a total of 9 quadrillion people join and leave, things might start going wrong
+        // }
     },
 
     trim(dict) {
@@ -1680,9 +1732,9 @@ const Scry = { // [F2]
         d.avatar = dict.avatar
     },
     prune() {
-        for (const key of Object.keys(Scry.playerDict)) {
-            if (!Scry.activeIndices.includes(key)) {
-                delete Scry.playerDict.key
+        for (const key of Object.keys(this.playerDict)) {
+            if (!this.activeIndices.includes(key)) {
+                delete this.playerDict.key
             }
         }
     },

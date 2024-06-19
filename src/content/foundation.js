@@ -526,9 +526,10 @@ class SettingsBelt { // derived from Circulator, derived from Iterator, trimmed
         this.index = defaultIndex || 0
         this.extension = extension
     }
-    current() { return this.items[this.index] }  // TODO: change this to get syntax
-    next() { this.index = (this.index + 1              ) % this.length; return this.current()}
-    prev() { this.index = (this.index + this.length - 1) % this.length; return this.current()} // Unused
+    get current() { return this.items[this.index] }  // TODO: change this to get syntax
+    isSetTo(thing) { return this.current == thing }
+    next() { this.index = (this.index + 1              ) % this.length; return this.current}
+    prev() { this.index = (this.index + this.length - 1) % this.length; return this.current} // Unused
 
     extend() {
         if (!this.extension) { return } 
@@ -540,6 +541,9 @@ class SettingsBelt { // derived from Circulator, derived from Iterator, trimmed
         this.length -= 1
         this.items.slice(0, this.length - 1)
         if (this.index == this.length) { this.index = this.length - 1 }
+    }
+    jump(setting) {
+        while (this.current != setting) { this.next() }
     }
 }
 class WhiteSettingsBelt extends SettingsBelt {

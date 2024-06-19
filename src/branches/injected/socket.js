@@ -226,3 +226,5 @@ if (typeof exports !== 'undefined') {
 //     // text = text.replace(/\(\(function\(\){if\(!\w{1,}\.disabled\)/, `((function(){;window.setData = ${setDataVar}.setData;if(!${setDataVar}.disabled)`)
 //     return text.replace('e.hidden','false').replace('f.hidden','false')
 //   }
+
+// console.log(chrome.storage.local.get())

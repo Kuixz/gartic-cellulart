@@ -65,7 +65,7 @@ const Controller = {
         }
         function createModuleButton(mod, green) {
             createButton(
-                mod.name.toLowerCase() + "_" + mod.setting.current(),
+                mod.name.toLowerCase() + "_" + mod.setting.current,
                 function() { return mod.name.toLowerCase() + "_" + mod.menuStep() },
                 mod.isCheat && green
             )
@@ -215,7 +215,7 @@ const Observer = {
         Controller.mutation(oldPhase, newPhase)
     },
     backToLobby(oldPhase) {
-        // Observer.nextObserver.observe(document.querySelector("#__next"), configChildTrunk); 
+        Observer.nextObserver.observe(document.querySelector("#__next"), configChildTrunk); 
         Controller.backToLobby(oldPhase) 
     },
 
@@ -227,13 +227,13 @@ const Observer = {
     // adjustSettings(data) {
     // },
 
-    // nextObserver: new MutationObserver((records) => {     
-    //     // todo: add a button to manually reattach the lobby observer in popup, if I try to disconnect the observer early.
+    nextObserver: new MutationObserver((records) => {     
+        // todo: add a button to manually reattach the lobby observer in popup, if I try to disconnect the observer early.
 
-    //     // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
-    //     if(records[0].addedNodes.length <= 0) { return; }
-    //     Observer.deduceSettingsFromDocument()
-    // }),
+        // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
+        if(records[0].addedNodes.length <= 0) { return; }
+        Observer.deduceSettingsFromDocument()
+    }),
     contentObserver: new MutationObserver((records) => {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
@@ -255,7 +255,7 @@ const Observer = {
 
 
     // Due to possible instability, I have judged that "perfect" settings tracking is infeasible.
-    // Thus, the below two functions will primarily find use under Scry and Spotlight.
+    // Thus, the below two functions will primarily find use under Timer/Spotlight (precise reconnect), Scry (functionality), and Socket (stroke erasure).
     deduceSettingsFromXHR(data) {
         // Console.log(data, 'Observer')
 
@@ -267,12 +267,12 @@ const Observer = {
         // }
         // Controller.updateLobbySettings(1, data)
         // Controller.updateLobbySettings(data[0], data[1])
-        const configs = data.configs
-        Controller.updateLobbySettings({
-            "custom": [Converter.timeIndexToString(configs.speed), Converter.flowIndexToString(configs.first), Converter.turnsIndexToString(configs.turns)],
-            "self": data.user,
-            "usersIn": data.users
-        })
+        // const configs = data.configs
+        // Controller.updateLobbySettings({
+        //     "custom": [Converter.timeIndexToString(configs.speed), Converter.flowIndexToString(configs.first), Converter.turnsIndexToString(configs.turns)],
+        //     "self": data.user,
+        //     "usersIn": data.users
+        // })
     },
     deduceSettingsFromSocket(data) {
         // console.log(data)
@@ -293,8 +293,9 @@ const Observer = {
     deduceSettingsFromDocument() {
         // TODO: move as much of this as possible to Converter / Timer.
 
-        const left = document.querySelector(".left")
-        const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
+        // console.log("deduce")
+        // const left = document.querySelector(".left")
+        // const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
         
         try {
             // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
@@ -343,6 +344,21 @@ document.readyState === 'complete' ? main() : window.addEventListener('load', ()
 // function sandbox() {
 // 
 // }
+window.addEventListener('beforeunload', () => {
+    // get states (including transient states) of all modules + 
+    // shelve them
+
+    // on load:
+    // retrieve states
+    // pass transience i.e. if backToLobby-ness along with aggregated state data to modules
+    // so they can pick out their data
+
+
+    // OR load:
+    // tell all modules to retrieve states
+    // on first transition:
+    // if transient i.e. if not backToLobby, tell all modules to retrieve transient states
+})
 
 if (typeof exports !== 'undefined') {
     module.exports = { Controller, Observer };
