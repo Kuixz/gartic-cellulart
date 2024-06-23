@@ -5,6 +5,14 @@
   * Please send any concerns, errors, reviews, and feedback to Quixz#0033 
   *    And please don't stare like that!! It's embarrassing (,,>﹏<,,) 
   * ---------------------------------------------------------------------- */ 
+const globalState = {
+    user : '',
+    players : 0,
+    turns : 0,
+    flow : '',
+    speed : '',
+}
+
 const Controller = { 
     
     menu: null, // [C1]
@@ -268,11 +276,11 @@ const Observer = {
         // Controller.updateLobbySettings(1, data)
         // Controller.updateLobbySettings(data[0], data[1])
         // const configs = data.configs
-        // Controller.updateLobbySettings({
-        //     "custom": [Converter.timeIndexToString(configs.speed), Converter.flowIndexToString(configs.first), Converter.turnsIndexToString(configs.turns)],
-        //     "self": data.user,
-        //     "usersIn": data.users
-        // })
+        Controller.updateLobbySettings({
+            "custom": [Converter.timeIndexToString(configs.speed), Converter.flowIndexToString(configs.first), Converter.turnsIndexToString(configs.turns)],
+            "self": data.user,
+            "usersIn": data.users
+        })
     },
     deduceSettingsFromSocket(data) {
         // console.log(data)

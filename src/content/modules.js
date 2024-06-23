@@ -31,11 +31,6 @@ const CellulartModule = { // [F2]
     // To be overridden by each (controllable) module.
     adjustSettings(previous, current) {},
 
-    // This function should set internal states based on the game config
-    // depending on the needs of the module.
-    // To be overridden by each module that requires more than marginal state knowledge.
-    updateLobbySettings(dict) {},
-
     // These three functions handle the retrieval of settings between sessions.
     // Long term storage: recurrent
     // Short term storage: transient
@@ -80,7 +75,8 @@ const CellulartModule = { // [F2]
     // }
 
     // Syntactic getter for the setting. Generally shared between modules.
-    isSetTo(thing) { return this.setting.isSetTo(thing) },
+    isSetTo(thing) { return this.setting.current == thing }, // TODO: bad coupling
+    // isSetTo(thing) { return this.setting.isSetTo(thing) },
 
     // These functions receive messages from the in-window menu and are generally shared between modules.
     menuStep() { const c = this.setting.current; const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this.name); return n },
@@ -106,7 +102,7 @@ const Debug = {
     debugWIW : undefined,
 
     init(modules) {
-        const debugWIW =Inwindow.new(false, false, 0.2)
+        const debugWIW = Inwindow.new(false, false, 0.2)
         const body = setAttributes(debugWIW.body, { id:"debug-body" });
         const iconSelect = setAttributes(document.createElement("div"), { id: 'debug-header', parent: body })
 
@@ -281,9 +277,11 @@ const Timer = {
 
         const timerHolder = setAttributes(document.createElement("div"), { id: "timerHolder", parent: holder })
 
-        this.display = setAttributes(document.createElement("div"), { id: "timer", style: "visibility:" + this.isSetTo('off') ? "hidden" : "visible", parent: timerHolder })
+        // console.log(this.setting.current)
+        // console.log(this.isSetTo('off'))
+        this.display = setAttributes(document.createElement("div"), { id: "timer", style: `visibility:${this.isSetTo('off') ? "hidden" : "visible"}`, parent: timerHolder })
 
-        const p = clock.querySelector('p'); if (p) { p.remove() }
+        const p = clock.querySelector('p'); if (p) { p.style.visibility = "hidden" }
     },
     restartTimer(newPhase) {
         const clock = document.querySelector(".time")
@@ -482,13 +480,16 @@ const Refdrop = { // [R1]
     },
     mutation(oldPhase, newPhase) {
         // Recover the ref controls from the lower corners so that we don't lose track of them.
-        document.body.appendChild(this.refUpload);
-        document.body.appendChild(this.refCtrl)
+        // document.body.appendChild(this.refUpload);
+        // document.body.appendChild(this.refCtrl)
         // Recover the refimg from the overlay position so that we don't lose track of it.
-        this.refUpload.appendChild(this.refImage);
+        // this.refUpload.appendChild(this.refImage);
         this.refImage.style.visibility = "hidden";
     
-        if (newPhase == "draw") {
+        // console.log(this.setting.current)
+        // console.log(this.isSetTo('off'))
+
+        if (newPhase == "draw" && !(this.isSetTo('off'))) {
             setTimeout(() => { this.placeRefdropControls() }, 200)
         } else {
             this.refUpload.style.display = "none";
@@ -527,42 +528,42 @@ const Refdrop = { // [R1]
         const refBridge = setAttributes(document.createElement("input"), { class: "upload-bridge", type: "file", parent: refForm });
         this.refSocket = setAttributes(document.createElement("div"),   { class: "ref-border upload-socket hover-button", style: "background-image:url(" + getResource("assets/module-assets/ref-ul.png") + ")", parent: refForm });
 
-        window.addEventListener("dragenter", function(e){
+        window.addEventListener("dragenter", (e) => {
             // Console.log("dragenter", Refdrop)
             // Console.log(e.relatedTarget, Refdrop)
-            this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")"; 
+            Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")"; 
         })
-        window.addEventListener("dragleave", function(e){
+        window.addEventListener("dragleave", (e) => {
             // Console.log("dragleave", Refdrop)
             // Console.log(e.relatedTarget, Refdrop)
             if (e.fromElement || e.relatedTarget !== null) { return }
             Console.log("Dragging back to OS", 'Refdrop')
-            if (this.isSetTo('red')) { this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
+            if (Refdrop.isSetTo('red')) { Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
         })
-        window.addEventListener("drop", function(e){
+        window.addEventListener("drop", (e) => {
             Console.log("drop", 'Refdrop')
-            if (this.isSetTo('red')) { this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
+            if (Refdrop.isSetTo('red')) { Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
         }, true)
-        window.addEventListener("dragover", function(e){
+        window.addEventListener("dragover", (e) => {
             e.preventDefault()
         })
-        this.refSocket.addEventListener("dragenter", function(e) {
+        Refdrop.refSocket.addEventListener("dragenter", (e) => {
             preventDefaults(e)
-            this.refSocket.classList.add('highlight')
+            Refdrop.refSocket.classList.add('highlight')
         }, false)
         ;['dragleave', 'drop'].forEach(eventName => {
-            this.refSocket.addEventListener(eventName, function(e) {
+            Refdrop.refSocket.addEventListener(eventName, (e) => {
                 preventDefaults(e)
-                this.refSocket.classList.remove('highlight')
+                Refdrop.refSocket.classList.remove('highlight')
             }, false)
         })
-        this.refSocket.addEventListener("click", function() {
-            this.onSocketClick();
+        Refdrop.refSocket.addEventListener("click", function() {
+            Refdrop.onSocketClick();
         })
         refBridge.addEventListener("change", () => { handleFiles(refBridge.files) })
-        this.refSocket.addEventListener('drop', handleDrop, false)
+        Refdrop.refSocket.addEventListener('drop', handleDrop, false)
 
-        this.refUpload.style.visibility = "hidden";
+        Refdrop.refUpload.style.visibility = "hidden";
 
         return { clickBridge: () => { refBridge.click() }, screenshot: () => screenshot() };
 
@@ -575,15 +576,16 @@ const Refdrop = { // [R1]
         function handleFiles(files) {
             document.querySelector(".core").classList.remove("watermark")
     
-            switch (this.setting.current) {
+            console.log(this)
+            switch (Refdrop.setting.current) {
                 case 'on':
-                    this.newRefimgWIW(files.item(0));
+                    Refdrop.newRefimgWIW(files.item(0));
                     break;
                 case 'red':
-                    this.refImage.style.visibility = "visible";
-                    this.refImage.src = URL.createObjectURL(files.item(0))
+                    Refdrop.refImage.style.visibility = "visible";
+                    Refdrop.refImage.src = URL.createObjectURL(files.item(0))
     
-                    document.querySelector(".core").insertAdjacentElement("afterbegin", this.refImage);
+                    document.querySelector(".core").insertAdjacentElement("afterbegin", Refdrop.refImage);
                     break;
                 default:
                     Console.alert("Intended refimg location not recognised", 'Refdrop')
@@ -591,9 +593,9 @@ const Refdrop = { // [R1]
             } 
         }    
         function screenshot() {
-            this.refImage.src = document.querySelector(".core").querySelector("canvas").toDataURL();
-            document.querySelector(".core").insertAdjacentElement("afterbegin", this.refImage);
-            this.refImage.style.visibility = "visible";
+            Refdrop.refImage.src = document.querySelector(".core").querySelector("canvas").toDataURL();
+            document.querySelector(".core").insertAdjacentElement("afterbegin", Refdrop.refImage);
+            Refdrop.refImage.style.visibility = "visible";
             Console.log("Screenshot taken", 'Refdrop')
         }
     },
@@ -701,7 +703,8 @@ const Refdrop = { // [R1]
         this.refUpload.style.display = "initial";
         this.refCtrl.style.display = "initial";
         
-        this.refUpload.style.visibility = "visible";
+
+        if (!(this.isSetTo('off'))) { this.refUpload.style.visibility = "visible" }
         if (this.isSetTo('red')) { this.refCtrl.style.visibility = "visible" }
         //Debug.log(Refdrop, "Refdrop placed")
     }, // [R5]
@@ -882,7 +885,7 @@ const Spotlight = { // [S1]
             anchor.click();
         }
 
-        const dlnode =Inwindow.new(true, true)
+        const dlnode = Inwindow.new(true, true)
         const dlicon = setAttributes(new Image(), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/spotlight-on.png") })
         dlicon.onclick = function() {
             download(buffer, filename, { type: 'image/gif' });
@@ -1217,7 +1220,7 @@ const Geom = {
     // updateLobbySettings(dict) {},
 
     initGeomWIW() { // [G8]
-        const newWIW =Inwindow.new(false, false, 1)
+        const newWIW = Inwindow.new(false, false, 1)
         setAttributes(newWIW.element, { "id":"geom-wiw" })
         const body = newWIW.body
 
@@ -1234,13 +1237,13 @@ const Geom = {
             o.socket = setAttributes(document.createElement("div"),   { id: "geom-socket", class: "geom-border upload-socket hover-button", style: "background-image:url(" + getResource("assets/module-assets/geom-ul.png") + ")", parent: o.form })
             
             ;['dragenter'].forEach(eventName => {
-                o.socket.addEventListener(eventName, function(e) {
+                o.socket.addEventListener(eventName, (e) => {
                     preventDefaults(e)
                     o.socket.classList.add('highlight')
                 }, false)
             })
             ;['dragleave', 'drop'].forEach(eventName => {
-                o.socket.addEventListener(eventName, function(e) {
+                o.socket.addEventListener(eventName, (e) => {
                     preventDefaults(e)
                     o.socket.classList.remove('highlight')
                 }, false)

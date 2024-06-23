@@ -10,9 +10,9 @@
     },
     "scripts": {
         "preinstall": "npx only-allow pnpm",
-        "test": "vitest",
+        "test": "node_modules/vitest/vitest.mjs",
         "jest": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-        "unit": "npm run test -t"
+        "unit": "npm run jest -t"
     },
     "babel": {
         "presets": [

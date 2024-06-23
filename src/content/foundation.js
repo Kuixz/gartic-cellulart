@@ -302,6 +302,8 @@ const SHAuth = {
         return SHAuth.validate(hashString)
     }
 }
+
+// Branches
 const Socket = {
     name: 'Socket',
     handlers: [{ filter:'log', handle:(data) => { Console.log(data, 'Socket') }}],
@@ -311,7 +313,7 @@ const Socket = {
             if (event.source !== window || event.data.direction !== 'fromSocket') { return; }
             const purp = event.data.purpose
             const data = event.data.data
-            Console.log(`incoming (${purp}, ${data})`, 'Socket')
+            Console.log(`incoming (${purp}, ${JSON.stringify(data)})`, 'Socket')
             Socket.handle(purp, data)
             // Socket.handlers.forEach(handler => { 
             //     if (handler.filter == purp) { handler.handle(data) }
@@ -348,7 +350,7 @@ const Xhr = {
             if (event.source !== window || event.data.direction !== 'fromXHR') { return; }
             const purp = event.data.purpose
             const data = event.data.data
-            Console.log(`incoming (${purp}, ${data})`, 'XHR')
+            Console.log(`incoming (${purp}, ${JSON.stringify(data)})`, 'XHR')
             Xhr.handle(purp, data)
             // Xhr.handlers.forEach(handler => { 
             //     if (handler.filter == purp) { handler.handle(data) }
@@ -373,6 +375,25 @@ const Xhr = {
         Xhr.handlers.push({ filter:purp, handle:handler });
     }
 }
+// const Worker = {
+//     name: "Worker",
+
+//     keepAliveCallback: null,
+
+//     setKeepAlive(alive = true) {
+//         if (alive) {
+//             Worker.keepAliveCallback = setInterval(() => Worker.messageToWorker(2), 250)
+//         } else {
+//             if (Worker.keepAliveCallback) { clearInterval(Worker.keepAliveCallback); Worker.keepAliveCallback = null }
+//         }
+//     },
+//     async messageToWorker(purpose, data=undefined) {
+//         const message = (data === undefined) ? { function: purpose } : { function: purpose, data: data } 
+//         const response = await chrome.runtime.sendMessage(message);
+//         Console.log(response, 'Worker') 
+//         return response
+//     },
+// }
 
 // Utility functions
 const clamp = (min, n, max) => Math.min(Math.max(min, n), max)
@@ -403,16 +424,18 @@ const configChildTrunk = { childList: true };
 
 
 // Global variables
-// const game = {
-    // user: "Joyce Moore", // used by Spotlight
-    // turns: 0,            // used by Timer and Spotlight
+const game = {
+    user: "Joyce Moore", // used by Spotlight
+    turns: 0,            // used by Timer and Spotlight
     // The NORMAL settings follow
+    // flow: 'WRITING, DRAWING',
+
     // write: 40,             // used by Timer
     // draw: 150,             // used by Timer
     // decay: () => 0,                                          // used by Timer
     // firstMultiplier: 1.25, // used by Timer
     // fallback: 2            // used by Spotlight
-// }
+}
 const Converter = {
     // user: 'Joyce Moore',
     // turns: 0,
@@ -527,7 +550,7 @@ class SettingsBelt { // derived from Circulator, derived from Iterator, trimmed
         this.extension = extension
     }
     get current() { return this.items[this.index] }  // TODO: change this to get syntax
-    isSetTo(thing) { return this.current == thing }
+    // isSetTo(thing) { return this.current == thing }
     next() { this.index = (this.index + 1              ) % this.length; return this.current}
     prev() { this.index = (this.index + this.length - 1) % this.length; return this.current} // Unused
 
@@ -564,6 +587,22 @@ class Keybind {
         this.response = response;
     }
 }
+// class Throttle {
+//     semaphores = {}
+
+//     constructor(semaphores) {
+//         this.semaphores = semaphores
+//     }
+//     up (semaphore) {
+//         this.semaphores[semaphore] = true
+//     }
+//     down (semaphore) {
+//         this.semaphores[semaphore] = false
+//     }
+//     async get () {
+//         
+//     }
+// }
 
 
 // module.exports = { this.wdinwos }

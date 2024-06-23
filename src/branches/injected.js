@@ -468,8 +468,11 @@ const Xhr = {
             // console.log('succ')
         }
 
-        const modifiedText = text // && text.replace('"visible":1', '"visible":2');
-        return modifiedText
+        return text
+        // return text.replace('"visible":1', '"visible":2')
+        // const modifiedText = text && text.replace('"visible":1', '"visible":2');
+        // // const modifiedText = text // && text.replace('"visible":1', '"visible":2');
+        // return modifiedText
     },
     post(purpose, data) {
         window.postMessage({
