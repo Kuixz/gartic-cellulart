@@ -785,7 +785,7 @@ const Spotlight = { // [S1]
             ? this.compositedFrameDatas = new Array(game.turns - 1) 
             : this.compositedFrameDatas = {}
         Console.log(this.compositedFrameDatas)
-        // this.attachBookObserver();
+        this.attachBookObserver();
     },
     backToLobby(oldPhase) {
         if (oldPhase != 'book') { return }
@@ -872,7 +872,10 @@ const Spotlight = { // [S1]
             index += 1;*/
             const data = this.compositedFrameDatas[index];
             index += 1
-            if (!data) { continue }
+            if (!data) { 
+                Console.log("No data in this index", 'Spotlight')
+                continue 
+            }
             const format = "rgb444";
             const palette = gifenc.quantize(data, 256, { format });
             const indexed = gifenc.applyPalette(data, palette, format);
@@ -897,54 +900,65 @@ const Spotlight = { // [S1]
         }
 
         const dlnode = Inwindow.new(true, true)
-        const dlicon = setAttributes(new Image(), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/spotlight-on.png") })
+        const dlicon = setAttributes(new Image(), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/spotlight_on.png") })
         dlicon.onclick = function() {
             download(buffer, filename, { type: 'image/gif' });
-            dlnode.remove();
+            dlnode.element.remove();  // todo: Memory leak?
         }
         dlnode.body.appendChild(dlicon)
         document.body.appendChild(dlnode.element)
     },
     // These four determine when things should fire.
-    // attachBookObserver() { // [S2]
-    //     var frame = document.querySelector(".timeline")//.previousSibling//.parentElement;
-    //     if (!frame) {
-    //         setTimeout(this.attachBookObserver, 500);
-    //         return
-    //     }
-    //     this.bookObserver.observe(frame, configChildTrunk);// { characterData: true });
-    // },
-    // bookObserver : new MutationObserver(() => {
-    //     // console.log("timline obse fired; attaching book obse"); 
-    //     this.attachTimelineObserver(); 
-    //     this.bookObserver.disconnect();
-    // }),
-    // attachTimelineObserver() {
-    //     var frame = document.querySelector(".timeline").childNodes[0].childNodes[0];
-    //     if (!frame) {
-    //         setTimeout(this.attachTimelineObserver, 500);
-    //         return
-    //     }
-    //     this.timelineObserver.observe(frame, configChildTrunk);
-    // },
-    // timelineObserver : new MutationObserver((records) => { // Catch errors when the NEXT button shows up / the next round begins to load
-    //     // console.log("book obse fired")
-    //     if (records[0].removedNodes.length > 0) {
-    //         // console.log("New timeline entered; resetting slideNums")
-    //         this.slideNum = -1;
-    //         this.keySlideNum = -2;
-    //         return;
-    //     }
-    //     // what if an EMPTY response? Sometimes backtrack two steps, sometimes one. Hence modeParameters now has fallback values.
-    //     this.slideNum += 1
-    //     const currentSlide = records[0].addedNodes[0];
-    //     if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == this.username) {
-    //         this.keySlideNum = this.slideNum
-    //     } else if (this.slideNum == this.turns) {//currentSlide.querySelector(".download") != null) {
-    //         // console.log("Stepped over. Compositing response")
-    //         this.compositeResponseFrame()
-    //     }
-    // }),
+    attachBookObserver() { // [S2]
+        var frame = document.querySelector(".timeline")//.previousSibling//.parentElement;
+        if (!frame) {
+            setTimeout(Spotlight.attachBookObserver, 500);
+            return
+        }
+        Spotlight.bookObserver.observe(frame, configChildTrunk);// { characterData: true });
+    },
+    bookObserver : new MutationObserver((records) => {
+        console.log("timline obse fired; attaching book obse"); 
+        Spotlight.attachTimelineObserver(); 
+        Spotlight.bookObserver.disconnect();
+    }),
+    attachTimelineObserver() {
+        var frame = document.querySelector(".timeline").childNodes[0].childNodes[0];
+        if (!frame) {
+            setTimeout(Spotlight.attachTimelineObserver, 500);
+            return
+        }
+        Spotlight.timelineObserver.observe(frame, configChildTrunk);
+    },
+    timelineObserver : new MutationObserver((records) => { // Catch errors when the NEXT button shows up / the next round begins to load
+        // console.log("book obse fired")
+        console.log(records)
+        // if (records[0].addedNodes.find((x) => !(x instanceof HTMLDivElement))) {
+        //     console.log('hmm, i think we should composite')
+        //     Spotlight.compositeResponseFrame()
+        // }
+        const added = records[0].addedNodes[0]
+        if (!(added instanceof HTMLDivElement)) {
+            Console.log('End of timeline reached. Beginning frame grabbing', 'Spotlight')
+            Spotlight.writeResponseFrames()  
+        }
+        // }
+        // if (records[0].removedNodes.length > 0) {
+        //     console.log("New timeline entered; resetting slideNums")
+        //     // Spotlight.slideNum = -1;
+        //     // Spotlight.keySlideNum = -2;
+        //     return;
+        // }
+        // // what if an EMPTY response? Sometimes backtrack two steps, sometimes one. Hence modeParameters now has fallback values.
+        // this.slideNum += 1
+        // const currentSlide = records[0].addedNodes[0];
+        // if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == this.username) {
+        //     this.keySlideNum = this.slideNum
+        // } else if (this.slideNum == this.turns) {//currentSlide.querySelector(".download") != null) {
+        //     // console.log("Stepped over. Compositing response")
+        //     this.compositeResponseFrame()
+        // }
+    }),
 
     // These functions manage the compositing of timelines into ImageDatas.
     compositeBackgrounds() {
@@ -955,7 +969,8 @@ const Spotlight = { // [S1]
         switch (this.setting.current) {
             case 'on':
                 this.drawName(context, this.username.toUpperCase(), "R") 
-                // this.drawPFP(context, this.avatars[this.names.indexOf(this.username)], "R")
+                // this.drawPFP(context, '/images/avatar/38.svg', "R") 
+                this.drawPFP(context, game.user.avatar, "R")
                 // TODO TODO TODO 
                 break;
             // case 1:
@@ -974,16 +989,18 @@ const Spotlight = { // [S1]
         const pairs = this.determineResponseIndices(slides)
 
         for (const indices of pairs) {
-            if (indices.key < 0) { Console.log('Did not participate in this round; no frame will be saved'); continue }
+            if (indices.key < 0) { Console.log('Did not participate in this round; no frame will be saved', 'Spotlight'); continue }
             if (indices.prev < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); continue } //prevIndex += modeParameters[game.mode]["fallback"] }
+            Console.log(`Compositing frame with indices ${indices.key},${indices.prev}`, 'Spotlight')
             this.compositeResponseFrame(slides, indices.key, indices.prev)
         }
     },
     determineResponseIndices(slides) {
         var toReturn = []
-        for (var keyIndex = 0; keyIndex < slides.length; keyIndex++) {
+        for (var keyIndex = 1; keyIndex < slides.length; keyIndex++) {
             if (this.findUsername(slides[keyIndex]) != this.username) { continue }
             var prevIndex = indexOfPrevSlide(keyIndex)
+            // if (keyIndex == prevIndex)
             toReturn.push({ key:keyIndex, prev: prevIndex })
         }
         return toReturn
@@ -1006,41 +1023,52 @@ const Spotlight = { // [S1]
             return i
         }
     },
-    compositeResponseFrame(slides, keyIndex, prevIndex) {  // TODO incorrectly grabbing the same image twice, wtf?
+    compositeResponseFrame(slides, keyIndex, prevIndex) {  
+        // TODO incorrectly grabbing the same image twice, wtf?
         // todo: What to do if the one being spotlighted has an EMPTY?
-        // TODO: Some rounds might loop back to the same person multiple times.
-        if (this.isSetTo('off')) { return }
+        // TODO: Some rounds might loop back to the same person multiple times. (Fixed?)
+        if (this.isSetTo('off')) { 
+            console.log("hey bozo, it's off")
+            return 
+        }
         const canvas = this.initFrom(this.canbase)
         const context = canvas.context
 
         // const side = this.setting.current == 'on' ? { key:'R', other: 'L' } : { key:'L', other: 'R' }
         const side = { key:'R', other:'L' }
-        
-        // Determinine slides
-        // const slides = document.querySelector(".timeline").querySelectorAll(".item");
-        // const keyIndex = slides.find((item) => findUsername(item) == this.username)
-        // if (keyIndex < 0) { Console.log('Did not participate in this round; no frame will be saved') }
-        const keySlide = slides[keyIndex]  // slides[this.keyIndex]
-        // var prevIndex = indexOfPrevSlide(keySlide)
-        // if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return } //prevIndex += modeParameters[game.mode]["fallback"] }
+        const keySlide = slides[keyIndex]
         const prevSlide = slides[prevIndex]
         const prevUser = this.findUsername(prevSlide);
-        // const prevAvatar = this.avatars[this.names.indexOf(prevUser)]
-        const prevAvatar = prevSlide.querySelector('avatar').firstChild.style.backgroundImage
+        const prevAvatar = this.findAvatar(prevSlide);
+
+        console.log([side, keySlide, prevSlide, prevUser, prevAvatar])
     
         // Draw everything
         this.drawName(context, prevUser.toUpperCase(), side.other)
         const bottleneck = this.drawPFP(context, prevAvatar, side.other)  // This smells !!!
-        try { this.drawDrawing(context, prevSlide.querySelector("canvas"), side.other) } catch { this.drawPrompt(context, prevSlide.querySelector(".balloon").textContent, side.other) }
-        try { this.drawDrawing(context,  keySlide.querySelector("canvas"), side.key  ) } catch { this.drawPrompt(context,  keySlide.querySelector(".balloon").textContent, side.key  ) }
-        this.drawTurnsCounter(context, this.keyIndex, game.turns - 1);
+        this.drawInteraction(context, prevSlide, side.other)
+        this.drawInteraction(context, keySlide, side.key)
+        this.drawTurnsCounter(context, this.keyIndex, game.turns - 1)
         // TODO being on a different tab causes image grabs to fail
     
+        // Console.log("Almost", 'Spotlight')
         // setTimeout(this.preview, 500, canvas.canvas) // Temporary
-        (() => { const b = bottleneck.onload; bottleneck.onload = () => { b(); this.compositedFrameDatas[this.keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data }})()  // This stinks to high heaven!
+        if (bottleneck.complete) {
+            // setTimeout(() => { 
+                Spotlight.compositedFrameDatas[keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data
+                Spotlight.preview(canvas.canvas)
+            // }, 100)
+            Console.log("Success (Instant)", 'Spotlight')
+        } else { 
+            bottleneck.addEventListener('load', () => {
+                Spotlight.compositedFrameDatas[keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data
+                Spotlight.preview(canvas.canvas)
+            })
+            Console.log('Success (Onload)', 'Spotlight')
+        }
+        // ;(() => { const b = bottleneck.onload; bottleneck.onload = () => { b(); Spotlight.compositedFrameDatas[keyIndex] = context.getImageData(0, 0, 1616, 683).data }})()  // This stinks to high heaven!
         // setTimeout(function() { this.compositedFrameDatas[this.keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data }, 200) // TODO: Horrendously bad bodged solution to the pfp not yet being loaded
         // prevAvatar
-
         // function indexOfPrevSlide(key) {
         //     var i = this.fallback > 0 ? key - 1 : 0; 
         //     /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
@@ -1053,6 +1081,9 @@ const Spotlight = { // [S1]
     }, // [S3]
     findUsername(element) {
         return (element.querySelector(".nick") ?? element.querySelector("span")).textContent
+    },
+    findAvatar(element) {
+        return getComputedStyle(element.querySelector('.avatar').firstChild).backgroundImage
     },
     
     // Temporary preview function
@@ -1069,7 +1100,19 @@ const Spotlight = { // [S1]
         return {canvas: canvas, context: context}
     },
 
+    drawInteraction(context, slide, side) {
+        const canvases = slide.querySelectorAll('canvas')
+        if (canvases.length > 0) { 
+            for (const canvas of canvases) {
+                this.drawDrawing(context, canvas, side) 
+            }
+        } else { 
+            this.drawPrompt(context, slide.querySelector(".balloon").textContent, side) 
+        }
+    },
     drawDrawing(context, drawing, side) {
+        console.log(arguments)
+        // console.log(side == "L" ? 33 : 825)
         context.drawImage(drawing, (side == "L" ? 33 : 825), 203);
     },
     drawPrompt(context, prompt, side) {
@@ -1160,8 +1203,27 @@ const Spotlight = { // [S1]
         context.fillText(name, startingx, 186);
     },
     drawPFP(context, pfpURL, side) { // todo: An attempt was made to repair tainted canvasses, verify
-        const pfp = new Image(); pfp.setAttribute('crossorigin', 'anonymous'); pfp.src = pfpURL; pfp.onload = function() { 
-        context.drawImage(pfp, (side == "L" ? 39 : 1422), 7, 155, 175) };
+        const pfp = new Image(); 
+        if (pfpURL.includes('custom-avatars-for-gartic-phone')) {
+            Console.alert("SillyV's custom avatars extension doesn't work with Spotlight due to CORS reasons. Please ask SillyV to enable CORS on his S3 buckets.")
+            return { complete:true }
+        }
+        pfp.setAttribute('crossorigin', 'anonymous'); 
+        // pfp.src = pfpURL; 
+        if (pfpURL.slice(0,4) == 'url(') {
+            pfp.src = pfpURL.slice(5, -2)
+        } else {
+            pfp.src = pfpURL; 
+        }
+        console.log(pfp.src)
+
+        if (pfp.complete) {
+            context.drawImage(pfp, (side == "L" ? 39 : 1422), 7, 155, 175) 
+        } else {
+            pfp.addEventListener('load', () => { 
+                context.drawImage(pfp, (side == "L" ? 39 : 1422), 7, 155, 175) 
+            });
+        }
         return pfp
     },
 }

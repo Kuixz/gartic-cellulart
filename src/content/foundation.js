@@ -544,27 +544,27 @@ const Converter = {
         return ([0,"FEW","MOST","ALL","200%","300%","SINGLE TURN","5 TURNS","10 TURNS","20 TURNS","2 TURNS","3 TURNS","ALL +1","6 TURNS","7 TURNS","8 TURNS","9 TURNS","4 TURNS",])[index]
     },
     turnsStringToFunction(str) {
-        return (players) => {
-            switch (str) {
-                case "FEW":         return Math.floor(players / 2);     // [C3]
-                case "MOST":        return Math.floor(3 * players / 4); // [C3]
-                case "ALL":         return players; 
-                case "ALL +1":      return players + 1;
-                case "200%":        return 2 * players;
-                case "300%":        return 3 * players;
-                case "SINGLE TURN": return 1;
-                case "2 TURNS":     return 2;
-                case "3 TURNS":     return 3;
-                case "4 TURNS":     return 4;
-                case "5 TURNS":     return 5;
-                case "6 TURNS":     return 6;
-                case "7 TURNS":     return 7;
-                case "8 TURNS":     return 8;
-                case "9 TURNS":     return 9;
-                case "10 TURNS":    return 10;
-                case "20 TURNS":    return 20;
-                default: Console.alert("Could not identify the turn setting being used", 'Converter'); return 0;
-            }
+        switch (str) {
+            case "FEW":         return (players) => Math.floor(players / 2);     // [C3]
+            case "MOST":        return (players) => Math.floor(3 * players / 4); // [C3]
+            case "ALL":         return (players) => players; 
+            case "ALL +1":      return (players) => players + 1;
+            case "200%":        return (players) => 2 * players;
+            case "300%":        return (players) => 3 * players;
+            case "SINGLE TURN": return (players) => 1;
+            case "2 TURNS":     return (players) => 2;
+            case "3 TURNS":     return (players) => 3;
+            case "4 TURNS":     return (players) => 4;
+            case "5 TURNS":     return (players) => 5;
+            case "6 TURNS":     return (players) => 6;
+            case "7 TURNS":     return (players) => 7;
+            case "8 TURNS":     return (players) => 8;
+            case "9 TURNS":     return (players) => 9;
+            case "10 TURNS":    return (players) => 10;
+            case "20 TURNS":    return (players) => 20;
+            default: 
+                Console.alert("Could not identify the turn setting being used", 'Converter');
+                return (players) => { Console.alert("Could not identify the turn setting being used", 'Converter'); return 0; }
         }
     }
 }

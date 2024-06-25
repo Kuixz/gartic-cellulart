@@ -296,6 +296,7 @@ const Observer = {
         // })
         game.host = data.users.find((x) => x.owner === true).nick
         game.user = data.user
+        game.user.avatar = getComputedStyle(document.querySelector('.avatar > i').previousSibling).backgroundImage
         game.players = data.users
         game.turnsString = Converter.turnsIndexToString(data.configs.turns)
         game.flowString = Converter.flowIndexToString(data.configs.first)
@@ -312,14 +313,14 @@ const Observer = {
         // if (data[1] == 1) {
         // var dict = {}
         switch (data[1]) {
-            case 2: 
-                game.players.push(data[2])
-                // dict["usersIn"] = [data[2]]; 
-                break;
-            case 3: 
-                // game.players.push(data[2])
-                // dict["userOut"] = data[2]; 
-                break;
+            // case 2: 
+            //     game.players.push(data[2])
+            //     // dict["usersIn"] = [data[2]]; 
+            //     break;
+            // case 3: 
+            //     // game.players.push(data[2])
+            //     // dict["userOut"] = data[2]; 
+            //     break;
             case 18:
                 for (const key in data[2]) {
                     if (key == 'speed') {
@@ -347,12 +348,12 @@ const Observer = {
         // }
     },
     deduceSettingsFromDocument() {
-        // TODO: move as much of this as possible to Converter / Timer.
 
         // console.log("deduce")
-        // const left = document.querySelector(".left")
-        // const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
-        
+        const left = document.querySelector(".left")
+        const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
+        game.players = new Array(players)
+
         try {
             // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
             const mode = document.querySelector(".checked").querySelector("h4").textContent;
@@ -452,3 +453,17 @@ window.addEventListener('beforeunload', () => {
 if (typeof exports !== 'undefined') {
     module.exports = { Controller, Observer };
 }
+
+// const h = new Image()
+// // h.crossOrigin = "anonymous";
+// h.src = 'https://custom-avatars-for-gartic-phone.s3.eu-north-1.amazonaws.com/lunarmoontea.png'
+// document.body.appendChild(h)
+
+// const g = document.createElement('canvas')
+// document.body.appendChild(g)
+// const j = g.getContext("2d");
+
+// g.width = 500
+// g.height = 500
+// j.drawImage(h, 0, 0)
+// console.log(j.getImageData(0,0,500,500))
