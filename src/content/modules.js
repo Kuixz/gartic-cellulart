@@ -23,8 +23,13 @@ const CellulartModule = { // [F2]
     // To be overridden by each module.
     mutation(oldPhase, newPhase) {},
 
+    // This function sets critical persistent variables when a game starts.
+    // To be overridden by each module.
+    roundStart() {},
+
     // This function "cleans the slate" when a game ends. 
     // To be overridden by each module.
+    // TODO: Remove oldPhase from this.
     backToLobby(oldPhase) {}, 
 
     // This function makes required changes when switching between settings. 
@@ -178,21 +183,16 @@ const Timer = {
     display : undefined, // HTMLDivElement
     countdown : undefined, // timeoutID
 
-    // parameters : {    
-    players: 0,
-    turns: 0,              // used by Timer 
-    // turnsFunction: () => {},
     write: 40,             // used by Timer
     draw: 150,             // used by Timer
     decay: 0,              // used by Timer
-    decayFunction: () => {},
+    // decayFunction: () => 0,
     firstMultiplier: 1.25, // used by Timer
-    // },
 
     // init(modules) {}, // Empty.
     mutation(oldPhase, newPhase) {
         if (["book", "start"].includes(newPhase)) { return }
-        if (this.turns == 0) { this.finalizeTurns() }
+        if (game.turns == 0) { this.finalizeTurns() }
         setTimeout(() => { this.placeTimer() }, 200)
 
         // If we changed from a phase that warrants a reset in the timer, reset the timer.
@@ -201,27 +201,34 @@ const Timer = {
         setTimeout((x) => { this.restartTimer(x) }, 200, newPhase)
     },
     backToLobby(oldPhase) {
-        this.turns = 0
+        // this.turns = 0
     }, // Empty.
     adjustSettings(previous, current) {
         if (this.display == undefined) { return }
         if (current == "on") { this.display.style.visibility = "visible" } else { this.display.style.visibility = "hidden" }
     },
-    updateLobbySettings(dict) {
-        if ("default" in dict) {
-            const data = dict.default
-            const parameters = Converter.getParameters(data)
-            Object.assign(this, parameters)  // TODO: unsafe and unscalable
-            // console.log(g)
-        }
-        if ("custom" in dict) {
-            const data = dict.custom
-            // const players = "players" in dict ? dict.players : 1
-            // this.turnsFunction = Converter.turnsStringToFunction(data[2]) // (players) 
-            const parameters = Converter.timeStringToParameters(data[0])
-            Object.assign(this, parameters)  // TODO: unsafe and unscalable
-        }
+    roundStart() {
+        // const data = dict.custom
+        const parameters = Converter.speedStringToParameters(game.speedString)
+        this.decay = parameters.decayFunction(game.turns)
+        // delete parameters.turns
+        Object.assign(this, parameters)  // TODO: unsafe and unscalable
     },
+    // updateLobbySettings(dict) {
+    //     if ("default" in dict) {
+    //         const data = dict.default
+    //         const parameters = Converter.getParameters(data)
+    //         Object.assign(this, parameters)  // TODO: unsafe and unscalable
+    //         // console.log(g)
+    //     }
+    //     if ("custom" in dict) {
+    //         const data = dict.custom
+    //         // const players = "players" in dict ? dict.players : 1
+    //         // this.turnsFunction = Converter.turnsStringToFunction(data[2]) // (players) 
+    //         const parameters = Converter.speedStringToParameters(data[0])
+    //         Object.assign(this, parameters)  // TODO: unsafe and unscalable
+    //     }
+    // },
 
     // templateParameters(data) {
     //     Object.assign(this.parameters, Converter.getParameters(Converter.modeIndexToString(data)))
@@ -231,7 +238,7 @@ const Timer = {
     //     // const midgame = parameters.turnMax > 0
 
     //     // Timer.parameters.players = parameters.users.length;
-    //     if ('speed' in config) { Object.assign(this, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }  // TODO: unsafe and unscalable
+    //     if ('speed' in config) { Object.assign(this, Converter.speedStringToParameters(Converter.speedIndexToString(config.speed))) }  // TODO: unsafe and unscalable
     //     // Timer.tweakParameters(config, midgame)
 
     //     if (parameters.turnMax > 0) {
@@ -244,26 +251,26 @@ const Timer = {
     // },
     // tweakParameters(config, midgame=false) {
     //     // if ('turns' in config) { Timer.parameters.turnsFunction = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns)) }  // (players) 
-    //     if ('speed' in config) { Object.assign(this.parameters, Converter.timeStringToParameters(Converter.timeIndexToString(config.speed))) }
+    //     if ('speed' in config) { Object.assign(this.parameters, Converter.speedStringToParameters(Converter.speedIndexToString(config.speed))) }
     // },
-    finalizeTurns() {
-        const step = document.querySelector('.step')
-        if (!step) { setTimeout(() => { this.finalizeTurns() }, 200)}
-        // if (newPhase != 'book') { 
-            // setTimeout(() => {
-            // if (this.parameters.turns == 0) { 
-        // const d = this.parameters.turns; if (t 
-        const indicator = step.querySelector('p').textContent
-        this.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
+    // finalizeTurns() {
+    //     const step = document.querySelector('.step')
+    //     if (!step) { setTimeout(() => { this.finalizeTurns() }, 200)}
+    //     // if (newPhase != 'book') { 
+    //         // setTimeout(() => {
+    //         // if (this.parameters.turns == 0) { 
+    //     // const d = this.parameters.turns; if (t 
+    //     const indicator = step.querySelector('p').textContent
+    //     this.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
             
-            // }
-            // return
-        // }
-    // finalizeTurns(players) {
-        // const t = Timer.parameters.turns; if (t instanceof Function) { Timer.parameters.turns = t(players) }
-        this.decay = this.decayFunction(this.turns)
-        // }, 200);
-    },
+    //         // }
+    //         // return
+    //     // }
+    // // finalizeTurns(players) {
+    //     // const t = Timer.parameters.turns; if (t instanceof Function) { Timer.parameters.turns = t(players) }
+    //     this.decay = this.decayFunction(this.turns)
+    //     // }, 200);
+    // },
 
     placeTimer() {  // [T3]
         // const p = document.querySelector("p.jsx-3561292207"); if (p) { p.remove() }
@@ -289,7 +296,13 @@ const Timer = {
             const p = clock.querySelector("p"); if(p) { p.style.visibility = "hidden" } // Prevents clashing with SillyV's extension
             this.tick(1, 1)
         } else {
-            this.tick(this.getSecondsForPhase(newPhase) - 1, -1)
+            var seconds = this.getSecondsForPhase(newPhase)
+            if (seconds == -1) {
+                this.tick(1, 1)
+            }
+            else {
+                this.tick(seconds - 1, -1)
+            }
         }
         // if (game.parameters["timerCurve"] != 0) { 
         this.interpolate(1); 
@@ -418,7 +431,6 @@ const Koss = { // [K1]
             default: Console.alert("KOSS location not recognised", 'Koss')
         }
     },
-    // updateLobbySettings(dict) {},
 
     placeCanvas() {
         if (!this.kossCanvas) { return }
@@ -519,7 +531,6 @@ const Refdrop = { // [R1]
                 return;
         }
     },
-    // updateLobbySettings(dict) {},
 
     initRefdrop() {
         this.refImage = setAttributes(document.createElement("img"),  { class: "bounded",    id: "ref-img"    })
@@ -746,9 +757,6 @@ const Spotlight = { // [S1]
     // slideNum : -1,
     // keySlideNum : -3,
 
-    host : '',
-    user : '',
-    turns : 0,
     fallback : 0,
     
     init(modules) {
@@ -756,11 +764,13 @@ const Spotlight = { // [S1]
     },
     mutation(oldPhase, newPhase) {
         if (newPhase == 'start') { return }
-        if (newPhase != 'book') { 
-            if (this.turns == 0) { this.finalizeTurns() }
-            return
-        }
-        if (this.turns <= 1) { return }
+        if (newPhase != 'book') { return }
+            // if (this.turns == 0) { this.finalizeTurns() }
+        //     return
+        // }
+
+        // if (game.turns <= 1) { return }
+
         // if (oldPhase == "start") {
         //     // In case you had to reload in the middle of visualization
         //     this.user = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
@@ -769,84 +779,82 @@ const Spotlight = { // [S1]
         // this.names = Array.from(document.querySelectorAll(".nick")).map(element => element.textContent);
 
         this.compositeBackgrounds();
-        this.turns > 0 
-            ? this.compositedFrameDatas = new Array(this.turns - 1) 
+        game.turns > 0 
+            ? this.compositedFrameDatas = new Array(game.turns - 1) 
             : this.compositedFrameDatas = {}
 
         // this.attachBookObserver();
     },
     backToLobby(oldPhase) {
         if (oldPhase != 'book') { return }
-        if (this.turns > 1) { this.compileToGif() }
+        if (game.turns > 1) { this.compileToGif() }  // TODO: Move this check.
         // this.timelineObserver.disconnect()
         // this.avatars = []
         // this.names = []
-        this.turns = 0
+        // this.turns = 0
     },
     adjustSettings(previous, current) {
         // We can actually override menuStep to prevent this to begin with.
-        if (this.compositedFrameDatas != []) { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
+        // if (this.compositedFrameDatas != []) { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
+        if (this.compositedFrameDatas.some(x => x)) { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
     },
-    updateLobbySettings(dict) {
-        if ('default' in dict) {
-            this.fallback = Converter.getParameters(dict.default).fallback
-        } 
-        if ('custom' in dict) {
-            this.fallback = Converter.getParameters(dict.custom[1])
-        }
+    roundStart() {
+        this.fallback = Converter.flowStringToFallback(game.flow)
+    },
+    // updateLobbySettings(dict) {
+    //     if ('default' in dict) {
+    //         this.fallback = Converter.getParameters(dict.default).fallback
+    //     } 
+    //     if ('custom' in dict) {
+    //         this.fallback = Converter.getParameters(dict.custom[1])
+    //     }
 
-        if ("self" in dict) {
-            this.user = dict.self.nick
-        }
-        // if ("usersIn" in dict) {
-        //     this.players += dict.usersIn.length
-        // }
-        // if ("userOut" in dict) {
-        //     this.players -= 1
-        //     // null
-        // }
-        // switch (type) {
-        //     case "default": 
-        //         break;
-        //     case "custom":
-        //         fallback = Converter.flowStringToFallback(data[1])
-        //         break;
-        //     // case 2: Timer.parameters.players += 1; break;
-        //     // case 3: Timer.parameters.players -= 1; break;
-        //     // case 5: Timer.finalizeTurns(); break;
-        //     // case 18: Timer.tweakParameters(data); break;
-        //     // case 26: Timer.templateParameters(data); break;
-        // }
-        // switch (type) {
-        //     case 1: 
-        //         this.user = data.user.nick; 
-        //         this.host = data.users[0].nick;
-        //         this.fallback = Converter.flowStringToFallback(Converter.flowIndexToString(data.configs.first))
+    //     if ("self" in dict) {
+    //         this.user = dict.self.nick
+    //     }
+    //     // if ("usersIn" in dict) {
+    //     //     this.players += dict.usersIn.length
+    //     // }
+    //     // if ("userOut" in dict) {
+    //     //     this.players -= 1
+    //     //     // null
+    //     // }
+    //     // switch (type) {
+    //     //     case "default": 
+    //     //         break;
+    //     //     case "custom":
+    //     //         fallback = Converter.flowStringToFallback(data[1])
+    //     //         break;
+    //     //     // case 2: Timer.parameters.players += 1; break;
+    //     //     // case 3: Timer.parameters.players -= 1; break;
+    //     //     // case 5: Timer.finalizeTurns(); break;
+    //     //     // case 18: Timer.tweakParameters(data); break;
+    //     //     // case 26: Timer.templateParameters(data); break;
+    //     // }
+    //     // switch (type) {
+    //     //     case 1: 
+    //     //         this.user = data.user.nick; 
+    //     //         this.host = data.users[0].nick;
+    //     //         this.fallback = Converter.flowStringToFallback(Converter.flowIndexToString(data.configs.first))
         
-        //         // this.players = data.users.length;
-        //         if (data.turnMax > 0) { this.turns = data.turnMax }
-        //         break;
-        //     // case 2: this.players += 1; break;
-        //     // case 3: this.players -= 1; break;
-        //     // case 5: 
-        //     //     this.finalizeTurns(); break;
-        //     case 9:
-        //         if (Object.keys(data).length > 0) { break } else { this.writeResponseFrames() }
-        //     // Spotlight can be a bit looser on its turn tracking, so we do just that.
-        // }
-    },
+    //     //         // this.players = data.users.length;
+    //     //         if (data.turnMax > 0) { this.turns = data.turnMax }
+    //     //         break;
+    //     //     // case 2: this.players += 1; break;
+    //     //     // case 3: this.players -= 1; break;
+    //     //     // case 5: 
+    //     //     //     this.finalizeTurns(); break;
+    //     //     case 9:
+    //     //         if (Object.keys(data).length > 0) { break } else { this.writeResponseFrames() }
+    //     //     // Spotlight can be a bit looser on its turn tracking, so we do just that.
+    //     // }
+    // },
 
     // finalizeTurns(players) {
     //     const t = this.parameters.turns; if (t instanceof Function) { this.parameters.turns = t(players) }
     // },
 
     // Compiles an array of ImageData into a GIF.
-    finalizeTurns() {
-        const step = document.querySelector('.step')
-        if (!step) { setTimeout(() => { this.finalizeTurns() }, 200)}
-        const indicator = step.querySelector('p').textContent
-        this.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
-    },
     compileToGif() {
         if( this.isSetTo('off') || this.compositedFrameDatas.length == 0) { return }
         Console.log('Now compiling to GIF', 'Spotlight');
@@ -1022,7 +1030,7 @@ const Spotlight = { // [S1]
         const bottleneck = this.drawPFP(context, prevAvatar, side.other)  // This smells !!!
         try { this.drawDrawing(context, prevSlide.querySelector("canvas"), side.other) } catch { this.drawPrompt(context, prevSlide.querySelector(".balloon").textContent, side.other) }
         try { this.drawDrawing(context,  keySlide.querySelector("canvas"), side.key  ) } catch { this.drawPrompt(context,  keySlide.querySelector(".balloon").textContent, side.key  ) }
-        this.drawTurnsCounter(context, this.keyIndex, this.turns - 1);
+        this.drawTurnsCounter(context, this.keyIndex, game.turns - 1);
         // TODO being on a different tab causes image grabs to fail
     
         // setTimeout(this.preview, 500, canvas.canvas) // Temporary
@@ -1206,7 +1214,7 @@ const Geom = {
     },
     backToLobby(oldPhase) {
         this.flags.mode = false; 
-        if (oldPhase != 'start') { this.stopGeometrize() }
+        // if (oldPhase != 'start') { this.stopGeometrize() }  // Technically redundant.
     }, 
     adjustSettings(previous, current) { 
         // hide or show Geom window without stopping web worker (just like Koss)
@@ -1217,7 +1225,6 @@ const Geom = {
             this.geomWIW.setVisibility("visible");
         }
     },
-    // updateLobbySettings(dict) {},
 
     initGeomWIW() { // [G8]
         const newWIW = Inwindow.new(false, false, 1)
@@ -1572,7 +1579,6 @@ const Triangle = { // [F2]
         }
         // Isoceles and 3-point have entirely different control schemes.
     },
-    // updateLobbySettings(dict) {},
 
     beginDrawingFullTriangle() {
 
@@ -1630,7 +1636,6 @@ const Reveal = {
             case "ALL": this.revealDrawing(); break;
         }
     },
-    // updateLobbySettings(dict) {},
 
     revealPrompt() {
         // TODO: Can't I use an enable/disable CSS or CSS variable thing instead?

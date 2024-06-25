@@ -16,7 +16,7 @@ const globalState = {
 const Controller = { 
     
     menu: null, // [C1]
-    modules: [Timer, Koss, Refdrop, Spotlight, Geom, Scry, Red, Debug], //, Reveal]
+    modules: [Timer, Koss, Refdrop, Spotlight, Geom, Red, Debug], //, Reveal]
     auth: SHAuth.using(Shelf),
 
     init() {
@@ -35,6 +35,10 @@ const Controller = {
     mutation (oldPhase, newPhase) {
         Controller.modules.forEach(mod => mod.mutation(oldPhase, newPhase))
     },
+    roundStart() {
+        game.roundStart()
+        Controller.modules.forEach(mod => mod.roundStart())
+    },
     backToLobby(oldPhase) {
         // Socket.post("backToLobby")
         Socket.backToLobby()
@@ -42,9 +46,9 @@ const Controller = {
         Controller.modules.forEach(mod => mod.backToLobby(oldPhase))
     },
     // adjustSettings(previous, current) {},
-    updateLobbySettings(type, data) {
-        Controller.modules.forEach(mod => mod.updateLobbySettings(type, data))
-    },
+    // updateLobbySettings(type, data) {
+    //     Controller.modules.forEach(mod => mod.updateLobbySettings(type, data))
+    // },
 
     initPopupAuth() {
         chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
@@ -216,11 +220,15 @@ const Observer = {
         Console.log(newPhase, Observer)
 
         // Handle special cases
+        if (oldPhase == "lobby" && newPhase != "start") { Observer.roundStart(); }
         if (newPhase == "waiting") { Observer.waiting(); return; } 
         if (newPhase == "lobby")   { Observer.backToLobby(oldPhase); return; } 
         // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
 
         Controller.mutation(oldPhase, newPhase)
+    },
+    roundStart() {
+        Controller.roundStart()
     },
     backToLobby(oldPhase) {
         Observer.nextObserver.observe(document.querySelector("#__next"), configChildTrunk); 
@@ -241,6 +249,8 @@ const Observer = {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
         Observer.deduceSettingsFromDocument()
+        
+        // console.log('next fired')
     }),
     contentObserver: new MutationObserver((records) => {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
@@ -248,6 +258,8 @@ const Observer = {
         // Observer.nextObserver.disconnect()
 
         Observer.mutation(Observer.content.firstChild.firstChild.classList.item(1))
+
+        // console.log('content fired')
     }),
     attachContentObserver() {
         var frame = document.querySelector("#content");
@@ -275,27 +287,44 @@ const Observer = {
         // }
         // Controller.updateLobbySettings(1, data)
         // Controller.updateLobbySettings(data[0], data[1])
+
         // const configs = data.configs
-        Controller.updateLobbySettings({
-            "custom": [Converter.timeIndexToString(configs.speed), Converter.flowIndexToString(configs.first), Converter.turnsIndexToString(configs.turns)],
-            "self": data.user,
-            "usersIn": data.users
-        })
+        // Controller.updateLobbySettings({
+        //     "custom": [Converter.speedIndexToString(configs.speed), Converter.flowIndexToString(configs.first), Converter.turnsIndexToString(configs.turns)],
+        //     "self": data.user,
+        //     "usersIn": data.users
+        // })
+        game.user = data.user
+        game.players = data.users
+        game.turnsString = Converter.turnsIndexToString(data.configs.turns)
+        game.flowString = Converter.flowIndexToString(data.configs.first)
+        game.speedString = Converter.speedIndexToString(data.configs.speed)
+        // turnsString: 'ALL',
     },
     deduceSettingsFromSocket(data) {
-        // console.log(data)
+        console.log(data)
         // Controller.updateLobbySettings(data[1], data[2])
         // if (data[1] == 5) {
             // game.turns = data[2]  // it's not that easy...
         //     game.turns = Converter.turnsStringToFunction(/* TODO TODO TODO */)(data[2])
         // }
         // if (data[1] == 1) {
-        var dict = {}
+        // var dict = {}
         switch (data[1]) {
-            case 2: dict["usersIn"] = [data[2]]; break;
-            case 3: dict["userOut"] = data[2]; break;
+            case 2: 
+                // dict["usersIn"] = [data[2]]; 
+                break;
+            case 3: 
+                // dict["userOut"] = data[2]; 
+                break;
+            case 18:
+                break;
+            case 26:
+                break;
+            case 27:
+                break;
         }
-        Controller.updateLobbySettings(dict)
+        // Controller.updateLobbySettings(dict)
         // }
     },
     deduceSettingsFromDocument() {
@@ -308,8 +337,12 @@ const Observer = {
         try {
             // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
             const mode = document.querySelector(".checked").querySelector("h4").textContent;
-            Controller.updateLobbySettings({"default": mode})
-            // Object.assign(game, Converter.getParameters(mode));
+            // Controller.updateLobbySettings({"default": mode})
+
+            const gameConfig = Converter.getParameters(mode)
+            game.turnsString = gameConfig.turns
+            game.speedString = gameConfig.speed
+            game.flowString = gameConfig.flow
             // switch (mode) {
             //     case "ICEBREAKER":  game.turns = players + 1; break;
             //     case "MASTERPIECE": game.turns = 1;           break;
@@ -327,12 +360,41 @@ const Observer = {
                         gameConfig[num] = select.childNodes[select.selectedIndex].textContent; }
                 catch { gameConfig[num] = gameEncodedConfig[num].childNodes[0].textContent;    }
             })
-            Controller.updateLobbySettings({"custom": gameConfig/*, "players": players*/})
+            // Controller.updateLobbySettings({"custom": gameConfig/*, "players": players*/})
+
+            game.turnsString = gameConfig[2]
+            game.speedString = gameConfig[0]
+            game.flowString = gameConfig[1]
             // game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
-            // Object.assign(game, Converter.timeStringToParameters(gameConfig[0]))
+            // Object.assign(game, Converter.speedStringToParameters(gameConfig[0]))
             // game.fallback = Converter.flowStringToFallback(gameConfig[1])
         }
     },
+
+    // if utrns 0 finalize turns
+
+    // finalizeTurns() {
+    //     const step = document.querySelector('.step')
+    //     if (!step) { setTimeout(() => { this.finalizeTurns() }, 200)}
+    //     const indicator = step.querySelector('p').textContent
+    //     this.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
+    // },
+    // updateLobbySettings(dict) {
+    //     if ("default" in dict) {
+    //         const data = dict.default
+    //         const parameters = Converter.getParameters(data)
+    //         Object.assign(this, parameters)  // TODO: unsafe and unscalable
+    //         // console.log(g)
+    //     }
+    //     if ("custom" in dict) {
+    //         const data = dict.custom
+    //         // const players = "players" in dict ? dict.players : 1
+    //         // this.turnsFunction = Converter.turnsStringToFunction(data[2]) // (players) 
+    //         const parameters = Converter.speedStringToParameters(data[0])
+    //         Object.assign(this, parameters)  // TODO: unsafe and unscalable
+    //     }
+    // },
+
     // TODO: Get phase transition data from Socket
 }
 

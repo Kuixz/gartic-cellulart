@@ -156,7 +156,7 @@ const Inwindow = {
 const Console = { // Only print certain messages
     name: "Console",
     // enabled: new Set(),
-    enabled: new Set([/*'Observer',*/'Socket', 'XHR']),
+    enabled: new Set([/*'Observer',*//*'Socket', */'Xhr']),
 
     toggle: function(mod) {
         this.set(mod, !this.enabled.has(mod))
@@ -425,16 +425,28 @@ const configChildTrunk = { childList: true };
 
 // Global variables
 const game = {
+    host: "Kirsten Wright",
     user: "Joyce Moore", // used by Spotlight
-    turns: 0,            // used by Timer and Spotlight
     // The NORMAL settings follow
+    players: [],
     // flow: 'WRITING, DRAWING',
+    // speed: 'NORMAL',
+    turns: 0,
+
+    flowString: 'WRITING, DRAWING',
+    speedString: 'NORMAL',
+    turnsString: 'ALL',
+    // turns: () => 0,
+    // turns: 0,            // used by Timer and Spotlight
 
     // write: 40,             // used by Timer
     // draw: 150,             // used by Timer
     // decay: () => 0,                                          // used by Timer
     // firstMultiplier: 1.25, // used by Timer
     // fallback: 2            // used by Spotlight
+    roundStart() {
+        this.turns = Converter.turnsStringToFunction(this.turnsString)(this.players.length)
+    }
 }
 const Converter = {
     // user: 'Joyce Moore',
@@ -451,23 +463,35 @@ const Converter = {
     //     Converter.mode = str
     // },
     modeParameters: {
-        "NORMAL":           { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 1 -> 1
-        "KNOCK-OFF":        { write: 90, draw: 300, decayFunction: (turns) => 1 / Math.exp(8 / turns), firstMultiplier: 1   , fallback: 1  }, // 2 -> 8
-        "SECRET":           { write: 20, draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 3 -> 3
-        "ANIMATION":        { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 4 -> 11
-        "ICEBREAKER":       { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: -1 }, // 5 -> 9
-        "COMPLEMENT":       { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 0.2 , fallback: -1 }, // 6 -> 15
+        "NORMAL":           { speed: 'NORMAL', turns: 'ALL', flow: 'WRITING, DRAWING'  }, // 1 -> 1
+        "KNOCK-OFF":        { speed: 'REGRESSIVE', turns: 'ALL', flow: 'ONLY DRAWINGS'  }, // 2 -> 8
+        "SECRET":           { speed: 'FAST', turns: 'ALL', flow: 'WRITING, DRAWING' }, // 3 -> 3
+        "ANIMATION":        { speed: 'NORMAL', turns: 'ALL', flow: 'ONLY DRAWINGS' }, // 4 -> 11
+        "ICEBREAKER":       { speed: 'NORMAL', turns: 'ALL +1', flow: 'SINGLE SENTENCE'  }, // 5 -> 9
+        "COMPLEMENT":       { speed: 'FASTER FIRST TURN', turns: 'ALL +1', flow: 'DRAWINGS WITH A BACKGROUND, NO PREVIEW' }, // 6 -> 15
         // speedrun is 7 (what? no it isn't???)
-        "MASTERPIECE":      { write: 2,  draw: 2,   decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 15 -> 20
-        "STORY":            { write: 40, draw: 2,   decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 1  },       // 17
-        "MISSING PIECE":    { write: 2 , draw: 150, decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  },       // 21 
-        "CO-OP":            { write: 20, draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 1  },       // 18
-        "SCORE":            { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  },       // 10
-        "SANDWICH":         { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 1  }, // 12 -> 5
-        "CROWD":            { write: 20, draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 13 -> 7
-        "BACKGROUND":       { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 2   , fallback: 1  }, // 14 -> 14
-        "SOLO":             { write: 2,  draw: 2,   decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
-        "EXQUISITE CORPSE": { write: 90, draw: 300, decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }
+        "MASTERPIECE":      { speed: "HOST'S DECISION", turns: 'SINGLE TURN', flow: 'SOLO DRAWING' }, // 15 -> 20
+        "STORY":            { speed: 'NORMAL', turns: 'ALL', flow: 'ONLY WRITING' },       // 17
+        "MISSING PIECE":    { speed: 'NORMAL', turns: 'ALL', flow: 'ONLY DRAWINGS' },       // 21 
+        "CO-OP":            { speed: 'FAST', turns: '6 TURNS', flow: 'SINGLE SENTENCE' },       // 18
+        "SCORE":            { speed: 'NORMAL', turns: 'ALL', flow: 'WRITING, DRAWING' },       // 10
+        "SANDWICH":         { speed: 'NORMAL', turns: 'ALL', flow: 'WRITING ONLY AT THE BEGINNING AND THE END' },      // 12 -> 5
+        // "CROWD":            { write: 20, draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 13 -> 7
+        "BACKGROUND":       { speed: 'SLOWER FIRST TURN', turns: '200%', flow: 'DRAWINGS WITH A BACKGROUND' }, // 14 -> 14
+        "SOLO":             { speed: 'DYNAMIC', turns: '5 TURNS', flow: 'SOLO DRAWING' }, // 15 -> 13
+        "EXQUISITE CORPSE": { speed: 'SLOW', turns: '3 TURNS', flow: 'ONLY DRAWINGS'}
+    },
+    speedParameters: {
+        "SLOW":              { write: 80, draw: 300, decayFunction: () => 0,                            firstMultiplier: 1.25 },
+        "NORMAL":            { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25 }, // 1 -> 1
+        "FAST":              { write: 20, draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25 }, // 3 -> 3
+        "PROGRESSIVE":       { write: 8,  draw: 30,  decayFunction: (turns) => Math.exp(8 / turns),     firstMultiplier: 1, },
+        "REGRESSIVE":        { write: 90, draw: 300, decayFunction: (turns) => 1 / Math.exp(8 / turns), firstMultiplier: 1   , fallback: 1  }, // 2 -> 8
+        "DYNAMIC":           { write: -1, draw: -1,  decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
+        "INFINITE":          { write: -1, draw: -1,  decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
+        "HOST'S DECISION":   { write: -1, draw: -1,  decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
+        "FASTER FIRST TURN": { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 0.2 , fallback: -1 }, // 6 -> 15
+        "SLOWER FIRST TURN": { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 2   , fallback: 1  }, // 14 -> 14
     },
 
     getParameters(str) {
@@ -478,23 +502,27 @@ const Converter = {
         return ([0,'NORMAL',2,'SECRET',4,'SANDWICH',6,'CROWD','KNOCK-OFF','ICEBREAKER','SCORE','ANIMATION',12,'SOLO','BACKGROUND','COMPLEMENT',16,'STORY','CO-OP',19,'MASTERPIECE', 'MISSING PIECE',22,23,'EXQUISITE CORPSE'])[index]
     },
 
-    timeIndexToString(index) {
+    speedIndexToString(index) {
         return ([0,"SLOW","NORMAL","FAST","DYNAMIC","REGRESSIVE","INFINITE","HOST'S DECISION","PROGRESSIVE","FASTER FIRST TURN","SLOWER FIRST TURN"])[index]
     },
-    timeStringToParameters(str) {
-        switch (str) { // Setting custom game.parameters
-            case "SLOW":              return { "write": 80, "draw": 300, 'decayFunction': () => 0, "firstMultiplier": 1.25 };
-            case "NORMAL":            return Converter.getParameters(["NORMAL"]);
-            case "FAST":              return Converter.getParameters(["SECRET"]);
-            case "PROGRESSIVE":       return { "write": 8, "draw": 30, "firstMultiplier": 1, "decayFunction": (turns) => Math.exp(8 / turns)};
-            case "REGRESSIVE":        return /*{ ...*/Converter.getParameters(['KNOCK-OFF']) /*, "decay": 1 / Math.exp(8 / game.turns) }*/;
-            case "DYNAMIC":           return Converter.getParameters(["SOLO"]);
-            case "INFINITE":          return Converter.getParameters(["SOLO"]);
-            case "HOST'S DECISION":   return Converter.getParameters(["SOLO"]);
-            case "FASTER FIRST TURN": return Converter.getParameters(["COMPLEMENT"]);
-            case "SLOWER FIRST TURN": return Converter.getParameters(["BACKGROUND"]);
-            default: Console.alert("Could not identify the time setting being used", 'Converter'); return {}
-        }
+    speedStringToParameters(str) {
+        // switch (str) { // Setting custom game.parameters
+        //     case "SLOW":              return { "write": 80, "draw": 300, 'decayFunction': () => 0, "firstMultiplier": 1.25 };
+        //     case "NORMAL":            return Converter.getParameters(["NORMAL"]);
+        //     case "FAST":              return Converter.getParameters(["SECRET"]);
+        //     case "PROGRESSIVE":       return { "write": 8, "draw": 30, "firstMultiplier": 1, "decayFunction": (turns) => Math.exp(8 / turns)};
+        //     case "REGRESSIVE":        return /*{ ...*/Converter.getParameters(['KNOCK-OFF']) /*, "decay": 1 / Math.exp(8 / game.turns) }*/;
+        //     case "DYNAMIC":           return Converter.getParameters(["SOLO"]);
+        //     case "INFINITE":          return Converter.getParameters(["SOLO"]);
+        //     case "HOST'S DECISION":   return Converter.getParameters(["SOLO"]);
+        //     case "FASTER FIRST TURN": return Converter.getParameters(["COMPLEMENT"]);
+        //     case "SLOWER FIRST TURN": return Converter.getParameters(["BACKGROUND"]);
+        //     default: Console.alert("Could not identify the time setting being used", 'Converter'); return {}
+        // }
+        const k = Converter.speedParameters[str]
+        if (k) { return k }
+        Console.alert(`Could not identify the time setting being used (${str})`, 'Converter'); return {}
+        // return Converter.speedParameters[str]
     },
 
     flowIndexToString(index) {
@@ -607,7 +635,7 @@ class Keybind {
 
 // module.exports = { this.wdinwos }
 if (typeof exports !== 'undefined') {
-    module.exports = { gifenc, Inwindow, Console, Shelf, Keybinder, SHAuth, Socket, Xhr, clamp, preventDefaults, setAttributes, svgNS, configChildTrunk, Converter, SettingsBelt, WhiteSettingsBelt, RedSettingsBelt, Keybind };
+    module.exports = { gifenc, Inwindow, Console, Shelf, Keybinder, SHAuth, Socket, Xhr, clamp, preventDefaults, setAttributes, svgNS, configChildTrunk, game, Converter, SettingsBelt, WhiteSettingsBelt, RedSettingsBelt, Keybind };
     // module.exports = { ...Object.entries(this) }
     // module.exports = { ...Object.entries(window) }
     // module.exports = { ...Object.values(this) }

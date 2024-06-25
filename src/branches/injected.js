@@ -115,7 +115,7 @@ const Socket = {
         if (json[1] == 11) {
             if ('draw' in message) { 
                 console.log(message.draw)
-                Socket.setStrokeStack(json.draw)
+                Socket.setStrokeStack(message.draw)
                 // Socket.post('turnNum', json.turnNum)
             } else {
                 Socket.clearStrokes()
