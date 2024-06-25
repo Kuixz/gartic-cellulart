@@ -312,16 +312,34 @@ const Observer = {
         // var dict = {}
         switch (data[1]) {
             case 2: 
+                game.players.push(data[2])
                 // dict["usersIn"] = [data[2]]; 
                 break;
             case 3: 
+                // game.players.push(data[2])
                 // dict["userOut"] = data[2]; 
                 break;
             case 18:
+                for (const key in data[2]) {
+                    if (key == 'speed') {
+                        game.speedString = Converter.speedIndexToString(data[2][key])
+                    }
+                    if (key == 'first') {
+                        game.flowString = Converter.flowIndexToString(data[2][key])
+                    }
+                    if (key == 'turns') {
+                        game.turnsString = Converter.turnsIndexToString(data[2][key])
+                    }
+                }
                 break;
-            case 26:
-                break;
+            // case 26:
+            //     break;
             case 27:
+                game.flowString = 'WRITING, DRAWING'
+                game.speedString = 'NORMAL'
+                game.turnsString = 'ALL'
+                break;
+            default:
                 break;
         }
         // Controller.updateLobbySettings(dict)
