@@ -156,7 +156,7 @@ const Inwindow = {
 const Console = { // Only print certain messages
     name: "Console",
     // enabled: new Set(),
-    enabled: new Set([/*'Observer',*//*'Socket', */'Xhr']),
+    enabled: new Set([/*'Observer',*//*'Socket', */'Spotlight', 'Xhr']),
 
     toggle: function(mod) {
         this.set(mod, !this.enabled.has(mod))

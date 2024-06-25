@@ -294,6 +294,7 @@ const Observer = {
         //     "self": data.user,
         //     "usersIn": data.users
         // })
+        game.host = data.users.find((x) => x.owner === true).nick
         game.user = data.user
         game.players = data.users
         game.turnsString = Converter.turnsIndexToString(data.configs.turns)

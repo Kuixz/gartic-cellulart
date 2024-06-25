@@ -757,6 +757,7 @@ const Spotlight = { // [S1]
     // slideNum : -1,
     // keySlideNum : -3,
 
+    username : '',
     fallback : 0,
     
     init(modules) {
@@ -770,10 +771,11 @@ const Spotlight = { // [S1]
         // }
 
         // if (game.turns <= 1) { return }
-
+        Console.log(game.host, 'Spotlight')
+        Console.log(this.username, 'Spotlight')
         // if (oldPhase == "start") {
         //     // In case you had to reload in the middle of visualization
-        //     this.user = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
+        //     this.username = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
         // }
         // this.avatars = Array.from(document.querySelectorAll(".avatar")).map(element => window.getComputedStyle(element.childNodes[0]).backgroundImage.slice(5, -2));//.slice(13, -2) );//.slice(29, -2));
         // this.names = Array.from(document.querySelectorAll(".nick")).map(element => element.textContent);
@@ -782,12 +784,12 @@ const Spotlight = { // [S1]
         game.turns > 0 
             ? this.compositedFrameDatas = new Array(game.turns - 1) 
             : this.compositedFrameDatas = {}
-
+        Console.log(this.compositedFrameDatas)
         // this.attachBookObserver();
     },
     backToLobby(oldPhase) {
         if (oldPhase != 'book') { return }
-        if (game.turns > 1) { this.compileToGif() }  // TODO: Move this check.
+        if (game.turns >= 1) { this.compileToGif() }  // TODO: Move this check. (?)
         // this.timelineObserver.disconnect()
         // this.avatars = []
         // this.names = []
@@ -800,6 +802,7 @@ const Spotlight = { // [S1]
     },
     roundStart() {
         this.fallback = Converter.flowStringToFallback(game.flow)
+        this.username = game.user.nick
     },
     // updateLobbySettings(dict) {
     //     if ('default' in dict) {
@@ -810,7 +813,7 @@ const Spotlight = { // [S1]
     //     }
 
     //     if ("self" in dict) {
-    //         this.user = dict.self.nick
+    //         this.username = dict.self.nick
     //     }
     //     // if ("usersIn" in dict) {
     //     //     this.players += dict.usersIn.length
@@ -833,7 +836,7 @@ const Spotlight = { // [S1]
     //     // }
     //     // switch (type) {
     //     //     case 1: 
-    //     //         this.user = data.user.nick; 
+    //     //         this.username = data.user.nick; 
     //     //         this.host = data.users[0].nick;
     //     //         this.fallback = Converter.flowStringToFallback(Converter.flowIndexToString(data.configs.first))
         
@@ -883,7 +886,7 @@ const Spotlight = { // [S1]
         const today = new Date();
         const day = today.getDate() + "-" + (today.getMonth() + 1) + '-' + today.getFullYear()
         const time = today.getHours() + ":" + today.getMinutes()
-        const filename = "Spotlight " + this.user + " " + day + " " + time + ".gif"
+        const filename = "Spotlight " + this.username + " " + day + " " + time + ".gif"
         function download (buf, filename, type) {
             const blob = buf instanceof Blob ? buf : new Blob([buf], { type });
             const url = URL.createObjectURL(blob);
@@ -900,7 +903,7 @@ const Spotlight = { // [S1]
             dlnode.remove();
         }
         dlnode.body.appendChild(dlicon)
-        document.body.appendChild(dlnode)
+        document.body.appendChild(dlnode.element)
     },
     // These four determine when things should fire.
     // attachBookObserver() { // [S2]
@@ -935,7 +938,7 @@ const Spotlight = { // [S1]
     //     // what if an EMPTY response? Sometimes backtrack two steps, sometimes one. Hence modeParameters now has fallback values.
     //     this.slideNum += 1
     //     const currentSlide = records[0].addedNodes[0];
-    //     if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == this.user) {
+    //     if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == this.username) {
     //         this.keySlideNum = this.slideNum
     //     } else if (this.slideNum == this.turns) {//currentSlide.querySelector(".download") != null) {
     //         // console.log("Stepped over. Compositing response")
@@ -948,16 +951,16 @@ const Spotlight = { // [S1]
         if (this.isSetTo('off')) { return }
         const canvas = this.initFrom(this.bg)
         const context = canvas.context
-        this.drawText(context, "HOSTED BY " + this.host.toUpperCase(), 1206, 82, 50, 400, "M", "white")
+        this.drawText(context, "HOSTED BY " + game.host.toUpperCase(), 1206, 82, 50, 400, "M", "white")
         switch (this.setting.current) {
             case 'on':
-                this.drawName(context, this.user.toUpperCase(), "R") 
-                // this.drawPFP(context, this.avatars[this.names.indexOf(this.user)], "R")
+                this.drawName(context, this.username.toUpperCase(), "R") 
+                // this.drawPFP(context, this.avatars[this.names.indexOf(this.username)], "R")
                 // TODO TODO TODO 
                 break;
             // case 1:
-            //     this.drawName(context, this.user.toUpperCase(), "L") 
-            //     this.drawPFP(context, this.avatars[this.names.indexOf(this.user)], "L")
+            //     this.drawName(context, this.username.toUpperCase(), "L") 
+            //     this.drawPFP(context, this.avatars[this.names.indexOf(this.username)], "L")
             //     break;
             default:
                 Console.alert("Spotlight setting not recognized", 'Spotlight')
@@ -979,12 +982,12 @@ const Spotlight = { // [S1]
     determineResponseIndices(slides) {
         var toReturn = []
         for (var keyIndex = 0; keyIndex < slides.length; keyIndex++) {
-            if (this.findUsername(slides[keyIndex]) != this.user) { continue }
+            if (this.findUsername(slides[keyIndex]) != this.username) { continue }
             var prevIndex = indexOfPrevSlide(keyIndex)
             toReturn.push({ key:keyIndex, prev: prevIndex })
         }
         return toReturn
-        // const keyIndex = slides.find((item) => findUsername(item) == this.user)
+        // const keyIndex = slides.find((item) => findUsername(item) == this.username)
         // if (keySlide < 0) { Console.log('Did not participate in this round; no frame will be saved') }
         // const keySlide = slides[keyIndex]  // slides[this.keyIndex]
         // var prevIndex = indexOfPrevSlide(keySlide)
@@ -1015,7 +1018,7 @@ const Spotlight = { // [S1]
         
         // Determinine slides
         // const slides = document.querySelector(".timeline").querySelectorAll(".item");
-        // const keyIndex = slides.find((item) => findUsername(item) == this.user)
+        // const keyIndex = slides.find((item) => findUsername(item) == this.username)
         // if (keyIndex < 0) { Console.log('Did not participate in this round; no frame will be saved') }
         const keySlide = slides[keyIndex]  // slides[this.keyIndex]
         // var prevIndex = indexOfPrevSlide(keySlide)
