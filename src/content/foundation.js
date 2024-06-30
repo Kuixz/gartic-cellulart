@@ -153,31 +153,7 @@ const Inwindow = {
 }
 
 // Submodule functionalities
-const Console = { // Only print certain messages
-    name: "Console",
-    // enabled: new Set(),
-    enabled: new Set([/*'Observer',*//*'Socket', */'Spotlight', 'Xhr']),
 
-    toggle: function(mod) {
-        this.set(mod, !this.enabled.has(mod))
-    },
-    set: function(mod, enabled) {
-        enabled ? this.enabled.add(mod) : this.enabled.delete(mod)
-        Console.log((enabled ? "Enabled " : "Disabled ") + "logging for " + mod, 'Console')
-    },
-    log: function(message, modName=null) {
-        if (modName && !this.enabled.has(modName)) { return }
-        const msg = `[${modName}] ${message}`
-        this.onprint(msg)
-        console.log(msg)
-    },
-    alert: function(message, modName) {
-        const msg = `[${modName}] ERROR: ${message}`
-        this.onprint(msg)
-        console.log(msg)
-    },
-    onprint: function(message) {}, // Dynamically set
-}; Console.enabled.add('Console')
 const Shelf = { // FAKE SHELF - REMOVE THIS WHEN PUSHING BETA 
     dict: { 
         auth: "ad1b033f4885a8bc3ae4f055f591a79c59ce73a6a7380b00c4fcb75ac3eefffb",
