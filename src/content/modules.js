@@ -84,7 +84,7 @@ const CellulartModule = { // [F2]
     // isSetTo(thing) { return this.setting.isSetTo(thing) },
 
     // These functions receive messages from the in-window menu and are generally shared between modules.
-    menuStep() { const c = this.setting.current; const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this.name); return n },
+    menuStep() { const c = this.setting.current; const n = this.setting.next(); this.adjustSettings(c.name,n.name); Console.log(n, this.name); return n },
     togglePlus(plus) { if (plus) { this.setting.extend() } else { this.setting.retract() } },
     // current() { return this.setting.current }
     // An unstated assumption is that the following is always equal to 0 or 1:
