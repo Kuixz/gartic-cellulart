@@ -1,3 +1,5 @@
+
+
 const Console = { // Only print certain messages
     name: "Console",
     // enabled: new Set(),
@@ -25,3 +27,5 @@ const Console = { // Only print certain messages
     },
     onprint: function(message) {}, // Dynamically set
 };
+
+export default Console
