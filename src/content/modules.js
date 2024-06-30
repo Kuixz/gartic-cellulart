@@ -1236,7 +1236,7 @@ Object.setPrototypeOf(Spotlight, CellulartModule)
   * ---------------------------------------------------------------------- */
 /** Geom (Geometrize) is the second generation of Gartic autodrawers 
   * after rate limiting culled the first generation.     
-  * The longest module at 360 lines. Some of my finer work.                  
+  * The longest module at 360 lines. Previously some of my finer work.                  
   * ---------------------------------------------------------------------- */
 const Geom = { 
 
