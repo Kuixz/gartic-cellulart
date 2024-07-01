@@ -1,6 +1,7 @@
 // import { Socket, preventDefaults, clamp, gifenc, WhiteSettingsBelt, RedSettingsBelt, SettingsBelt, Console, Inwindow, setAttributes, svgNS, getResource, Converter, Keybind } from 'bleh'
 // import Console from "./Console";
-import Console from "./Console.js";
+// import Console from "../foundation/Console.js";
+import { Console } from "../foundation";
 
 /* ----------------------------------------------------------------------
   *                            CellulartModule 

@@ -1,4 +1,4 @@
-import { setAttributes } from "./Core"
+import { setAttributes } from "./Core.js"
 
 class InwindowElement {
     element = undefined
@@ -141,3 +141,5 @@ const Inwindow = {
         }
     }
 }
+
+export { Inwindow, InwindowElement }

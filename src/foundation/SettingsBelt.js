@@ -11,7 +11,7 @@ class SettingsBelt { // derived from Circulator, derived from Iterator, trimmed
         this.index = defaultIndex || 0
         this.extension = extension
     }
-    get current() { return this.items[this.index] }  // TODO: change this to get syntax
+    get current() { return this.items[this.index] } 
     // get currentAsset() { return this.items[this.index].asset }
     // isSetTo(thing) { return this.current == thing }
     next() { this.index = (this.index + 1              ) % this.length; return this.current }
