@@ -1,3 +1,7 @@
+/* :root {
+    --cellulart-reveal
+} */
+
 /* Multi-module */
 
 form.upload-form {
@@ -76,6 +80,7 @@ div.window-in-window {
         height: calc(100% - 40px);
         display: flex;
         justify-content: center;
+        /* position: relative; */
     }
     & img.wiw-img {
         max-width: 100%;
@@ -117,12 +122,22 @@ div.window-in-window {
     font-family: black;
 }
 
+/* Koss */
+
+canvas.koss-canvas {
+    max-height: 100%;
+    max-width: 100%;
+    /* height: 100% !important; */
+    /* width: 100% !important; */
+}
+
 /* Refdrop */
 
 img#ref-img {
     position: absolute;
     max-width: 100%;
     max-height: 100%;
+    pointer-events: none;
 }
 /*div#ref-img {
     position:absolute;

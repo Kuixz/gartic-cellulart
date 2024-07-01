@@ -12,7 +12,7 @@
     // wsSend = wsSend.apply.bind(wsSend);
     var wsSend = window.WebSocket.prototype.send;
     window.WebSocket.prototype.expressSend = function() {
-        return wsSend.call(this, ...arguments); 
+        return wsSend.apply(this, arguments); 
     }
     // Possibly bad and stupid convolution, just set expressSend to send, if I can get around the illegal invocation
     // window.WebSocket.prototype.expressSend = wsSend.bind(window.WebSocket.prototype);
@@ -28,7 +28,21 @@
         return wsSend.call(this, ...args);
     }; 
 
-    console.log("[Cellulart] WebSocket proxified")
+    // var wdAEL = window.WebSocket.prototype.addEventListener
+    // window.WebSocket.prototype.addEventListener = function(type, func) {
+    //     console.log(func)
+    //     return wdAEL.call(this, ...arguments)
+    // }
+
+    // Object.defineProperty(window.WebSocket.prototype, 'onmessage', {
+    //     set: function(f) { 
+    //         console.log(f)
+    //         this.chamberedCallback = f
+    //         this.addEventListener('message', f)
+    //     }
+    // })
+
+    // console.log("[Cellulart] WebSocket proxified")   TODO: Uncomment this
 
         /* OrigWebSocket.prototype.send = new Proxy(OrigWebSocket.prototype.send, {
             apply: function(data) {
@@ -62,7 +76,7 @@ const Socket = {
     strokeCount: 0,
 
     backToLobby() {
-        currentWS = null
+        Socket.currentWS = null
         Socket.clearStrokes()
     },
     clearStrokes() {
@@ -94,13 +108,24 @@ const Socket = {
         // if (json.screen != 5) { return }  // This saves on redundant clearStrokes, but risks breaking if Gartic changes something on a whim.
         // var json = JSON.parse(data.slice(8, -1))
         // console.log(json)
-        if ('draw' in json) { 
-            console.log(json.draw)
-            Socket.setStrokeStack(json.draw)
-            Socket.post('turnNum', json.turnNum)
-        } else {
-            Socket.clearStrokes()
+
+        Socket.post('update42', json)
+
+        if (json[1] == 11) {
+            if ('draw' in message) { 
+                console.log(message.draw)
+                Socket.setStrokeStack(json.draw)
+                // Socket.post('turnNum', json.turnNum)
+            } else {
+                Socket.clearStrokes()
+            }
         }
+
+        // if (data == '42[2,26,3]' || data == '42[2,18,{"visible":2}]' ) {
+        //     Socket.currentWS.onmessage( {data:'42[2,18,{"visible":1}]'} )
+        //     // this.currentWS.onmessage( {data:'42[2,5,1]'} )
+        // }
+        // 42[2,18,{"speed":3, "first":1, "turns":3, "keep":2, "score":2, "visible":1, "animate":2, "mod":2}]
 
         // console.log('has draw')
         // console.log(json.draw)
@@ -108,6 +133,9 @@ const Socket = {
         // Socket.post('turnNum', json.turnNum)
     },
     interceptOutgoing(data) {
+        // TODO: Bad workaround right here
+        if (data.slice(0,8) == '42[2,18,') { Socket.interceptIncoming(data); return data }
+
         if (data.indexOf('"v":') == -1) { return data }
     
         var pieces = data.split(',')  // TODO: could be a costly operation with big data, consider a different method
@@ -170,3 +198,32 @@ const Socket = {
 if (typeof exports !== 'undefined') {
     module.exports = { Socket };
 }
+
+// Node.prototype.appendChild = new Proxy( Node.prototype.appendChild, {
+//     async apply (target, thisArg, [element]) {
+//       if (element.tagName == "SCRIPT") {
+//         if (element.src.indexOf('draw') != -1) {
+//           let text = await requestText(element.src)
+//           text = editScript(text)
+//           let blob = new Blob([text])
+//           element.src = URL.createObjectURL(blob)
+//         }
+//       }
+//       return Reflect.apply( ...arguments )
+//     }
+//   })
+   
+//   /* stroke configuration note */
+//   /* [toolID, strokeID, [color, 18, 0.6], [x0, y0]. [x1, y1], ..., [xn, yn]] */
+   
+//   function editScript (text) {
+//     // Find the final draw function
+//     // let functionFinalDraw = text.match(/function\s\w{1,}\(\w{0,}\){[^\{]+{[^\}]{0,}return\[\]\.concat\(Object\(\w{0,}\.*\w{0,}\)\(\w{0,}\),\[\w{0,}\]\)[^\}]{0,}}[^\}]{0,}}/g)[0]
+//     // find the variable that setData is part of
+//     // let setDataVar = functionFinalDraw.match(/\w{1,}(?=\.setData)/g)[0]
+//     // Expose setData to the script
+//     // text = text.replace(/\(\(function\(\){if\(!\w{1,}\.disabled\)/, `((function(){;window.setData = ${setDataVar}.setData;if(!${setDataVar}.disabled)`)
+//     return text.replace('e.hidden','false').replace('f.hidden','false')
+//   }
+
+// console.log(chrome.storage.local.get())

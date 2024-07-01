@@ -7,7 +7,7 @@
 // (document.head || document.documentElement).appendChild(s2);
 
 var ds
-for (const script of [/*'src/lib/wsHook.js',*//*'src/lib/xhook.min.js',*/'src/branches/injected/socket.js', 'src/branches/injected/xhr.js']) {
+for (const script of [/*'src/lib/wsHook.js',*//*'src/lib/xhook.min.js',*/'src/branches/injected.js']) { //'src/branches/injected/socket.js']) {//, 'src/branches/injected/xhr.js']) {
     ds = document.createElement('script');
     ds.src = chrome.runtime.getURL(script);
     (document.head || document.documentElement).appendChild(ds);

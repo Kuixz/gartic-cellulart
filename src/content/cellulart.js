@@ -1,17 +1,25 @@
  /* ----------------------------------------------------------------------
-  *                         Cellulart BETA 1.2.0
+  *                           Cellulart 1.2.0
   *                           Created by Quoi3
   * Please send any concerns, errors, reviews, and feedback to Quixz#0033 
   *    And please don't stare like that!! It's embarrassing (,,>﹏<,,) 
   * ---------------------------------------------------------------------- */ 
+const globalState = {
+    user : '',
+    players : 0,
+    turns : 0,
+    flow : '',
+    speed : '',
+}
+
 const Controller = { 
     
     menu: null, // [C1]
-    modules: [Timer, Koss, Refdrop, Geom, Red, Debug], //, Reveal]
+    modules: [Timer, Koss, Refdrop, Spotlight, Geom, Red, Debug], //, Reveal]
     auth: SHAuth.using(Shelf),
 
     init() {
-        WIW.constructWIWNode();
+        Inwindow.constructNode();
         Keybinder.init()
         Socket.init()
         Xhr.init()
@@ -26,11 +34,19 @@ const Controller = {
     mutation (oldPhase, newPhase) {
         Controller.modules.forEach(mod => mod.mutation(oldPhase, newPhase))
     },
+    roundStart() {
+        game.roundStart()
+        Controller.modules.forEach(mod => mod.roundStart())
+    },
     backToLobby(oldPhase) {
         Socket.post("backToLobby")
         // Shelf.set({ strokeCount:data }) // Possibly redundant? Will have to test.
         Controller.modules.forEach(mod => mod.backToLobby(oldPhase))
     },
+    // adjustSettings(previous, current) {},
+    // updateLobbySettings(type, data) {
+    //     Controller.modules.forEach(mod => mod.updateLobbySettings(type, data))
+    // },
 
     initPopupAuth() {
         chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
@@ -42,7 +58,7 @@ const Controller = {
     async createMenu() {
         var hiddenButtons = []
 
-        green = !(await Controller.auth.tryLogin())
+        const green = !(await Controller.auth.tryLogin())
         createMenuButtons(green)
         if (green) { Controller.unhide = unhide }
 
@@ -59,17 +75,17 @@ const Controller = {
         }
         function createModuleButton(mod, green) {
             createButton(
-                mod.name.toLowerCase() + "_" + mod.setting.current(),
+                mod.name.toLowerCase() + "_" + mod.setting.current,
                 function() { return mod.name.toLowerCase() + "_" + mod.menuStep() },
                 mod.isCheat && green
             )
         }
         function createButton(defaultPicture, onclick, hidden){
             const item = setAttributes(document.createElement("div"), { class: "cellulart-menu-item" })
-            const itemIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/" + defaultPicture + ".png"), parent: item })
+            const itemIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/" + defaultPicture + ".png"), parent: item })
             item.addEventListener("click", () => { 
                 const res = onclick(); 
-                itemIcon.src = chrome.runtime.getURL("assets/menu-icons/" + res + ".png") 
+                itemIcon.src = getResource("assets/menu-icons/" + res + ".png")
             })
             if (hidden) { hiddenButtons.push(item); item.style.display = "none" } 
             Controller.menu.appendChild(item)
@@ -192,6 +208,7 @@ const Observer = {
         Observer.attachContentObserver(); 
         // Socket.addMessageListener('gameEvent', Observer.deduceSettingsFromSocket)
         // Socket.addMessageListener('gameEventScreenTransition', Observer.deduceSettingsFromSocket)
+        Socket.addMessageListener('updateLobbySettings', Observer.deduceSettingsFromSocket)
         Xhr.addMessageListener('lobbySettings', Observer.deduceSettingsFromXHR)
         // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     },
@@ -201,10 +218,15 @@ const Observer = {
         Console.log(newPhase, Observer)
 
         // Handle special cases
+        if (oldPhase == "lobby" && newPhase != "start") { Observer.roundStart(); }
         if (newPhase == "waiting") { Observer.waiting(); return; } 
         if (newPhase == "lobby")   { Observer.backToLobby(oldPhase); return; } 
+        // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
 
         Controller.mutation(oldPhase, newPhase)
+    },
+    roundStart() {
+        Controller.roundStart()
     },
     backToLobby(oldPhase) {
         Observer.nextObserver.observe(document.querySelector("#__next"), configChildTrunk); 
@@ -212,6 +234,9 @@ const Observer = {
     },
 
     waiting() { Console.log("Waiting", Observer) }, // [C4]
+    // reconnect() {
+        
+    // },
 
     // adjustSettings(data) {
     // },
@@ -222,13 +247,17 @@ const Observer = {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
         Observer.deduceSettingsFromDocument()
+        
+        // console.log('next fired')
     }),
     contentObserver: new MutationObserver((records) => {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
-        Observer.nextObserver.disconnect()
+        // Observer.nextObserver.disconnect()
 
         Observer.mutation(Observer.content.firstChild.firstChild.classList.item(1))
+
+        // console.log('content fired')
     }),
     attachContentObserver() {
         var frame = document.querySelector("#content");
@@ -242,60 +271,103 @@ const Observer = {
         Observer.content = frame;
     },
 
+
+    // Due to possible instability, I have judged that "perfect" settings tracking is infeasible.
+    // Thus, the below two functions will primarily find use under Timer/Spotlight (precise reconnect), Scry (functionality), and Socket (stroke erasure).
     deduceSettingsFromXHR(data) {
-        Console.log(data, 'Observer')
-        // const config = data.configs
+        // Console.log(data, 'Observer')
 
-        // if (config.tab == 1) { 
-        //     Console.log("XHR can use presets", 'Observer')
-        //     try {
-        //         const preset = Converter.modeIndexToString(config.mode)
-        //         Object.assign(game, modeParameters[preset]);
-        //         Timer.rejoinInterpolate(data.turnNum)
-        //         return
-        //     } catch {
-        //         Console.alert('This is an unknown preset, defaulting to piecewise assignment', 'Observer')
-        //     }
-        // }
-        // Console.log("XHR can't use presets", 'Observer')
-
-        // Converter.setMode('CUSTOM')
-        // TODO: add piecewise assignment here
-        // game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
-        // Object.assign(game, Converter.modeStringToParameters(gameConfig[0]))
-        // game.fallback = Converter.flowStringToFallback(gameConfig[1])
-
-        if (data.turnMax > 0) {
+        // if (data.turnMax > 0) {
             // todo: in theory we should pass these through to all the modules, but ehh.
-            game.turns = data.turnMax
-            Timer.interpolate(data.turnNum)
-            Socket.post('setStrokeStack', data.draw)
-        }
-    },
-    // deduceSettingsFromSocket(data) {
-    //     // console.log(data)
-    //     if (data[1] == 5) {
-    //         // game.turns = data[2]  // it's not that easy...
-    //         game.turns = Converter.turnsStringToFunction(/* TODO TODO TODO */)(data[2])
-    //     }
-    // },
-    deduceSettingsFromDocument() {
-        // TODO: move as much of this as possible to Converter / Timer.
+            // game.turns = data.turnMax
+            // Timer.interpolate(data.turnNum)
+        //     Socket.post('setStrokeStack', data.draw)
+        // }
+        // Controller.updateLobbySettings(1, data)
+        // Controller.updateLobbySettings(data[0], data[1])
 
+        // const configs = data.configs
+        // Controller.updateLobbySettings({
+        //     "custom": [Converter.speedIndexToString(configs.speed), Converter.flowIndexToString(configs.first), Converter.turnsIndexToString(configs.turns)],
+        //     "self": data.user,
+        //     "usersIn": data.users
+        // })
+        game.host = data.users.find((x) => x.owner === true).nick
+        game.user = data.user
+        game.user.avatar = getComputedStyle(document.querySelector('.avatar > i').previousSibling).backgroundImage
+        game.players = data.users
+        game.turnsString = Converter.turnsIndexToString(data.configs.turns)
+        game.flowString = Converter.flowIndexToString(data.configs.first)
+        game.speedString = Converter.speedIndexToString(data.configs.speed)
+        // turnsString: 'ALL',
+    },
+    deduceSettingsFromSocket(data) {
+        console.log(data)
+        // Controller.updateLobbySettings(data[1], data[2])
+        // if (data[1] == 5) {
+            // game.turns = data[2]  // it's not that easy...
+        //     game.turns = Converter.turnsStringToFunction(/* TODO TODO TODO */)(data[2])
+        // }
+        // if (data[1] == 1) {
+        // var dict = {}
+        switch (data[1]) {
+            // case 2: 
+            //     game.players.push(data[2])
+            //     // dict["usersIn"] = [data[2]]; 
+            //     break;
+            // case 3: 
+            //     // game.players.push(data[2])
+            //     // dict["userOut"] = data[2]; 
+            //     break;
+            case 18:
+                for (const key in data[2]) {
+                    if (key == 'speed') {
+                        game.speedString = Converter.speedIndexToString(data[2][key])
+                    }
+                    if (key == 'first') {
+                        game.flowString = Converter.flowIndexToString(data[2][key])
+                    }
+                    if (key == 'turns') {
+                        game.turnsString = Converter.turnsIndexToString(data[2][key])
+                    }
+                }
+                break;
+            // case 26:
+            //     break;
+            case 27:
+                game.flowString = 'WRITING, DRAWING'
+                game.speedString = 'NORMAL'
+                game.turnsString = 'ALL'
+                break;
+            default:
+                break;
+        }
+        // Controller.updateLobbySettings(dict)
+        // }
+    },
+    deduceSettingsFromDocument() {
+
+        // console.log("deduce")
         const left = document.querySelector(".left")
         const players = Number(left.firstChild.textContent.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
-        
+        game.players = new Array(players)
+
         try {
             // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
             const mode = document.querySelector(".checked").querySelector("h4").textContent;
-            Object.assign(game, Converter.getParameters(mode));
-            switch (mode) {
-                case "ICEBREAKER":  game.turns = players + 1; break;
-                case "MASTERPIECE": game.turns = 1;           break;
-                case "CROWD":       game.turns = players / 2; break;
-                case "KNOCK-OFF":   game.decay = Math.exp(8 / players); game.turns = players; break;
-                default:            game.turns = players;     break;
-            }
+            // Controller.updateLobbySettings({"default": mode})
+
+            const gameConfig = Converter.getParameters(mode)
+            game.turnsString = gameConfig.turns
+            game.speedString = gameConfig.speed
+            game.flowString = gameConfig.flow
+            // switch (mode) {
+            //     case "ICEBREAKER":  game.turns = players + 1; break;
+            //     case "MASTERPIECE": game.turns = 1;           break;
+            //     case "CROWD":       game.turns = players / 2; break;
+            //     case "KNOCK-OFF":   game.decay = Math.exp(8 / players); game.turns = players; break;
+            //     default:            game.turns = players;     break;
+            // }
         } catch { 
             // if the current gamemode variable is not found by searching for .checked, then each piece must be assigned separately.
             const gameConfig = {};
@@ -306,11 +378,41 @@ const Observer = {
                         gameConfig[num] = select.childNodes[select.selectedIndex].textContent; }
                 catch { gameConfig[num] = gameEncodedConfig[num].childNodes[0].textContent;    }
             })
-            game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
-            Object.assign(game, Converter.modeStringToParameters(gameConfig[0]))
-            game.fallback = Converter.flowStringToFallback(gameConfig[1])
+            // Controller.updateLobbySettings({"custom": gameConfig/*, "players": players*/})
+
+            game.turnsString = gameConfig[2]
+            game.speedString = gameConfig[0]
+            game.flowString = gameConfig[1]
+            // game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
+            // Object.assign(game, Converter.speedStringToParameters(gameConfig[0]))
+            // game.fallback = Converter.flowStringToFallback(gameConfig[1])
         }
     },
+
+    // if utrns 0 finalize turns
+
+    // finalizeTurns() {
+    //     const step = document.querySelector('.step')
+    //     if (!step) { setTimeout(() => { this.finalizeTurns() }, 200)}
+    //     const indicator = step.querySelector('p').textContent
+    //     this.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
+    // },
+    // updateLobbySettings(dict) {
+    //     if ("default" in dict) {
+    //         const data = dict.default
+    //         const parameters = Converter.getParameters(data)
+    //         Object.assign(this, parameters)  // TODO: unsafe and unscalable
+    //         // console.log(g)
+    //     }
+    //     if ("custom" in dict) {
+    //         const data = dict.custom
+    //         // const players = "players" in dict ? dict.players : 1
+    //         // this.turnsFunction = Converter.turnsStringToFunction(data[2]) // (players) 
+    //         const parameters = Converter.speedStringToParameters(data[0])
+    //         Object.assign(this, parameters)  // TODO: unsafe and unscalable
+    //     }
+    // },
+
     // TODO: Get phase transition data from Socket
 }
 
@@ -325,12 +427,41 @@ function main() {
     // document.querySelector(".side").remove() // lol
     var side = document.querySelector(".side"); if (side) { side.style.display = "none" }
 }
-document.readyState === 'complete' ? main() : window.addEventListener('load', (e) => main());
+document.readyState === 'complete' ? main() : window.addEventListener('load', () => main());
 
 // function sandbox() {
 // 
 // }
+window.addEventListener('beforeunload', () => {
+    // get states (including transient states) of all modules + 
+    // shelve them
+
+    // on load:
+    // retrieve states
+    // pass transience i.e. if backToLobby-ness along with aggregated state data to modules
+    // so they can pick out their data
+
+
+    // OR load:
+    // tell all modules to retrieve states
+    // on first transition:
+    // if transient i.e. if not backToLobby, tell all modules to retrieve transient states
+})
 
 if (typeof exports !== 'undefined') {
     module.exports = { Controller, Observer };
 }
+
+// const h = new Image()
+// // h.crossOrigin = "anonymous";
+// h.src = 'https://custom-avatars-for-gartic-phone.s3.eu-north-1.amazonaws.com/lunarmoontea.png'
+// document.body.appendChild(h)
+
+// const g = document.createElement('canvas')
+// document.body.appendChild(g)
+// const j = g.getContext("2d");
+
+// g.width = 500
+// g.height = 500
+// j.drawImage(h, 0, 0)
+// console.log(j.getImageData(0,0,500,500))
