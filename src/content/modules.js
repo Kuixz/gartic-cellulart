@@ -1,3 +1,5 @@
+// import { Socket, preventDefaults, clamp, gifenc, WhiteSettingsBelt, RedSettingsBelt, SettingsBelt, Console, Inwindow, setAttributes, svgNS, getResource, Converter, Keybind } from 'bleh'
+
 /* ----------------------------------------------------------------------
   *                            CellulartModule 
   * ---------------------------------------------------------------------- */
@@ -8,30 +10,83 @@
   * ---------------------------------------------------------------------- */
 const CellulartModule = { // [F2]
     name : "null",          // All modules have a name property
+    hasMenuButton : true,   // Some modules aren't directly controllable
     isCheat : false,        // Most modules declare if they are unfair or not
     setting : undefined,    // All modules have a SettingsBelt
     keybinds : undefined,   // Some modules have keybinds
 
     // Initialization. 
-    // To be overriden by each module.
-    init() {},
+    // To be overridden by each module.
+    init(modules) {},
 
     // This function is called whenever the game transitions to a new phase.
-    // To be overriden by each module.
+    // To be overridden by each module.
     mutation(oldPhase, newPhase) {},
 
+    // This function sets critical persistent variables when a game starts.
+    // To be overridden by each module.
+    roundStart() {},
+
     // This function "cleans the slate" when a game ends. 
-    // To be overriden by each module.
+    // To be overridden by each module.
+    // TODO: Remove oldPhase from this.
     backToLobby(oldPhase) {}, 
 
     // This function makes required changes when switching between settings. 
-    // To be overriden by each (controllable) module.
+    // To be overridden by each (controllable) module.
     adjustSettings(previous, current) {},
 
+    // These three functions handle the retrieval of settings between sessions.
+    // Long term storage: recurrent
+    // Short term storage: transient
+    // saveRecurrentState() { return {} },
+    // saveTransientState() { return {} },
+    // saveRecurrentState() { Shelf.set({ [this.name + '_recurrent_state']: {} }) },
+    // saveTransientState() { Shelf.set({ [this.name + '_transient_state']: {} }) },
+
+
+
+    //  Loading from storage (this function is generally shared between modules):
+    // loadState() {
+    //     const dict = {}
+    //     Object.assign(this, dict)
+    //     // if ('recurrent' in dict) {
+    //     //     // if ('setting' in dict.recurrent) {
+    //     //     //    this.setting.jump(dict.recurrent.setting)
+    //     //     //    delete dict.recurrent.setting
+    //     //     // }
+    //     //     Object.assign(this, dict.recurrent)
+    //     // }
+    //     // if ('transient' in dict) {
+    //     //     Object.assign(this, dict.transient)
+    //     // }
+    // },
+    // loadState(dict, transient) {
+    //     if (!(this.name in dict)) { return }
+    //     const data = dict[this.name]
+    //     // if ('recurrent' in dict) {
+    //     //     // if ('setting' in dict.recurrent) {
+    //     //     //    this.setting.jump(dict.recurrent.setting)
+    //     //     //    delete dict.recurrent.setting
+    //     //     // }
+    //     //     Object.assign(this, dict.recurrent)
+    //     // }
+    //     // if (transient && 'transient' in dict) {
+    //     //     Object.assign(this, dict.transient)
+    //     // }
+    // },
+    // loadTransientState() {
+
+    // }
+
+    // Syntactic getter for the setting. Generally shared between modules.
+    isSetTo(thing) { return this.setting.current == thing }, // TODO: bad coupling
+    // isSetTo(thing) { return this.setting.isSetTo(thing) },
+
     // These functions receive messages from the in-window menu and are generally shared between modules.
-    menuStep() { const c = this.setting.current(); const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this); return n },
+    menuStep() { const c = this.setting.current; const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this.name); return n },
     togglePlus(plus) { if (plus) { this.setting.extend() } else { this.setting.retract() } },
-    current() { return this.setting.current() }
+    // current() { return this.setting.current }
     // An unstated assumption is that the following is always equal to 0 or 1:
     // the number of times togglePlus(true) is called minus the number of times togglePlus(false) is called.
 }
@@ -41,10 +96,9 @@ const CellulartModule = { // [F2]
 
 /* ----------------------------------------------------------------------
   *                                 Debug 
-  * With credit to Jon Ege Ronnenberg (https://jsfiddle.net/user/dotnetCarpenter/)
   * ---------------------------------------------------------------------- */
-/** Debug creates an onscreen window where console messages are rerouted.
-  * Works closely with Console; the two may be merged into one.
+/** Debug routes or blocks console messages.
+  * Works closely with Console; the two should be merged into one.
   * ---------------------------------------------------------------------- */
 const Debug = {
     name : "Debug",
@@ -53,61 +107,31 @@ const Debug = {
     debugWIW : undefined,
 
     init(modules) {
-        const debugWIW = WIW.newWIW(false, false, 0.2)
-        const body = setAttributes(debugWIW.querySelector(".wiw-body"), { id:"debug-body" });
+        const debugWIW = Inwindow.new(false, false, 0.2)
+        const body = setAttributes(debugWIW.body, { id:"debug-body" });
         const iconSelect = setAttributes(document.createElement("div"), { id: 'debug-header', parent: body })
-        // const logArea = setAttributes(document.createElement("div"), { id: "debug-log", parent: body })
-        // const textArea = setAttributes(document.createElement("input"), {id: "debug-input", parent: body })
-        // const backColor = new SettingsBelt(["rgb(30,30,30)", "rgb(50,50,50)"])
-        // const modNames = new Set([...modules.map((mod) => mod.name), "Socket", "Worker", "Observer"])
-        // const filter = new Set()
 
-        modules.concat([{ name:"Socket" }, { name:"Worker" }, Observer]).forEach((mod) => {
-            const modIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/" + mod.name.toLowerCase() + "_on" + ".png"), parent: iconSelect })
-            modIcon.addEventListener("click", () => { 
-                // filter.has(mod.name) ? filter.delete(mod.name) : filter.add(mod.name) 
+        // const preactivated = [ Observer ]
+        modules.map(mod => mod.name).concat(["Socket", "Xhr", "Worker", "Observer"]).forEach((mod) => {
+            const modIcon = setAttributes(document.createElement("img"), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/" + mod.toLowerCase() + "_on" + ".png"), parent: iconSelect })
+            modIcon.addEventListener("click", toggle)
+            if (Console.enabled.has(mod)) { 
+                modIcon.classList.add("debug-selected")
+            }
+            function toggle() {
                 modIcon.classList.toggle("debug-selected")
-                // Debug.filter(logArea, modNames, filter)
-                Console.toggle(mod.name)
-            })
-        }) // TODO: none or all is all
-
-        // Console.onprint = function(message, mod) {
-        //     if (Debug.setting.current == 'off') { return }
-        //     // The below function is adapted from Jon Ege Ronnenberg at (https://jsfiddle.net/dotnetCarpenter/KpM5j)
-        //     // and is used to keep the user scrolled to the bottom of the messages.
-        //     const isScrolledToBottom = logArea.scrollHeight - logArea.clientHeight <= logArea.scrollTop + 1;
-
-        //     const logEntry = setAttributes(document.createElement("label"), { style: "background-color:" + backColor.next(), class:"debug-entry", owner:mod.name });
-        //     logEntry.textContent = message;
-        //     logArea.appendChild(logEntry);
-        //     if (filter.size > 0 && !filter.has(mod.name)) { logEntry.style.display = 'none' }
-            
-        //     if(isScrolledToBottom) {logArea.scrollTop = logArea.scrollHeight - logArea.clientHeight};
-        // }
+                Console.toggle(mod)
+            }
+        }) 
 
         Debug.debugWIW = debugWIW;
     },
     adjustSettings(previous, current) {
         if (current == 'on') { 
-            Debug.debugWIW.style.visibility = 'initial'; return 
+            Debug.debugWIW.setVisibility('initial'); return 
         }
-        Debug.debugWIW.style.visibility = 'hidden'
-        // Debug.debugWIW.querySelector('debug-log').childNodes.forEach((entry) => entry.remove())
+        Debug.debugWIW.setVisibility('hidden')
     },
-    /* filter(logArea, all, selected) {
-        const pass = selected.size == 0 ? all : selected
-        var color = "rgb(30,30,30)"
-        logArea.childNodes.forEach((entry) => {
-            if (pass.has(entry.getAttribute("owner"))) {
-                entry.style.display = 'block'
-                entry.style.backgroundColor = color
-                color = color == "rgb(50,50,50)" ? "rgb(30,30,30)" : "rgb(50,50,50)" 
-                return
-            }
-            entry.style.display = 'none'
-        })
-    } */
 }; 
 Object.setPrototypeOf(Debug, CellulartModule)
 
@@ -127,10 +151,15 @@ const Red = {
 
     modules : null,
 
-    init(modules) { this.modules = modules },
+    init(modules) { 
+        this.modules = modules.filter((x) => 'setting' in x ) 
+        // console.log(this.modules)
+    },
     adjustSettings(previous, current) {
         this.modules.forEach((mod) => { mod.togglePlus(current == 'red') })
-    }
+    },
+    // saveRecurrentState() { return { setting: this.setting.current } }
+    // saveTransientState() { return {} },
 }; 
 Object.setPrototypeOf(Red, CellulartModule)
 
@@ -154,24 +183,97 @@ const Timer = {
     display : undefined, // HTMLDivElement
     countdown : undefined, // timeoutID
 
-    init() {}, // Empty.
+    write: 40,             // used by Timer
+    draw: 150,             // used by Timer
+    decay: 0,              // used by Timer
+    // decayFunction: () => 0,
+    firstMultiplier: 1.25, // used by Timer
+
+    // init(modules) {}, // Empty.
     mutation(oldPhase, newPhase) {
         if (["book", "start"].includes(newPhase)) { return }
-        setTimeout(Timer.placeTimer, 200)
+        if (game.turns == 0) { this.finalizeTurns() }
+        setTimeout(() => { this.placeTimer() }, 200)
 
         // If we changed from a phase that warrants a reset in the timer, reset the timer.
         if (oldPhase == "memory" && newPhase != "memory") { return } // !["lobby", "write", "draw", "first"].includes(phase) && newPhase != "memory") { return }
-        clearTimeout(Timer.countdown)
-        setTimeout(Timer.restartTimer, 200, newPhase)
+        clearTimeout(this.countdown)
+        setTimeout((x) => { this.restartTimer(x) }, 200, newPhase)
     },
-    backToLobby(oldPhase) {},
+    backToLobby(oldPhase) {
+        // this.turns = 0
+    }, // Empty.
     adjustSettings(previous, current) {
-        if (Timer.display == undefined) { return }
-        if (current == "on") { Timer.display.style.visibility = "visible" } else { Timer.display.style.visibility = "hidden" }
+        if (this.display == undefined) { return }
+        if (current == "on") { this.display.style.visibility = "visible" } else { this.display.style.visibility = "hidden" }
     },
+    roundStart() {
+        // const data = dict.custom
+        const parameters = Converter.speedStringToParameters(game.speedString)
+        this.decay = parameters.decayFunction(game.turns)
+        // delete parameters.turns
+        Object.assign(this, parameters)  // TODO: unsafe and unscalable
+    },
+    // updateLobbySettings(dict) {
+    //     if ("default" in dict) {
+    //         const data = dict.default
+    //         const parameters = Converter.getParameters(data)
+    //         Object.assign(this, parameters)  // TODO: unsafe and unscalable
+    //         // console.log(g)
+    //     }
+    //     if ("custom" in dict) {
+    //         const data = dict.custom
+    //         // const players = "players" in dict ? dict.players : 1
+    //         // this.turnsFunction = Converter.turnsStringToFunction(data[2]) // (players) 
+    //         const parameters = Converter.speedStringToParameters(data[0])
+    //         Object.assign(this, parameters)  // TODO: unsafe and unscalable
+    //     }
+    // },
+
+    // templateParameters(data) {
+    //     Object.assign(this.parameters, Converter.getParameters(Converter.modeIndexToString(data)))
+    // },
+    // adjustParameters(parameters) {
+    //     const config = parameters.configs
+    //     // const midgame = parameters.turnMax > 0
+
+    //     // Timer.parameters.players = parameters.users.length;
+    //     if ('speed' in config) { Object.assign(this, Converter.speedStringToParameters(Converter.speedIndexToString(config.speed))) }  // TODO: unsafe and unscalable
+    //     // Timer.tweakParameters(config, midgame)
+
+    //     if (parameters.turnMax > 0) {
+    //     // if (midgame) {
+    //         // todo: in theory we should pass these through to all the modules, but ehh.
+    //         // Timer.parameters.turns = parameters.turnMax
+    //         Timer.interpolate(parameters.turnNum)
+    //         // Timer.finalizeTurns(Timer.parameters.players)
+    //     }
+    // },
+    // tweakParameters(config, midgame=false) {
+    //     // if ('turns' in config) { Timer.parameters.turnsFunction = midgame ? () => { return parameters.turnMax } : Converter.turnsStringToFunction(Converter.turnsIndexToString(config.turns)) }  // (players) 
+    //     if ('speed' in config) { Object.assign(this.parameters, Converter.speedStringToParameters(Converter.speedIndexToString(config.speed))) }
+    // },
+    // finalizeTurns() {
+    //     const step = document.querySelector('.step')
+    //     if (!step) { setTimeout(() => { this.finalizeTurns() }, 200)}
+    //     // if (newPhase != 'book') { 
+    //         // setTimeout(() => {
+    //         // if (this.parameters.turns == 0) { 
+    //     // const d = this.parameters.turns; if (t 
+    //     const indicator = step.querySelector('p').textContent
+    //     this.turns = Number(indicator.slice(indicator.indexOf('/') + 1))
+            
+    //         // }
+    //         // return
+    //     // }
+    // // finalizeTurns(players) {
+    //     // const t = Timer.parameters.turns; if (t instanceof Function) { Timer.parameters.turns = t(players) }
+    //     this.decay = this.decayFunction(this.turns)
+    //     // }, 200);
+    // },
 
     placeTimer() {  // [T3]
-        const p = document.querySelector("p.jsx-3561292207"); if (p) { p.remove() }
+        // const p = document.querySelector("p.jsx-3561292207"); if (p) { p.remove() }
 
         // todo: is it even possible to run a rescue scheme, given that we pluck the clock and stick it in the holder?
         const clock = document.querySelector(".time");
@@ -182,36 +284,46 @@ const Timer = {
 
         const timerHolder = setAttributes(document.createElement("div"), { id: "timerHolder", parent: holder })
 
-        Timer.display = setAttributes(document.createElement("div"), { id: "timer", style: "visibility:" + Timer.setting.current() == 'off' ? "hidden" : "visible", parent: timerHolder })
+        // console.log(this.setting.current)
+        // console.log(this.isSetTo('off'))
+        this.display = setAttributes(document.createElement("div"), { id: "timer", style: `visibility:${this.isSetTo('off') ? "hidden" : "visible"}`, parent: timerHolder })
+
+        const p = clock.querySelector('p'); if (p) { p.style.visibility = "hidden" }
     },
     restartTimer(newPhase) {
         const clock = document.querySelector(".time")
         if (clock.classList.contains("lock")) {
             const p = clock.querySelector("p"); if(p) { p.style.visibility = "hidden" } // Prevents clashing with SillyV's extension
-            Timer.tick(1, 1)
+            this.tick(1, 1)
         } else {
-            Timer.tick(Timer.getSecondsForPhase(newPhase) - 1, -1)
+            var seconds = this.getSecondsForPhase(newPhase)
+            if (seconds == -1) {
+                this.tick(1, 1)
+            }
+            else {
+                this.tick(seconds - 1, -1)
+            }
         }
         // if (game.parameters["timerCurve"] != 0) { 
-        Timer.interpolate(); 
+        this.interpolate(1); 
         // }
     },
     getSecondsForPhase(newPhase) {
-        Console.log("I think this phase is " + newPhase, Timer);
+        Console.log("I think this phase is " + newPhase, 'Timer');
         var toReturn = 0;
         switch (newPhase) {
             case 'draw': case 'memory': 
                 // Checks if first turn && the firstMultiplier is so extreme that it must be either FASTER FIRST or SLOWER FIRST
-                if (![1,1.25].includes(game.firstMultiplier) && document.querySelector(".step").textContent.slice(0, 2) == "1/") {
-                    toReturn = 150 * game.firstMultiplier;  // Experimental optimization replacing game.draw with flat 150
+                if (![1,1.25].includes(this.firstMultiplier) && document.querySelector(".step").textContent.slice(0, 2) == "1/") {
+                    toReturn = 150 * this.firstMultiplier;  // Experimental optimization replacing this.draw with flat 150
                 } else { 
-                    toReturn = game.draw;
+                    toReturn = this.draw;
                 } break;
-            case 'write': toReturn = game.write; break;
-            case 'first': toReturn = game.write * game.firstMultiplier; break;
+            case 'write': toReturn = this.write; break;
+            case 'first': toReturn = this.write * this.firstMultiplier; break;
             case 'mod':   return 25 // 10 // [T2]
             default:
-                Console.alert(Timer, "Could not determine duration of phase " + newPhase)
+                Console.alert("Could not determine duration of phase " + newPhase, 'Timer')
                 return 0
         }
         return Math.floor(toReturn)
@@ -221,18 +333,25 @@ const Timer = {
         const m = String(Math.floor(seconds / 60)) + ":"
         var s = String(seconds % 60);
         if (s.length < 2) { s = 0 + s }
-        Timer.display.textContent = h == "0:" ? m + s : h + m + s
+        this.display.textContent = h == "0:" ? m + s : h + m + s
 
-        if (seconds <= 0 || !Timer.display) { Console.log("Countdown ended", Timer); return }
-        Timer.countdown = setTimeout(Timer.tick, 1000, seconds + direction, direction)
+        if (seconds <= 0 || !this.display) { Console.log("Countdown ended", 'Timer'); return }
+        this.countdown = setTimeout((s,d) => { this.tick(s,d) }, 1000, seconds + direction, direction)
     },
-    interpolate() {
-        if (game.decay != 0) {
-            Console.log("Interpolating regressive/progressive timer", Timer)
-            game.write = (game.write - 8) * game.decay + 8
-            game.draw = (game.draw - 30) * game.decay + 30
+    interpolate(times) {
+        if (this.decay != 0) {
+            Console.log("Interpolating regressive/progressive timer", 'Timer')
+            this.write = (this.write - 8) * (this.decay ** times) + 8
+            this.draw = (this.draw - 30) * (this.decay ** times) + 30
         } 
-    }
+    },
+
+    // deduceSettingsFromXHR(data) {
+    //     console.log(data)
+    // },
+    // deduceSettingsFromSocket(data) {
+
+    // }
 };
 Object.setPrototypeOf(Timer, CellulartModule)
 
@@ -253,71 +372,91 @@ const Koss = { // [K1]
     // KOSS variables
     kossWIW : undefined,    // HTMLDivElement
     kossImage : undefined,  // HTMLImageElement
+    kossCanvas : undefined, // HTMLCanvasElement
 
-    init() {
-        Koss.kossWIW = WIW.newWIW(false, false);
-        Koss.kossImage = setAttributes(new Image(), { style: "position: absolute", class:"wiw-img" })
+    init(modules) {
+        this.kossWIW = Inwindow.new(false, false);
+        this.kossWIW.body.style.position = 'relative';  // TODO: Too many dots
+        this.kossImage = setAttributes(new Image(), { style: "position: absolute", class:"wiw-img" })
     },
     mutation(oldPhase, newPhase) { 
         // ssView.childNodes[1].appendChild(kossImage);
-        
-        // If the new phase is "memory", schedule a screenshot to be taken of the canvas approximately when it's done drawing.
-        if (newPhase == "memory") {
-            // Recover the kossImage from the overlay position so that we don't lose track of it.
-            Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossImage);
-            setTimeout(Koss.screenshot, 1500);
-        } else if (newPhase == "draw" && Koss.setting.current() == 'red') {
-            setTimeout(Koss.tryUnderlayKossImage, 1000)
+        const wiwBody = this.kossWIW.body
+        if (wiwBody.firstChild) { wiwBody.removeChild(wiwBody.firstChild) }
+        if (newPhase == 'memory') {
+            setTimeout(() => { this.kossCanvas = document.querySelector(".core").querySelector("canvas") }, 10)
         }
+        else if (newPhase == 'draw') {
+            // document.querySelector(".core").querySelector("canvas")
+            // this.kossCanvas
+            this.placeCanvas()
+        }
+        // If the new phase is "memory", schedule a screenshot to be taken of the canvas approximately when it's done drawing.
+        // if (newPhase == "memory") {
+        //     // Recover the kossImage from the overlay position so that we don't lose track of it.
+        //     this.kossWIW.querySelector(".wiw-body").appendChild(this.kossImage);
+        //     setTimeout(this.screenshot, 1500);
+        // } else if (newPhase == "draw" && this.setting.current == 'red') {
+        //     setTimeout(this.tryUnderlayKossImage, 1000)
+        // }
     },
     backToLobby(oldPhase) {
-        Koss.kossImage.src = "";
+        // this.kossImage.src = "";
+        if (this.kossCanvas) {
+            this.kossCanvas.remove();
+            this.kossCanvas = undefined;
+        }
     },
     adjustSettings(previous, current) {
         // alert(current)
         switch (current) {
             case 'off':
-                Koss.kossImage.style.opacity = "1";
-                // Koss.kossImage.style.position = "static";
-                Koss.kossWIW.style.visibility = "hidden";
-                Koss.kossImage.style.display = "none"; // todo for some reason going from OVERLAY to OFF wipes your canvas unless you use display instead of visibility parameter, wtf?
-                
+                this.kossWIW.setVisibility("hidden");
+                if (this.kossCanvas) { this.kossWIW.body.appendChild(this.kossCanvas); }
                 break;
             case 'on':
-                Koss.kossImage.style.display = "initial";
-
-                Koss.kossWIW.style.visibility = "visible";
-                Koss.kossWIW.querySelector(".wiw-body").appendChild(Koss.kossImage);
+                this.kossWIW.setVisibility("visible");
+                if (this.kossCanvas) { 
+                    this.kossCanvas.style.opacity = "1"; 
+                    this.kossWIW.body.appendChild(this.kossCanvas); 
+                }
                 break;
             case 'red':
-                Koss.kossWIW.style.visibility = "hidden";
-
-                Koss.kossImage.style.opacity = "0.25";
-                // Koss.kossImage.style.position = "absolute";
-                
-                //var kossimg_host = document.createElement("div");
-                //kossimg_host.classList.add("kossImage-host");
-                Koss.tryUnderlayKossImage();
-                //kossimg_host.style.backgroundImage = "url(\"".concat(kossImage.src, "\")"); 
-                //document.querySelector(".watermark").style.backgroundImage = "url('/images/ic_ready.svg')"
-                //document.querySelector(".watermark").classList.toggle("kossImage-host");
+                this.kossWIW.setVisibility("visible");
+                if (this.kossCanvas) { 
+                    this.kossCanvas.style.opacity = "0.25"; 
+                    this.tryUnderlayKossImage();
+                }
                 break;
-            default: Console.alert(Koss, "KOSS location not recognised")
+            default: Console.alert("KOSS location not recognised", 'Koss')
         }
     },
 
-    // This function takes a screenshot of the core canvas and shows it on the kossImage element.
-    
-    tryUnderlayKossImage() {
-        try { 
-            document.querySelector(".drawingContainer").insertAdjacentElement("beforebegin", Koss.kossImage);
-            Console.log("Koss image underlaid", Koss)
-        } catch {}
+    placeCanvas() {
+        if (!this.kossCanvas) { return }
+       /* if (this.kossCanvas) { */ this.kossCanvas.classList.add('koss-canvas') // }
+        switch (this.setting.current) {
+            case 'off':
+                this.kossWIW.body.appendChild(this.kossCanvas);
+                break;
+            case 'on':
+                this.kossWIW.body.appendChild(this.kossCanvas);
+                break;
+            case 'red':
+                setTimeout(() => { this.tryUnderlayKossImage() }, 1000);
+                break;
+            default: Console.alert("KOSS location not recognised", 'Koss')
+        }
     },
-    screenshot() {
-        Koss.kossImage.src = document.querySelector(".core").querySelector("canvas").toDataURL();
-        Console.log("Screenshot taken", Koss)
-    }
+    tryUnderlayKossImage() {
+        this.kossCanvas.style.opacity = "0.25";
+        try { 
+            document.querySelector(".drawingContainer").insertAdjacentElement("beforebegin", this.kossCanvas);
+            Console.log("Koss image underlaid", 'Koss')
+        } catch {
+            Console.log("Koss image NOT underlaid, no place found : not on draw mode?", 'Koss')
+        }
+    },
 }
 Object.setPrototypeOf(Koss, CellulartModule)
 
@@ -328,15 +467,16 @@ Object.setPrototypeOf(Koss, CellulartModule)
   * ---------------------------------------------------------------------- */
 /** Refdrop allows you to upload reference images over or behind the canvas,
   * with controls for position and opacity.
+  * Includes arrow key keybinds for adjustment of the image when in Red mode.
   * ---------------------------------------------------------------------- */
 const Refdrop = { // [R1]
     name : "Refdrop",
     setting : new RedSettingsBelt('on'),
     keybinds : [
-        new Keybind((e) => e.code == "ArrowLeft" , (e) => { Refdrop.refImage.style.left = parseInt(Refdrop.refImage.style.left) - e.shiftKey ? 0.5 : 2 + "px" }),
-        new Keybind((e) => e.code == "ArrowUp"   , (e) => { Refdrop.refImage.style.top  = parseInt(Refdrop.refImage.style.top)  - e.shiftKey ? 0.5 : 2 + "px" }),
-        new Keybind((e) => e.code == "ArrowRight", (e) => { Refdrop.refImage.style.left = parseInt(Refdrop.refImage.style.left) + e.shiftKey ? 0.5 : 2 + "px" }),
-        new Keybind((e) => e.code == "ArrowDown" , (e) => { Refdrop.refImage.style.top  = parseInt(Refdrop.refImage.style.top)  + e.shiftKey ? 0.5 : 2 + "px" }),
+        new Keybind((e) => e.code == "ArrowLeft" , (e) => { this.refImage.style.left = parseInt(this.refImage.style.left) - e.shiftKey ? 0.5 : 2 + "px" }),
+        new Keybind((e) => e.code == "ArrowUp"   , (e) => { this.refImage.style.top  = parseInt(this.refImage.style.top)  - e.shiftKey ? 0.5 : 2 + "px" }),
+        new Keybind((e) => e.code == "ArrowRight", (e) => { this.refImage.style.left = parseInt(this.refImage.style.left) + e.shiftKey ? 0.5 : 2 + "px" }),
+        new Keybind((e) => e.code == "ArrowDown" , (e) => { this.refImage.style.top  = parseInt(this.refImage.style.top)  + e.shiftKey ? 0.5 : 2 + "px" }),
                 ],
     // Refdrop variables
     refUpload : undefined, // HTMLDivElement
@@ -345,83 +485,85 @@ const Refdrop = { // [R1]
     refSocket : undefined, // HTMLDivElement
     seFunctions : null,    // { clickBridge: function, screenshot: function }
 
-    init() {
-        Refdrop.seFunctions = Refdrop.initRefdrop();
-        Refdrop.onSocketClick = Refdrop.seFunctions.clickBridge;
-        Refdrop.initRefctrl()
+    init(modules) {
+        this.seFunctions = this.initRefdrop();
+        this.onSocketClick = this.seFunctions.clickBridge;
+        this.initRefctrl()
     },
     mutation(oldPhase, newPhase) {
         // Recover the ref controls from the lower corners so that we don't lose track of them.
-        document.body.appendChild(Refdrop.refUpload);
-        document.body.appendChild(Refdrop.refCtrl)
+        // document.body.appendChild(this.refUpload);
+        // document.body.appendChild(this.refCtrl)
         // Recover the refimg from the overlay position so that we don't lose track of it.
-        Refdrop.refUpload.appendChild(Refdrop.refImage);
-        Refdrop.refImage.style.visibility = "hidden";
+        // this.refUpload.appendChild(this.refImage);
+        this.refImage.style.visibility = "hidden";
     
-        if (newPhase == "draw") {
-            setTimeout(Refdrop.placeRefdropControls, 200)
+        // console.log(this.setting.current)
+        // console.log(this.isSetTo('off'))
+
+        if (newPhase == "draw" && !(this.isSetTo('off'))) {
+            setTimeout(() => { this.placeRefdropControls() }, 200)
         } else {
-            Refdrop.refUpload.style.display = "none";
-            Refdrop.refCtrl.style.display = "none";
+            this.refUpload.style.display = "none";
+            this.refCtrl.style.display = "none";
         }
     },
     backToLobby(oldPhase) {
-        Refdrop.refImage.src = "";
+        this.refImage.src = "";
     },
     adjustSettings(previous, current) {
-
         switch (current) {
             case 'off': 
                 document.querySelectorAll(".wiw-close").forEach(v => v.parentNode.parentNode.remove()) // This closes all references, forcing you to drag them in again.
-                Refdrop.refImage.src = "";
-                Refdrop.refUpload.style.visibility = "hidden";
-                Refdrop.refCtrl.style.visibility = "hidden";
+                this.refImage.src = "";
+                this.refUpload.style.visibility = "hidden";
+                this.refCtrl.style.visibility = "hidden";
                 return;
             case 'on':
-                Refdrop.refUpload.style.visibility = "visible"
-                Refdrop.onSocketClick = Refdrop.seFunctions.clickBridge;
-                Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ul.png") + ")";
+                this.refUpload.style.visibility = "visible"
+                this.onSocketClick = this.seFunctions.clickBridge;
+                this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")";
                 return;
             case 'red':
-                Refdrop.refCtrl.style.visibility = "visible";
-                Refdrop.onSocketClick = Refdrop.seFunctions.screenshot;
-                Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ss.png") + ")";
+                this.refCtrl.style.visibility = "visible";
+                this.onSocketClick = this.seFunctions.screenshot;
+                this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")";
                 return;
         }
     },
 
     initRefdrop() {
-        Refdrop.refImage = setAttributes(document.createElement("img"),  { class: "bounded",    id: "ref-img"    })
-        Refdrop.refUpload = setAttributes(document.createElement("div"), { style: "display: none", class: "ref-square", id: "ref-se",    parent: document.body });
-        const refForm = setAttributes(document.createElement("form"),    { class: "upload-form",                 parent: Refdrop.refUpload });  
+        this.refImage = setAttributes(document.createElement("img"),  { class: "bounded",    id: "ref-img"    })
+        this.refUpload = setAttributes(document.createElement("div"), { style: "display: none", class: "ref-square", id: "ref-se",    parent: document.body });
+        const refForm = setAttributes(document.createElement("form"),    { class: "upload-form",                 parent: this.refUpload });  
         const refBridge = setAttributes(document.createElement("input"), { class: "upload-bridge", type: "file", parent: refForm });
-        Refdrop.refSocket = setAttributes(document.createElement("div"),   { class: "ref-border upload-socket hover-button", style: "background-image:url(" + chrome.runtime.getURL("assets/module-assets/ref-ul.png") + ")", parent: refForm });
+        this.refSocket = setAttributes(document.createElement("div"),   { class: "ref-border upload-socket hover-button", style: "background-image:url(" + getResource("assets/module-assets/ref-ul.png") + ")", parent: refForm });
 
-        window.addEventListener("dragenter", function(e){
+        window.addEventListener("dragenter", (e) => {
             // Console.log("dragenter", Refdrop)
             // Console.log(e.relatedTarget, Refdrop)
-            Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ul.png") + ")"; 
+            Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")"; 
         })
-        window.addEventListener("dragleave", function(e){
+        window.addEventListener("dragleave", (e) => {
             // Console.log("dragleave", Refdrop)
             // Console.log(e.relatedTarget, Refdrop)
             if (e.fromElement || e.relatedTarget !== null) { return }
-            Console.log("Dragging back to OS", Refdrop)
-            if (Refdrop.setting.current() == 'red') { Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ss.png") + ")"; }
+            Console.log("Dragging back to OS", 'Refdrop')
+            if (Refdrop.isSetTo('red')) { Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
         })
-        window.addEventListener("drop", function(e){
-            Console.log("drop", Refdrop)
-            if (Refdrop.setting.current() == 'red') { Refdrop.refSocket.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/module-assets/ref-ss.png") + ")"; }
+        window.addEventListener("drop", (e) => {
+            Console.log("drop", 'Refdrop')
+            if (Refdrop.isSetTo('red')) { Refdrop.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
         }, true)
-        window.addEventListener("dragover", function(e){
+        window.addEventListener("dragover", (e) => {
             e.preventDefault()
         })
-        Refdrop.refSocket.addEventListener("dragenter", function(e) {
+        Refdrop.refSocket.addEventListener("dragenter", (e) => {
             preventDefaults(e)
             Refdrop.refSocket.classList.add('highlight')
         }, false)
         ;['dragleave', 'drop'].forEach(eventName => {
-            Refdrop.refSocket.addEventListener(eventName, function(e) {
+            Refdrop.refSocket.addEventListener(eventName, (e) => {
                 preventDefaults(e)
                 Refdrop.refSocket.classList.remove('highlight')
             }, false)
@@ -445,7 +587,8 @@ const Refdrop = { // [R1]
         function handleFiles(files) {
             document.querySelector(".core").classList.remove("watermark")
     
-            switch (Refdrop.setting.current()) {
+            console.log(this)
+            switch (Refdrop.setting.current) {
                 case 'on':
                     Refdrop.newRefimgWIW(files.item(0));
                     break;
@@ -456,7 +599,7 @@ const Refdrop = { // [R1]
                     document.querySelector(".core").insertAdjacentElement("afterbegin", Refdrop.refImage);
                     break;
                 default:
-                    Console.alert(Refdrop, "Intended refimg location not recognised")
+                    Console.alert("Intended refimg location not recognised", 'Refdrop')
                     break;
             } 
         }    
@@ -464,23 +607,23 @@ const Refdrop = { // [R1]
             Refdrop.refImage.src = document.querySelector(".core").querySelector("canvas").toDataURL();
             document.querySelector(".core").insertAdjacentElement("afterbegin", Refdrop.refImage);
             Refdrop.refImage.style.visibility = "visible";
-            Console.log("Screenshot taken", Refdrop)
+            Console.log("Screenshot taken", 'Refdrop')
         }
     },
     initRefctrl() {
-        Refdrop.refCtrl  = setAttributes(document.createElement("div"),    { id: "ref-sw", class: "ref-square" })
-        const refpos = setAttributes(document.createElement("div"),        { class: "ref-border canvas-in-square", parent: Refdrop.refCtrl })
+        this.refCtrl  = setAttributes(document.createElement("div"),    { id: "ref-sw", class: "ref-square" })
+        const refpos = setAttributes(document.createElement("div"),        { class: "ref-border canvas-in-square", parent: this.refCtrl })
         const refdot = setAttributes(document.createElement("div"),        { id: "ref-dot", class: "ref-border bounded", parent: refpos })
-        const reflower = setAttributes(document.createElement("div"),      { class: "canvas-square-lower-tray", parent: Refdrop.refCtrl })
+        const reflower = setAttributes(document.createElement("div"),      { class: "canvas-square-lower-tray", parent: this.refCtrl })
         const refz = setAttributes(document.createElement("div"),          { class : "ref-border ref-tray-button hover-button", /*style: "background-image:url(" + chrome.runtime.getURL("assets/downz.png") + ")",*/ parent: reflower })
         const refc = setAttributes(document.createElement("div"),          { class : "ref-border ref-tray-button hover-button", parent: reflower })
         const refoholder = setAttributes(document.createElement("div"),    { class : "ref-border ref-tray-button hover-button", parent: reflower })
         const refo = setAttributes(document.createElement("input"),        { id: "refo", type: "range", value: "25", parent: refoholder })
 
-        initPantograph(refdot, Refdrop.refImage); 
-        initZ         (refz,   Refdrop.refImage);
-        initCenter    (refc,   Refdrop.refImage);
-        initOpacity   (refo,   Refdrop.refImage);
+        initPantograph(refdot, this.refImage); 
+        initZ         (refz,   this.refImage);
+        initCenter    (refc,   this.refImage);
+        initOpacity   (refo,   this.refImage);
         function initPantograph(small, large) {
             var parentCoords = {}; var ratio = 1; const parent = small.parentElement
             small.onmousedown = dragMouseDown;
@@ -562,24 +705,25 @@ const Refdrop = { // [R1]
             })
         }
 
-        Refdrop.refCtrl.style.visibility = "hidden";
+        this.refCtrl.style.visibility = "hidden";
     }, // [R6]
     onSocketClick() { }, // Dynamically set
     placeRefdropControls() {
-        document.querySelector(".tools").insertAdjacentElement("beforebegin", Refdrop.refUpload);
-        document.querySelector(".tools").insertAdjacentElement("afterend", Refdrop.refCtrl);
-        Refdrop.refUpload.style.display = "initial";
-        Refdrop.refCtrl.style.display = "initial";
+        document.querySelector(".tools").insertAdjacentElement("beforebegin", this.refUpload);
+        document.querySelector(".tools").insertAdjacentElement("afterend", this.refCtrl);
+        this.refUpload.style.display = "initial";
+        this.refCtrl.style.display = "initial";
         
-        Refdrop.refUpload.style.visibility = "visible";
-        if (Refdrop.setting.current() == 'red') { Refdrop.refCtrl.style.visibility = "visible" }
+
+        if (!(this.isSetTo('off'))) { this.refUpload.style.visibility = "visible" }
+        if (this.isSetTo('red')) { this.refCtrl.style.visibility = "visible" }
         //Debug.log(Refdrop, "Refdrop placed")
     }, // [R5]
     newRefimgWIW(object) {
         const i = setAttributes(new Image(), { class: "wiw-img", src: URL.createObjectURL(object) })
-        i.onload = function(){
-            const newRefWIW = WIW.newWIW(true, true, i.height / i.width);
-            newRefWIW.children[1].appendChild(i)
+        i.onload = function() {
+            const newRefWIW = Inwindow.new(true, true, i.height / i.width);
+            newRefWIW.body.appendChild(i)
         }
         /*
         const newRefWIWImg = new Image();
@@ -593,11 +737,12 @@ Object.setPrototypeOf(Refdrop, CellulartModule)
 
 
  /* ----------------------------------------------------------------------
-  *                                Spotlight 
+  *                            Spotlight (DOWN)
   * ---------------------------------------------------------------------- */
 /** Spotlight condenses your performance for the current round into a gif. 
   * The most spaghetti, convoluted module, second longest at 300 lines.
-  * And it's not even particularly useful.                                 
+  * And it's not even particularly useful.   
+  * Down for maintenance.                              
   * ---------------------------------------------------------------------- */
 const Spotlight = { // [S1]
 
@@ -609,69 +754,142 @@ const Spotlight = { // [S1]
     canbase: undefined, // HTMLCanvasElement
     avatars : [],
     names : [],
-    slideNum : -1,
-    keySlideNum : -3,
+    // slideNum : -1,
+    // keySlideNum : -3,
+
+    username : '',
+    fallback : 0,
     
-    init() {
-        Spotlight.bg.src = chrome.runtime.getURL("assets/module-assets/spotlight-base.png");
+    init(modules) {
+        this.bg.src = getResource("assets/module-assets/spotlight-base.png");
     },
     mutation(oldPhase, newPhase) {
+        if (newPhase == 'start') { return }
         if (newPhase != 'book') { return }
-        if (oldPhase == "start") {
-            // In case you had to reload in the middle of visualization
-            game.user = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
-        }
-        Spotlight.avatars = Array.from(document.querySelectorAll(".avatar")).map(element => window.getComputedStyle(element.childNodes[0]).backgroundImage.slice(5, -2));//.slice(13, -2) );//.slice(29, -2));
-        Spotlight.names = Array.from(document.querySelectorAll(".nick")).map(element => element.textContent);
+            // if (this.turns == 0) { this.finalizeTurns() }
+        //     return
+        // }
 
-        Spotlight.compositeBackgrounds();
+        // if (game.turns <= 1) { return }
+        Console.log(game.host, 'Spotlight')
+        Console.log(this.username, 'Spotlight')
+        // if (oldPhase == "start") {
+        //     // In case you had to reload in the middle of visualization
+        //     this.username = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
+        // }
+        // this.avatars = Array.from(document.querySelectorAll(".avatar")).map(element => window.getComputedStyle(element.childNodes[0]).backgroundImage.slice(5, -2));//.slice(13, -2) );//.slice(29, -2));
+        // this.names = Array.from(document.querySelectorAll(".nick")).map(element => element.textContent);
+
+        this.compositeBackgrounds();
         game.turns > 0 
-            ? Spotlight.compositedFrameDatas = new Array(game.turns - 1) 
-            : Spotlight.compositedFrameDatas = {}
-
-        Spotlight.attachBookObserver();
+            ? this.compositedFrameDatas = new Array(game.turns - 1) 
+            : this.compositedFrameDatas = {}
+        Console.log(this.compositedFrameDatas)
+        this.attachBookObserver();
     },
-    
     backToLobby(oldPhase) {
         if (oldPhase != 'book') { return }
-        Spotlight.compileToGif()
-        Spotlight.timelineObserver.disconnect()
-        Spotlight.avatars = []
-        Spotlight.names = []
+        if (game.turns >= 1) { this.compileToGif() }  // TODO: Move this check. (?)
+        // this.timelineObserver.disconnect()
+        // this.avatars = []
+        // this.names = []
+        // this.turns = 0
     },
-    adjustSettings(previous, current) { // TODO override menuStep to prevent this to begin with.
-        if (current == "book") { Console.alert(Spotlight, "Changing Spotlight settings mid-album visualization tends to have disastrous consequences") }
+    adjustSettings(previous, current) {
+        // We can actually override menuStep to prevent this to begin with.
+        // if (this.compositedFrameDatas != []) { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
+        if (this.compositedFrameDatas.some(x => x)) { Console.alert("Changing Spotlight settings mid-album visualization tends to have disastrous consequences", 'Spotlight') }
     },
+    roundStart() {
+        this.fallback = Converter.flowStringToFallback(game.flow)
+        this.username = game.user.nick
+    },
+    // updateLobbySettings(dict) {
+    //     if ('default' in dict) {
+    //         this.fallback = Converter.getParameters(dict.default).fallback
+    //     } 
+    //     if ('custom' in dict) {
+    //         this.fallback = Converter.getParameters(dict.custom[1])
+    //     }
+
+    //     if ("self" in dict) {
+    //         this.username = dict.self.nick
+    //     }
+    //     // if ("usersIn" in dict) {
+    //     //     this.players += dict.usersIn.length
+    //     // }
+    //     // if ("userOut" in dict) {
+    //     //     this.players -= 1
+    //     //     // null
+    //     // }
+    //     // switch (type) {
+    //     //     case "default": 
+    //     //         break;
+    //     //     case "custom":
+    //     //         fallback = Converter.flowStringToFallback(data[1])
+    //     //         break;
+    //     //     // case 2: Timer.parameters.players += 1; break;
+    //     //     // case 3: Timer.parameters.players -= 1; break;
+    //     //     // case 5: Timer.finalizeTurns(); break;
+    //     //     // case 18: Timer.tweakParameters(data); break;
+    //     //     // case 26: Timer.templateParameters(data); break;
+    //     // }
+    //     // switch (type) {
+    //     //     case 1: 
+    //     //         this.username = data.user.nick; 
+    //     //         this.host = data.users[0].nick;
+    //     //         this.fallback = Converter.flowStringToFallback(Converter.flowIndexToString(data.configs.first))
+        
+    //     //         // this.players = data.users.length;
+    //     //         if (data.turnMax > 0) { this.turns = data.turnMax }
+    //     //         break;
+    //     //     // case 2: this.players += 1; break;
+    //     //     // case 3: this.players -= 1; break;
+    //     //     // case 5: 
+    //     //     //     this.finalizeTurns(); break;
+    //     //     case 9:
+    //     //         if (Object.keys(data).length > 0) { break } else { this.writeResponseFrames() }
+    //     //     // Spotlight can be a bit looser on its turn tracking, so we do just that.
+    //     // }
+    // },
+
+    // finalizeTurns(players) {
+    //     const t = this.parameters.turns; if (t instanceof Function) { this.parameters.turns = t(players) }
+    // },
 
     // Compiles an array of ImageData into a GIF.
     compileToGif() {
-        if( Spotlight.setting.current() == 'off' || Spotlight.compositedFrameDatas.length == 0) { return }
-        // Console.log(compositedFrameDatas, Spotlight);
+        if( this.isSetTo('off') || this.compositedFrameDatas.length == 0) { return }
+        Console.log('Now compiling to GIF', 'Spotlight');
         const gif = gifenc.GIFEncoder();
         
         var index = 0;
         // Console.log(compositedFrameDatas.length, Spotlight)
-        while (index < Spotlight.compositedFrameDatas.length) {
-            // console.log("Queueing frame " + index);
+        while (index < this.compositedFrameDatas.length) {
+            Console.log("Queueing frame " + index, 'Spotlight');
             /*const canvasElement = compositedFrames[index];
             if (canvasElement != null) { gif.addFrame(canvasElement, {delay: 400}) };
             index += 1;*/
-            const data = Spotlight.compositedFrameDatas[index];
+            const data = this.compositedFrameDatas[index];
             index += 1
-            if (!data) { return }
+            if (!data) { 
+                Console.log("No data in this index", 'Spotlight')
+                continue 
+            }
             const format = "rgb444";
             const palette = gifenc.quantize(data, 256, { format });
             const indexed = gifenc.applyPalette(data, palette, format);
             gif.writeFrame(indexed, 1616, 683, { palette });
         }
 
+        Console.log('Complete', 'Spotlight')
         gif.finish();
         const buffer = gif.bytesView();
 
         const today = new Date();
         const day = today.getDate() + "-" + (today.getMonth() + 1) + '-' + today.getFullYear()
         const time = today.getHours() + ":" + today.getMinutes()
-        const filename = "Spotlight " + game.user + " " + day + " " + time + ".gif"
+        const filename = "Spotlight " + this.username + " " + day + " " + time + ".gif"
         function download (buf, filename, type) {
             const blob = buf instanceof Blob ? buf : new Blob([buf], { type });
             const url = URL.createObjectURL(blob);
@@ -679,16 +897,16 @@ const Spotlight = { // [S1]
             anchor.href = url;
             anchor.download = filename;
             anchor.click();
-        };
+        }
 
-        const dlnode = WIW.newWIW(true, true)
-        const dlicon = setAttributes(new Image(), { class: "cellulart-circular-icon", src: chrome.runtime.getURL("assets/menu-icons/spotlight-1.png") })
+        const dlnode = Inwindow.new(true, true)
+        const dlicon = setAttributes(new Image(), { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/spotlight_on.png") })
         dlicon.onclick = function() {
             download(buffer, filename, { type: 'image/gif' });
-            dlnode.remove();
+            dlnode.element.remove();  // todo: Memory leak?
         }
-        dlnode.children[1].appendChild(dlicon)
-        document.body.appendChild(dlnode)
+        dlnode.body.appendChild(dlicon)
+        document.body.appendChild(dlnode.element)
     },
     // These four determine when things should fire.
     attachBookObserver() { // [S2]
@@ -699,8 +917,8 @@ const Spotlight = { // [S1]
         }
         Spotlight.bookObserver.observe(frame, configChildTrunk);// { characterData: true });
     },
-    bookObserver : new MutationObserver(() => {
-        // console.log("timline obse fired; attaching book obse"); 
+    bookObserver : new MutationObserver((records) => {
+        console.log("timline obse fired; attaching book obse"); 
         Spotlight.attachTimelineObserver(); 
         Spotlight.bookObserver.disconnect();
     }),
@@ -714,79 +932,159 @@ const Spotlight = { // [S1]
     },
     timelineObserver : new MutationObserver((records) => { // Catch errors when the NEXT button shows up / the next round begins to load
         // console.log("book obse fired")
-        if (records[0].removedNodes.length > 0) {
-            // console.log("New timeline entered; resetting slideNums")
-            Spotlight.slideNum = -1;
-            Spotlight.keySlideNum = -2;
-            return;
+        console.log(records)
+        // if (records[0].addedNodes.find((x) => !(x instanceof HTMLDivElement))) {
+        //     console.log('hmm, i think we should composite')
+        //     Spotlight.compositeResponseFrame()
+        // }
+        const added = records[0].addedNodes[0]
+        if (!(added instanceof HTMLDivElement)) {
+            Console.log('End of timeline reached. Beginning frame grabbing', 'Spotlight')
+            Spotlight.writeResponseFrames()  
         }
-        // what if an EMPTY response? Sometimes backtrack two steps, sometimes one. Hence modeParameters now has fallback values.
-        Spotlight.slideNum += 1
-        const currentSlide = records[0].addedNodes[0];
-        if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == game.user) {
-            Spotlight.keySlideNum = Spotlight.slideNum
-        } else if (Spotlight.slideNum == game.turns) {//currentSlide.querySelector(".download") != null) {
-            // console.log("Stepped over. Compositing response")
-            Spotlight.compositeResponseFrame()
-        }
+        // }
+        // if (records[0].removedNodes.length > 0) {
+        //     console.log("New timeline entered; resetting slideNums")
+        //     // Spotlight.slideNum = -1;
+        //     // Spotlight.keySlideNum = -2;
+        //     return;
+        // }
+        // // what if an EMPTY response? Sometimes backtrack two steps, sometimes one. Hence modeParameters now has fallback values.
+        // this.slideNum += 1
+        // const currentSlide = records[0].addedNodes[0];
+        // if ((currentSlide.querySelector(".nick") ?? currentSlide.querySelector("span")).textContent == this.username) {
+        //     this.keySlideNum = this.slideNum
+        // } else if (this.slideNum == this.turns) {//currentSlide.querySelector(".download") != null) {
+        //     // console.log("Stepped over. Compositing response")
+        //     this.compositeResponseFrame()
+        // }
     }),
 
     // These functions manage the compositing of timelines into ImageDatas.
     compositeBackgrounds() {
-        if( Spotlight.setting.current() == 'off' ) { return }
-        const canvas = Spotlight.initFrom(Spotlight.bg)
+        if (this.isSetTo('off')) { return }
+        const canvas = this.initFrom(this.bg)
         const context = canvas.context
-        Spotlight.drawText(context, "HOSTED BY " + Spotlight.names[0].toUpperCase(), 1206, 82, 50, 400, "M", "white")
-        switch (Spotlight.setting.current()) {
+        this.drawText(context, "HOSTED BY " + game.host.toUpperCase(), 1206, 82, 50, 400, "M", "white")
+        switch (this.setting.current) {
             case 'on':
-                Spotlight.drawName(context, game.user.toUpperCase(), "R") 
-                Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(game.user)], "R")
+                this.drawName(context, this.username.toUpperCase(), "R") 
+                // this.drawPFP(context, '/images/avatar/38.svg', "R") 
+                this.drawPFP(context, game.user.avatar, "R")
+                // TODO TODO TODO 
                 break;
             // case 1:
-            //     Spotlight.drawName(context, game.user.toUpperCase(), "L") 
-            //     Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(game.user)], "L")
+            //     this.drawName(context, this.username.toUpperCase(), "L") 
+            //     this.drawPFP(context, this.avatars[this.names.indexOf(this.username)], "L")
             //     break;
             default:
-                Console.alert(Spotlight, "Spotlight setting not recognized")
+                Console.alert("Spotlight setting not recognized", 'Spotlight')
         }
         // intendurl = canvas;
         // setTimeout(preview, 1000)
-        Spotlight.canbase = canvas.canvas;
+        this.canbase = canvas.canvas;
     },
-    compositeResponseFrame() {  // TODO incorrectly grabbing the same image twice, wtf?
-        // todo: What to do if the one being spotlighted has an EMPTY?
-        if( Spotlight.setting.current() == 'off' ) { return }
-        const canvas = Spotlight.initFrom(Spotlight.canbase)
-        const context = canvas.context
-
-        const side = Spotlight.setting.current() == 'on' ? { key:'R', other: 'L' } : { key:'L', other: 'R' }
-        
-        // Determinine slides
+    writeResponseFrames() {
         const slides = document.querySelector(".timeline").querySelectorAll(".item");
-        const keySlide = slides[Spotlight.keySlideNum]
-        var prevIndex = indexOfPrevSlide()
-        if (prevIndex < 0) { Console.alert(Spotlight, "Could not find fallback; no frame will be saved"); return;} //prevIndex += modeParameters[game.mode]["fallback"] }
-        const prevSlide = slides[prevIndex]
-        const prevUser = (prevSlide.querySelector(".nick") ?? prevSlide.querySelector("span")).textContent;
-    
-        // Draw everything
-        Spotlight.drawName(context, prevUser.toUpperCase(), side.other)
-        Spotlight.drawPFP(context, Spotlight.avatars[Spotlight.names.indexOf(prevUser)], side.other)
-        try { Spotlight.drawDrawing(context, prevSlide.querySelector("canvas"), side.other) } catch { Spotlight.drawPrompt(context, prevSlide.querySelector(".balloon").textContent, side.other) }
-        try { Spotlight.drawDrawing(context,  keySlide.querySelector("canvas"), side.key  ) } catch { Spotlight.drawPrompt(context, keySlide.querySelector(".balloon").textContent, side.key ) }
-        Spotlight.drawTurnsCounter(context, Spotlight.keySlideNum, game.turns - 1)
-        // TODO being on a different tab causes image grabs to fail
-    
-        setTimeout(Spotlight.preview, 500, canvas.canvas) // Temporary
-        setTimeout(function() {Spotlight.compositedFrameDatas[Spotlight.keySlideNum - 1] = context.getImageData(0, 0, 1616, 683).data}, 200) // TODO: Horrendously bad bodged solution to the pfp not yet being loaded
+        const pairs = this.determineResponseIndices(slides)
 
-        function indexOfPrevSlide() {
-            var i = game.fallback > 0 ? Spotlight.keySlideNum - 1 : 0; 
+        for (const indices of pairs) {
+            if (indices.key < 0) { Console.log('Did not participate in this round; no frame will be saved', 'Spotlight'); continue }
+            if (indices.prev < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); continue } //prevIndex += modeParameters[game.mode]["fallback"] }
+            Console.log(`Compositing frame with indices ${indices.key},${indices.prev}`, 'Spotlight')
+            this.compositeResponseFrame(slides, indices.key, indices.prev)
+        }
+    },
+    determineResponseIndices(slides) {
+        var toReturn = []
+        for (var keyIndex = 1; keyIndex < slides.length; keyIndex++) {
+            if (this.findUsername(slides[keyIndex]) != this.username) { continue }
+            var prevIndex = indexOfPrevSlide(keyIndex)
+            // if (keyIndex == prevIndex)
+            toReturn.push({ key:keyIndex, prev: prevIndex })
+        }
+        return toReturn
+        // const keyIndex = slides.find((item) => findUsername(item) == this.username)
+        // if (keySlide < 0) { Console.log('Did not participate in this round; no frame will be saved') }
+        // const keySlide = slides[keyIndex]  // slides[this.keyIndex]
+        // var prevIndex = indexOfPrevSlide(keySlide)
+        // if (prevIndex < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); return } //prevIndex += modeParameters[game.mode]["fallback"] }
+        // const prevSlide = slides[prevIndex]
+        // const prevUser = findUsername(prevSlide);
+        // return { key:keyIndex, prev: prevIndex }
+
+        function indexOfPrevSlide(key) {
+            var i = this.fallback > 0 ? key - 1 : 0; 
             /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
-            while (i >= 0 && slides[i].querySelector(".empty") != null) { i -= game.fallback; }
+            while (i >= 0 && slides[i].querySelector(".empty") != null) { 
+                i -= this.fallback; 
+                Console.log(`Could not find prompt frame, falling back by ${this.fallback}`, 'Spotlight')
+            }
             return i
         }
+    },
+    compositeResponseFrame(slides, keyIndex, prevIndex) {  
+        // TODO incorrectly grabbing the same image twice, wtf?
+        // todo: What to do if the one being spotlighted has an EMPTY?
+        // TODO: Some rounds might loop back to the same person multiple times. (Fixed?)
+        if (this.isSetTo('off')) { 
+            console.log("hey bozo, it's off")
+            return 
+        }
+        const canvas = this.initFrom(this.canbase)
+        const context = canvas.context
+
+        // const side = this.setting.current == 'on' ? { key:'R', other: 'L' } : { key:'L', other: 'R' }
+        const side = { key:'R', other:'L' }
+        const keySlide = slides[keyIndex]
+        const prevSlide = slides[prevIndex]
+        const prevUser = this.findUsername(prevSlide);
+        const prevAvatar = this.findAvatar(prevSlide);
+
+        console.log([side, keySlide, prevSlide, prevUser, prevAvatar])
+    
+        // Draw everything
+        this.drawName(context, prevUser.toUpperCase(), side.other)
+        const bottleneck = this.drawPFP(context, prevAvatar, side.other)  // This smells !!!
+        this.drawInteraction(context, prevSlide, side.other)
+        this.drawInteraction(context, keySlide, side.key)
+        this.drawTurnsCounter(context, this.keyIndex, game.turns - 1)
+        // TODO being on a different tab causes image grabs to fail
+    
+        // Console.log("Almost", 'Spotlight')
+        // setTimeout(this.preview, 500, canvas.canvas) // Temporary
+        if (bottleneck.complete) {
+            // setTimeout(() => { 
+                Spotlight.compositedFrameDatas[keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data
+                Spotlight.preview(canvas.canvas)
+            // }, 100)
+            Console.log("Success (Instant)", 'Spotlight')
+        } else { 
+            bottleneck.addEventListener('load', () => {
+                Spotlight.compositedFrameDatas[keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data
+                Spotlight.preview(canvas.canvas)
+            })
+            Console.log('Success (Onload)', 'Spotlight')
+        }
+        // ;(() => { const b = bottleneck.onload; bottleneck.onload = () => { b(); Spotlight.compositedFrameDatas[keyIndex] = context.getImageData(0, 0, 1616, 683).data }})()  // This stinks to high heaven!
+        // setTimeout(function() { this.compositedFrameDatas[this.keyIndex - 1] = context.getImageData(0, 0, 1616, 683).data }, 200) // TODO: Horrendously bad bodged solution to the pfp not yet being loaded
+        // prevAvatar
+        // function indexOfPrevSlide(key) {
+        //     var i = this.fallback > 0 ? key - 1 : 0; 
+        //     /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
+        //     while (i >= 0 && slides[i].querySelector(".empty") != null) { 
+        //         i -= this.fallback; 
+        //         Console.log(`Could not find prompt frame, falling back by ${this.fallback}`, 'Spotlight')
+        //     }
+        //     return i
+        // }
     }, // [S3]
+    findUsername(element) {
+        return (element.querySelector(".nick") ?? element.querySelector("span")).textContent
+    },
+    findAvatar(element) {
+        return getComputedStyle(element.querySelector('.avatar').firstChild).backgroundImage
+    },
     
     // Temporary preview function
     preview(intend) {
@@ -802,7 +1100,19 @@ const Spotlight = { // [S1]
         return {canvas: canvas, context: context}
     },
 
+    drawInteraction(context, slide, side) {
+        const canvases = slide.querySelectorAll('canvas')
+        if (canvases.length > 0) { 
+            for (const canvas of canvases) {
+                this.drawDrawing(context, canvas, side) 
+            }
+        } else { 
+            this.drawPrompt(context, slide.querySelector(".balloon").textContent, side) 
+        }
+    },
     drawDrawing(context, drawing, side) {
+        console.log(arguments)
+        // console.log(side == "L" ? 33 : 825)
         context.drawImage(drawing, (side == "L" ? 33 : 825), 203);
     },
     drawPrompt(context, prompt, side) {
@@ -817,7 +1127,7 @@ const Spotlight = { // [S1]
         context.roundRect(startingx + 5, 208, 748, 414, [95]);
         context.fill();
     
-        Spotlight.drawText(context, prompt, (side == "L" ? 412 : 1204), 423, 60, 748, "M", "#180454");
+        this.drawText(context, prompt, (side == "L" ? 412 : 1204), 423, 60, 748, "M", "#180454");
     },
     drawTurnsCounter(context, elapsed, total) {
         // console.log(elapsed); console.log(total)
@@ -893,8 +1203,28 @@ const Spotlight = { // [S1]
         context.fillText(name, startingx, 186);
     },
     drawPFP(context, pfpURL, side) { // todo: An attempt was made to repair tainted canvasses, verify
-        const pfp = new Image(); pfp.setAttribute('crossorigin', 'anonymous'); pfp.src = pfpURL; pfp.onload = function() { 
-        context.drawImage(pfp, (side == "L" ? 39 : 1422), 7, 155, 175) };
+        const pfp = new Image(); 
+        if (pfpURL.includes('custom-avatars-for-gartic-phone')) {
+            Console.alert("SillyV's custom avatars extension doesn't work with Spotlight due to CORS reasons. Please ask SillyV to enable CORS on his S3 buckets.")
+            return { complete:true }
+        }
+        pfp.setAttribute('crossorigin', 'anonymous'); 
+        // pfp.src = pfpURL; 
+        if (pfpURL.slice(0,4) == 'url(') {
+            pfp.src = pfpURL.slice(5, -2)
+        } else {
+            pfp.src = pfpURL; 
+        }
+        console.log(pfp.src)
+
+        if (pfp.complete) {
+            context.drawImage(pfp, (side == "L" ? 39 : 1422), 7, 155, 175) 
+        } else {
+            pfp.addEventListener('load', () => { 
+                context.drawImage(pfp, (side == "L" ? 39 : 1422), 7, 155, 175) 
+            });
+        }
+        return pfp
     },
 }
 Object.setPrototypeOf(Spotlight, CellulartModule)
@@ -902,73 +1232,11 @@ Object.setPrototypeOf(Spotlight, CellulartModule)
 
 
  /* ----------------------------------------------------------------------
-  *                               Reveal (WIP)
-  * ---------------------------------------------------------------------- */
-/** Reveal uncovers the secrets of the Secret mode. Considered a "cheat". 
-  * (WIP) This module is not initialized by Controller.
-  * ---------------------------------------------------------------------- */
-const Reveal = {
-
-    name : "Reveal",
-    isCheat : true,
-    setting : new SettingsBelt(["OFF", "TEXT"], 0, "ALL"), // [V2]
-
-    hiddenElements : undefined,
-
-    // init() {}, // Empty.
-    mutation(oldPhase, newPhase) {
-        if (Reveal.setting.current() == "OFF") { return; }
-        if (newPhase == "write" || newPhase == "first") {
-            Reveal.revealPrompt()
-        } else if (Reveal.setting.current() == "ALL" && newPhase == "draw") {
-            Reveal.revealDrawing()
-        }
-    },
-    /*
-    // (deprecated) This function receives messages from the popup
-    recieveMessage(message) {}
-
-    // (deprecated) This function asks the module what message it would like to pass to the popup
-    getMessage() {} */
-    // backToLobby() {} // Empty.
-    // These functions receive messages from the in-window menu
-    adjustSettings(previous, current) {
-        switch (current) {
-            case "OFF": Reveal.rehide(); break;
-            case "TEXT": Reveal.revealPrompt(); break;
-            case "ALL": Reveal.revealDrawing(); break;
-        }
-    },
-
-    revealPrompt() {
-        Reveal.hiddenElements = document.querySelector(".center").querySelectorAll(".hiddenMode")
-        Reveal.hiddenElements.forEach(n => n.style.cssText = "font-family:Bold; -webkit-text-security: none")
-    },
-    revealDrawing() {
-        Reveal.hiddenCanvases = document.querySelector(".drawingContainer").querySelectorAll("canvas");
-        Reveal.hiddenCanvases[1].addEventListener("mouseup", e => {
-            const newwiw = WIW.newWIW(true, true);
-            setAttributes(new Image(), { class: "wiw-img", parent: newwiw.children[1], src: Reveal.hiddenCanvases[0].toDataURL() })
-        })
-        // [V3]
-    },
-    rehide() {
-        Reveal.hiddenElements.forEach(n => n.style.cssText = "");
-        // [V3]
-    }
-
-    // animate the black cover lifting to gray [V3]
-}
-Object.setPrototypeOf(Reveal, CellulartModule)
-
-
-
- /* ----------------------------------------------------------------------
   *                                  Geom 
   * ---------------------------------------------------------------------- */
-/** Geoem (Geometrize) is the second generation of Gartic autodrawers 
+/** Geom (Geometrize) is the second generation of Gartic autodrawers 
   * after rate limiting culled the first generation.     
-  * The longest module at 360 lines. Some of my finer work.                  
+  * The longest module at 360 lines. Previously some of my finer work.                  
   * ---------------------------------------------------------------------- */
 const Geom = { 
 
@@ -981,50 +1249,52 @@ const Geom = {
     stepCallback : undefined,           // TimeoutID
     shapeQueue: [],                     // Queue
     flags: { interval: true, queue: false, pause: true, mode: false, ws: false, generate: true,
-        notClearToSend() { return !(this.interval && this.queue && this.pause && this.mode && this.ws) } },
+        notClearToSend() { return !(this.interval && this.queue && !this.pause && this.mode && this.ws) } },
     counters: { created: 0, sent: 0 },
     config: { distance: 1200, max: 20000 },
 
-    init() {
+    init(modules) {
         Socket.addMessageListener('flag', (data) => {
-            Geom.flags.ws = data
+            this.flags.ws = data
         })
 
-        const initializedFunctions = Geom.initGeomWIW()
-        Geom.setSendPause = initializedFunctions.pause
-        Geom.stopGeometrize = initializedFunctions.stop
-        Geom.updateLabel = initializedFunctions.label
+        const initializedFunctions = this.initGeomWIW()
+        this.setSendPause = initializedFunctions.pause
+        this.stopGeometrize = initializedFunctions.stop
+        this.updateLabel = initializedFunctions.label
     },
     mutation(oldPhase, newPhase) {
-        Geom.setSendPause(false)
+        this.setSendPause(true)
         if (newPhase != 'draw') { 
-            Geom.flags.mode = false; 
+            this.flags.mode = false; 
             return 
         }
-        if (oldPhase == 'start') {
-            Shelf.retrieveOrElse('strokeCount', 0, false).then(c => Socket.post('setStroke', c))
-        } else {
-            Socket.post('clearStrokes')
-        }
-        Geom.flags.mode = true
-        Geom.geomPreview = setAttributes(document.createElementNS(svgNS, "svg"), { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424", parent: document.querySelector(".core") })
+        // if (oldPhase == 'start') {
+        //     Shelf.retrieveOrElse('strokeCount', 0, false).then(c => Socket.post('setStroke', c))
+        // } else {
+        //     Socket.post('clearStrokes')
+        // }
+        this.flags.mode = true
+        this.geomPreview = setAttributes(document.createElementNS(svgNS, "svg"), { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424", parent: document.querySelector(".core") })
     },
     backToLobby(oldPhase) {
-        if (oldPhase != 'start') { Geom.stopGeometrize() }
+        this.flags.mode = false; 
+        // if (oldPhase != 'start') { this.stopGeometrize() }  // Technically redundant.
     }, 
     adjustSettings(previous, current) { 
         // hide or show Geom window without stopping web worker (just like Koss)
         if (current == 'off') {
-            Geom.setSendPause(false)
-            Geom.geomWIW.style.visibility = "hidden"
+            this.setSendPause(true)
+            this.geomWIW.setVisibility("hidden");
         } else {
-            Geom.geomWIW.style.visibility = "visible"
+            this.geomWIW.setVisibility("visible");
         }
     },
 
     initGeomWIW() { // [G8]
-        const newWIW = setAttributes(WIW.newWIW(false, false, 1), { "id":"geom-wiw" })
-        const body = newWIW.querySelector(".wiw-body")
+        const newWIW = Inwindow.new(false, false, 1)
+        setAttributes(newWIW.element, { "id":"geom-wiw" })
+        const body = newWIW.body
 
         const geomScreen1 = constructScreen1();
         var geomScreen2 = undefined;
@@ -1036,16 +1306,16 @@ const Geom = {
             o.body = setAttributes(document.createElement("div"),     { class: "geom-carpet", parent: body });
             o.form = setAttributes(document.createElement("form"),    { class: "upload-form",                 parent: o.body });
             o.bridge = setAttributes(document.createElement("input"), { class: "upload-bridge", type: "file", parent: o.form });
-            o.socket = setAttributes(document.createElement("div"),   { id: "geom-socket", class: "geom-border upload-socket hover-button", style: "background-image:url(" + chrome.runtime.getURL("assets/module-assets/geom-ul.png") + ")", parent: o.form })
+            o.socket = setAttributes(document.createElement("div"),   { id: "geom-socket", class: "geom-border upload-socket hover-button", style: "background-image:url(" + getResource("assets/module-assets/geom-ul.png") + ")", parent: o.form })
             
             ;['dragenter'].forEach(eventName => {
-                o.socket.addEventListener(eventName, function(e) {
+                o.socket.addEventListener(eventName, (e) => {
                     preventDefaults(e)
                     o.socket.classList.add('highlight')
                 }, false)
             })
             ;['dragleave', 'drop'].forEach(eventName => {
-                o.socket.addEventListener(eventName, function(e) {
+                o.socket.addEventListener(eventName, (e) => {
                     preventDefaults(e)
                     o.socket.classList.remove('highlight')
                 }, false)
@@ -1063,12 +1333,12 @@ const Geom = {
             }
         }
         function constructScreen2() {
-            Console.log("Constructing screen 2", Geom)
+            Console.log("Constructing screen 2", 'Geom')
 
             var configActive = false;
 
-            const iconPause = "url(" + chrome.runtime.getURL("assets/module-assets/geom-pause.png") + ")"
-            const iconPlay = "url(" + chrome.runtime.getURL("assets/module-assets/geom-play.png") + ")"
+            const iconPause = "url(" + getResource("assets/module-assets/geom-pause.png") + ")"
+            const iconPlay = "url(" + getResource("assets/module-assets/geom-play.png") + ")"
             const o = {};
 
             o.body = setAttributes(document.createElement("div"),  { class: "geom-carpet", style: "display: none;", parent: body })
@@ -1082,30 +1352,35 @@ const Geom = {
             o.genLabel = setAttributes(document.createElement("label"),  { id: "geom-total", class: "geom-status", parent: o.genStack })
             o.genPauser = setAttributes(document.createElement("button"),  { class: "geom-border geom-tray-button hover-button", parent: o.genStack })
 
-            o.sendPauser.addEventListener("click", () => { o.setSendPause(Geom.flags.mode && !Geom.flags.pause) })
+            o.sendPauser.addEventListener("click", () => { o.setSendPause(!this.flags.pause) })
             o.sendPauser.style.backgroundImage = iconPlay;
             o.back.addEventListener("click", () => { stopGeometrize() }) // TODO put a semi-transparent negative space cancel icon instead of hover-button
-            o.genPauser.addEventListener("click", () => { o.setGenPause(!Geom.flags.generate) })
+            o.genPauser.addEventListener("click", () => { o.setGenPause(this.flags.generate) })
             o.genPauser.style.backgroundImage = iconPause;
             o.genLabel.addEventListener("click", () => { o.setGeomConfigWindow(!configActive) })
 
-            o.updateLabel = function(which, newValue) {
+            o.updateLabel = (which, newValue) => {
                 if (which == 'total') { o.genLabel.textContent = newValue }
                 else if (which == 'sent') { o.sendLabel.textContent = newValue }
                 else if (which == 'both') { o.genLabel.textContent = newValue; o.sendLabel.textContent = newValue }
             }
-            o.setSendPause = function(pause) { 
-                Console.log("Send " + pause ? 'paused' : 'play', Geom)
-                o.sendPauser.style.backgroundImage = pause ? iconPause : iconPlay
-                Geom.flags.pause = pause
-                if (pause) { Geom.trySend() }
+            o.setSendPause = (pause) => { 
+                Console.log("Send " + (pause ? 'paused' : 'play'), 'Geom')
+                if (!this.flags.mode) {  // TODO: This is kind of a bad place to put the mode check, in the middle of someone else's setter.
+                    o.sendPauser.style.backgroundImage = iconPlay
+                    this.flags.pause = true
+                    return
+                } 
+                o.sendPauser.style.backgroundImage = pause ? iconPlay : iconPause
+                this.flags.pause = pause
+                if (!pause) { this.trySend() }
             }
-            o.setGenPause = function(pause) {
-                Console.log("Gen " + pause ? 'paused' : 'play', Geom)
-                o.genPauser.style.backgroundImage = pause ? iconPause : iconPlay
-                Geom.flags.generate = pause
+            o.setGenPause = (pause) => {
+                Console.log("Gen " + (pause ? 'paused' : 'play'), 'Geom')
+                o.genPauser.style.backgroundImage = pause ? iconPlay : iconPause
+                this.flags.generate = !pause
             }
-            o.setGeomConfigWindow = function(active) {
+            o.setGeomConfigWindow = (active) => {
                 configActive = active
                 geomScreen3 = geomScreen3 || constructScreen3()
                 geomScreen3.body.style.display = active ? 'flex' : 'none';
@@ -1114,7 +1389,7 @@ const Geom = {
             return o;
         }
         function constructScreen3() {
-            Console.log("Constructing screen 3", Geom)
+            Console.log("Constructing screen 3", 'Geom')
 
             const o = {};
 
@@ -1126,28 +1401,28 @@ const Geom = {
             o.maxIcon = setAttributes(document.createElement("img"),     { class: "geom-3-icon", parent: o.maxEntry  })
             o.maxInput = setAttributes(document.createElement("input"), { class: "geom-3-input", parent: o.maxEntry  })
     
-            o.distIcon.src = chrome.runtime.getURL("assets/module-assets/geom-3d.png")
-            o.distInput.value = Geom.config.distance
+            o.distIcon.src = getResource("assets/module-assets/geom-3d.png")
+            o.distInput.value = this.config.distance
             o.distInput.addEventListener("blur", () => { 
                 const newValue = +o.distInput.value
-                if (isNaN(newValue) || newValue < 1) { o.distInput.value = Geom.config.distance; return }
-                Geom.config.distance = newValue;
-                Console.log("Config dist set to " + newValue, Geom)
+                if (isNaN(newValue) || newValue < 1) { o.distInput.value = this.config.distance; return }
+                this.config.distance = newValue;
+                Console.log("Config dist set to " + newValue, 'Geom')
             })
-            o.maxIcon.src = chrome.runtime.getURL("assets/module-assets/geom-3m.png")
-            o.maxInput.value = Geom.config.max
+            o.maxIcon.src = getResource("assets/module-assets/geom-3m.png")
+            o.maxInput.value = this.config.max
             o.maxInput.addEventListener("blur", () => { 
                 const newValue = +o.maxInput.value
-                if (isNaN(newValue) || newValue < 1) { o.maxInput.value = Geom.config.max; return }
-                if (newValue < Geom.counters.created) { o.maxInput.value = Geom.counters.created; return }
-                Geom.config.max = newValue;
-                Console.log("Config max set to " + newValue, Geom)
+                if (isNaN(newValue) || newValue < 1) { o.maxInput.value = this.config.max; return }
+                if (newValue < this.counters.created) { o.maxInput.value = this.counters.created; /* return; */}
+                this.config.max = newValue;
+                Console.log("Config max set to " + newValue, 'Geom')
             })
 
             return o;
         }
 
-        Geom.geomWIW = newWIW
+        this.geomWIW = newWIW
 
         return { 
             pause: (newState) => { if (geomScreen2) { geomScreen2.setSendPause(newState) } }, 
@@ -1155,7 +1430,7 @@ const Geom = {
             label: (which, newValue) => { geomScreen2.updateLabel(which, newValue) }
         }
 
-        function stopGeometrize() {
+        function stopGeometrize() {  // TODO this init can be lazier
             geomScreen2 = geomScreen2 || constructScreen2()
             geomScreen3 = geomScreen3 || constructScreen3()
 
@@ -1163,8 +1438,8 @@ const Geom = {
             geomScreen2.body.style.display = 'none'; // TODO lazy init
             geomScreen3.body.style.display = 'none';
             // other stopping stuff
-            geomScreen2.setSendPause(false) 
-            clearTimeout(Geom.stepCallback)
+            geomScreen2.setSendPause(true) 
+            clearTimeout(this.stepCallback)
         }
         function startGeometrize(files) { // [G1]
             geomScreen2 = geomScreen2 || constructScreen2()
@@ -1174,16 +1449,16 @@ const Geom = {
             geomScreen2.body.style.display = 'flex'; // TODO lazy init
             geomScreen2.echo.style.backgroundImage = "url(" + dataURL + ")"
 
-            geomScreen2.setGenPause(true)
+            geomScreen2.setGenPause(false)
             geomScreen2.updateLabel('both', 0)
-            Geom.counters = { created:0, sent:0 }
-            Geom.shapeQueue = [];
-            Geom.flags.queue = false;
+            this.counters = { created:0, sent:0 }
+            this.shapeQueue = [];
+            this.flags.queue = false;
 
             const img = new Image();
             img.src = dataURL;
             img.onload = function() {
-                Geom.geometrize(img)
+                this.geometrize(img)
             };
         }
     },
@@ -1195,9 +1470,9 @@ const Geom = {
         context.drawImage(img, resizedDimensions.margin.x / 2, resizedDimensions.margin.y / 2, resizedDimensions.x, resizedDimensions.y);
         const imgdata = context.getImageData(0, 0, 758, 424)
 
-        Geom.queryGW("set", { width: 758, height: 424, data: imgdata.data }).then((response) => {
-            if (response.status != 200) { Console.log("Could not recognise imagedata", Geom); return; }
-            Console.log("Image processed successfully. Beginning Geometrize", Geom);
+        this.queryGW("set", { width: 758, height: 424, data: imgdata.data }).then((response) => {
+            if (response.status != 200) { Console.log("Could not recognise imagedata", 'Geom'); return; }
+            Console.log("Image processed successfully. Beginning Geometrize", 'Geom');
             step()
         })
 
@@ -1241,14 +1516,15 @@ const Geom = {
         //     }
         // }
         async function step() {
-            if (!Geom.flags.generate || Geom.counters.created >= Geom.config.max || Geom.counters.created - Geom.counters.sent >= Geom.config.distance) { 
-                _ = await Geom.queryGW(2)
-                Geom.stepCallback = setTimeout(step, 250); 
+            if (!this.flags.generate || this.counters.created >= this.config.max || this.counters.created - this.counters.sent >= this.config.distance) { 
+                await this.queryGW(2)
+                this.stepCallback = setTimeout(step, 250); 
                 return 
             }
-            const shape = await Geom.queryGW("step")
-            if (shape === undefined) { Console.alert(Geom, "Mysterious error, no shape was produced; terminating"); return }            
-            Geom.queueShape(shape)
+            const shape = await this.queryGW("step")
+            if (shape === undefined) { Console.alert("Mysterious error, no shape was produced; terminating", 'Geom'); return }     
+            Console.log(shape, 'Worker')       
+            this.queueShape(shape)
             step() 
         }
     },
@@ -1256,12 +1532,12 @@ const Geom = {
     stopGeometrize() {},                // Dynamically initialized
     updateLabel(which, newValue) {},    // Dynamically initialized
     queueShape(shape) {
-        Geom.counters.created += 1
-        Geom.shapeQueue.push(shape)
-        Geom.flags.queue = true
-        Geom.updateLabel('total', Geom.counters.created)
+        this.counters.created += 1
+        this.shapeQueue.push(shape)
+        this.flags.queue = true
+        this.updateLabel('total', this.counters.created)
       
-        setTimeout(Geom.trySend, 0) // Maybe an overcomplication
+        setTimeout(() => { this.trySend() }, 0) // Maybe an overcomplication
     },
     trySend() {
         function gartic_format(shape) {
@@ -1310,28 +1586,238 @@ const Geom = {
             return setAttributes(document.createElementNS(svgNS, type), { ...coords, fill: color, "fill-opacity": "0.5" })
         }
 
-        if(Geom.flags.notClearToSend()) { return }
-        Geom.flags.interval = false
-        setTimeout(() => { Geom.flags.interval = true; Geom.trySend() }, 125)
+        // console.log(this.flags)
+
+        if(this.flags.notClearToSend()) { return }
+        this.flags.interval = false
+        setTimeout(() => { this.flags.interval = true; this.trySend() }, 125)
         
-        shape = Geom.shapeQueue.shift()
-        if(Geom.shapeQueue.length == 0) { Geom.flags.queue = false }
-        packet = gartic_format(shape)
-        svg = svg_format(shape)
+        const shape = this.shapeQueue.shift()
+        if(this.shapeQueue.length == 0) { this.flags.queue = false }
+        const packet = gartic_format(shape)
+        const svg = svg_format(shape)
         
         Socket.post('sendGeomShape', packet)
-        Geom.counters.sent += 1
-        Geom.geomPreview.appendChild(svg)
-        Geom.updateLabel('sent', Geom.counters.sent)
+        this.counters.sent += 1
+        this.geomPreview.appendChild(svg)
+        this.updateLabel('sent', this.counters.sent)
     },
-    async queryGW(purpose, data) {
-        var message; // todo: condense this line and below
-        if (data === undefined) { message = { function: purpose } } else { message = { function: purpose, data: data }}
+    async queryGW(purpose, data=undefined) {
+        const message = (data === undefined) ? { function: purpose } : { function: purpose, data: data } 
         const response = await chrome.runtime.sendMessage(message);
-        // Console.log(response, Geom) TODO: This is GW setting
+        Console.log(response, 'Worker') 
         return response
     },
 }
 Object.setPrototypeOf(Geom, CellulartModule)
 
+
+
+ /* ----------------------------------------------------------------------
+  *                              Triangle (WIP)
+  * ---------------------------------------------------------------------- */
+/** Triangles (full with T, outlined with K).
+  * Possibly opens the door to a third generation of autodrawers.
+  * (WIP) This module is not initialized by Controller.        
+  * ---------------------------------------------------------------------- */
+const Triangle = { // [F2]
+    name : "Triangle",          // All modules have a name property
+    setting : new SettingsBelt(['isoceles','3point'],),    // All modules have a SettingsBelt
+    // keybinds : [
+    //     new Keybind((e) => e.code == "T" , (e) => { this.beginDrawingFullTriangle() }),
+    //     new Keybind((e) => e.code == "K" , (e) => { this.beginDrawingFrameTriangle() }),
+    //             ],
+    // previewCanvas : undefined, 
+
+    init(modules) {}, // Probably empty.
+    mutation(oldPhase, newPhase) {
+        // Probably, we should discard the preview canvas (let it get removed from DOM),
+        // and reinitialize it on every new drawing phase.
+    },
+    backToLobby(oldPhase) {},  // Probably empty.
+    adjustSettings(previous, current) {
+        switch (current) {
+            case 'isoceles': break;
+                // 
+            case '3point': break;
+                // 
+        }
+        // Isoceles and 3-point have entirely different control schemes.
+    },
+
+    beginDrawingFullTriangle() {
+
+    },
+    beginDrawingFrameTriangle() {
+
+    },
+    deselect() {
+        // I need to carefully juggle variables to yield the correct behaviour when deselecting.
+    },
+
+    // Snowball 2, 6, 10, 14, 18
+}
+Object.setPrototypeOf(Triangle, CellulartModule)
+
+
+
+ /* ----------------------------------------------------------------------
+  *                               Reveal (WIP)
+  * ---------------------------------------------------------------------- */
+/** Reveal uncovers the secrets of the Secret mode. Considered a "cheat". 
+  * Current implementation requires invasive XHR patching 
+  * and can't be turned off, so I'm working on a softer one.
+  * (WIP) This module is not initialized by Controller.
+  * ---------------------------------------------------------------------- */
+const Reveal = {
+
+    name : "Reveal",
+    isCheat : true,
+    setting : new RedSettingsBelt('off'), // SettingsBelt(["OFF", "TEXT"], 0, "ALL"), // [V2]
+
+    hiddenElements : undefined,
+
+    // init(modules) {}, // Empty.
+    mutation(oldPhase, newPhase) {
+        if (this.isSetTo("OFF")) { return; }
+        if (newPhase == "write" || newPhase == "first") {
+            this.revealPrompt()
+        } else if (this.itSetTo("ALL") && newPhase == "draw") {
+            this.revealDrawing()
+        }
+    },
+    /*
+    // (deprecated) This function receives messages from the popup
+    recieveMessage(message) {}
+
+    // (deprecated) This function asks the module what message it would like to pass to the popup
+    getMessage() {} */
+    // backToLobby() {} // Empty.
+    // These functions receive messages from the in-window menu
+    adjustSettings(previous, current) {
+        switch (current) {
+            case "OFF": this.rehide(); break;
+            case "TEXT": this.revealPrompt(); break;
+            case "ALL": this.revealDrawing(); break;
+        }
+    },
+
+    revealPrompt() {
+        // TODO: Can't I use an enable/disable CSS or CSS variable thing instead?
+        this.hiddenElements = document.querySelector(".center").querySelectorAll(".hiddenMode")
+        this.hiddenElements.forEach(n => n.style.cssText = "font-family:Bold; -webkit-text-security: none")
+    },
+    revealDrawing() {
+        // this.hiddenCanvases = document.querySelector(".drawingContainer").querySelectorAll("canvas");
+        // this.hiddenCanvases[1].addEventListener("mouseup", () => {
+        //     const newwiw = Inwindow.new(true, true);
+        //     setAttributes(new Image(), { class: "wiw-img", parent: newwiw.body, src: this.hiddenCanvases[0].toDataURL() })
+        // })
+        // [V3]
+    },
+    rehide() {
+        this.hiddenElements.forEach(n => n.style.cssText = "");
+        // [V3]
+    }
+
+    // animate the black cover lifting to gray [V3]
+}
+Object.setPrototypeOf(Reveal, CellulartModule)
+
+
+
+ /* ----------------------------------------------------------------------
+  *                               Scry (WIP)
+  * ---------------------------------------------------------------------- */
+/** Scry helps keep the game moving by telling you who has and hasn't
+  * hit the "Done" button.
+  * ---------------------------------------------------------------------- */
+const Scry = { // [F2]
+    name : "Scry",          // All modules have a name property
+    hasMenuButton : true,   // Some modules aren't directly controllable
+    setting : new SettingsBelt(['off','windowed','sleek'], 2),    // All modules have a SettingsBelt
+    keybinds : [
+        // This keybind turns off when Scry does, because maybe people use tab as part of their drawing workflow.
+        new Keybind((e) => { return Scry.setting.current != 'off' && e.code == "Tab" }, (e) => { console.log("tab"); preventDefaults(e); /*this.show something or other*/ })
+    ],
+
+    activeIndices: new Set(),
+    playerDict: {},
+    // Initialization. 
+    // To be overridden by each module.
+    init(modules) {},
+
+    // This function is called whenever the game transitions to a new phase.
+    // To be overridden by each module.
+    mutation(oldPhase, newPhase) {
+        if (oldPhase != 'lobby') { return }
+        this.prune()
+    },
+
+    // This function "cleans the slate" when a game ends. 
+    // To be overridden by each module.
+    backToLobby(oldPhase) {
+        this.prune()
+    }, 
+
+    // This function makes required changes when switching between settings. 
+    // To be overridden by each (controllable) module.
+    adjustSettings(previous, current) {},
+
+    // This function should set internal states based on the game config
+    // depending on the needs of the module.
+    // To be overridden by each module that requires more than marginal state knowledge.
+    updateLobbySettings(dict) {
+        // switch (type) {
+        //     case 2: {       // new player joins            42[2,2,{"id":3,"nick":"CoolNickname4534","avatar":21,"owner":false,"viewer":false,"points":0,"change":0,"alert":false},false]
+        //         // const d = this.trim(data)
+        //         this.playerDict[data.id] = this.trim(data)
+        //         this.activeIndices.add(data.id)
+        //         break;  
+        //     }
+        //     case 3: {       // player leaves               42[2,3,{"userLeft":2,"newOwner":null},false]
+        //         this.activeIndices.remove(data.userLeft)
+        //         break;
+        //     }
+        //     case 15: {
+        //         console.log(data);
+        //         console.log(this.playerDict[data.user])
+        //         console.log(data.ready)
+        //         break;
+        //     }
+        //     case 21: {      // player leaves               42[2,21,{"userLeft":3,"newOwner":null}]
+        //         this.activeIndices.remove(data.userLeft)
+        //         break;
+        //     }
+        //     case 22: {      // player rejoins / reconnects 42[2,22,3] 
+        //         this.activeIndices.add(data)
+        //         break;  
+        //     }
+        //     // (TODO: study the way the ids are shuffled/reassigned at start of new turn. It seems like they completely aren't. Memory leak possible?)
+        //     // (i think) there is a memory leak in gartic involving the lack of reassignment of user IDs when people leave, meaning that if you start a lobby and a total of 9 quadrillion people join and leave, things might start going wrong
+        // }
+    },
+
+    trim(dict) {
+        const d = {}
+        // d.id = dict.id
+        d.nick = dict.nick
+        d.avatar = dict.avatar
+    },
+    prune() {
+        for (const key of Object.keys(this.playerDict)) {
+            if (!this.activeIndices.includes(key)) {
+                delete this.playerDict.key
+            }
+        }
+    },
+}
+Object.setPrototypeOf(Scry, CellulartModule)
+
 // #endregion
+
+
+// console.log(Object.keys(window))
+if (typeof exports !== 'undefined') {
+    module.exports = { Debug, Red, Timer, Koss, Refdrop, Spotlight, Geom, Triangle, Reveal, Scry };
+}

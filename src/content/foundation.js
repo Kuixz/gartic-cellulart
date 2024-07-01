@@ -9,30 +9,54 @@ var gifenc;
     const src = chrome.runtime.getURL("src/lib/gifenc.esm.mjs");
     gifenc = await import(src);
 })(); // setTimeout(function(){console.log(gifenc); console.log(gifenc.GIFEncoder); console.log(gifenc.quantize)}, 1000)
-const WIW = {
+
+class InwindowElement {
+    element = undefined
+    header = undefined
+    body = undefined
+
+    constructor(e, h=undefined, b=undefined) {
+        this.element = e
+        this.header = h ? h : e.querySelector('.wiw-header')
+        this.body = b ? b : e.querySelector('.wiw-body')
+    }
+
+    setVisibility(v) {
+        if (v === false) { 
+            this.element.style.visibility = 'hidden'
+        } else if (v === true) { 
+            this.element.style.visibility = 'visible'
+        } else {
+            this.element.style.visibility = v
+        }
+    }
+}
+
+const Inwindow = {
     wiwNode: undefined, // HTMLDivElement
     currentZIndex: 20,  // todo reset z index when a threshold is passed
 
-    constructWIWNode(customNode) {
-        if (customNode) { WIW.wiwNode = customNode; return }
-        WIW.wiwNode = setAttributes(document.createElement("div"), { style: "visibility: hidden", class: "window-in-window" })
-        WIW.wiwNode.innerHTML = `
+    constructNode(customNode) {
+        if (customNode) { Inwindow.wiwNode = customNode; return }
+        Inwindow.wiwNode = setAttributes(document.createElement("div"), { style: "visibility: hidden", class: "window-in-window" })
+        Inwindow.wiwNode.innerHTML = `
             <div class = "wiw-header">≡<div class = "wiw-close"></div></div>
             <div class = "wiw-body"></div>`
     },
-    newWIW(closeable, visible, ratio) {
-        const newWIW = WIW.wiwNode.cloneNode(true)
+    new(closeable, visible, ratio=(100/178)) {
+        const newWIW = Inwindow.wiwNode.cloneNode(true)
         const v = visible ? "visible" : "hidden"
-        const r = ratio ? ratio : (100/178)
+        // const r = ratio ? ratio : (100/178)
         closeable
             ? newWIW.querySelector(".wiw-close").onmousedown = function() { newWIW.remove() }
             : newWIW.querySelector(".wiw-close").remove()
-        WIW.initDragElement(newWIW)
-        WIW.initResizeElement(newWIW, r)
-        return setAttributes(newWIW, { 
-            style: "visibility:" + v + "; min-height:" + (178 * r + 40) + "px; height:" + (178 * r + 40) + "px; max-height:" + (536 * r + 40) + "px", 
+        Inwindow.initDragElement(newWIW)
+        Inwindow.initResizeElement(newWIW, ratio)
+        setAttributes(newWIW, { 
+            style: "visibility:" + v + "; min-height:" + (178 * ratio + 40) + "px; height:" + (178 * ratio + 40) + "px; max-height:" + (536 * ratio + 40) + "px", 
             parent: document.body 
         })
+        return new InwindowElement(newWIW)
     },
     // The below code is taken from Janith at https://codepen.io/jkasun/pen/QrLjXP
     // and is used to make the various window-in-windows movable.
@@ -42,7 +66,7 @@ const WIW = {
         var header = getHeader(element);
         
         element.onmousedown = function() {
-            this.style.zIndex = String(++WIW.currentZIndex);
+            this.style.zIndex = String(++Inwindow.currentZIndex);
         }
         if (header) {
             header.parentWindow = element;
@@ -129,72 +153,74 @@ const WIW = {
 }
 
 // Submodule functionalities
-// const Console = { // No filtering functionality
-//     name: "Console",
-    
-//     log: function(message, optMod) {
-//         const mod = optMod || { name:'?' }
-//         const msg = `[${mod.name || '?'}] ${message}`
-//         this.onprint(msg, mod)
-//         // console.log(msg)
-//     },
-//     alert: function(message, optMod) {
-//         const mod = optMod || { name:'?' }
-//         const msg = `[${mod.name || '?'}] ERROR: ${message}`
-//         this.onprint(msg, mod)
-//         console.log(msg)
-//     },
-//     onprint: function(message) {} // Dynamically set
-// }
-/* */
-const Console = { // Only block certain messages
+const Console = { // Only print certain messages
     name: "Console",
-    disabled: new Set(), //(["Console"]),
+    // enabled: new Set(),
+    enabled: new Set([/*'Observer',*//*'Socket', */'Spotlight', 'Xhr']),
 
     toggle: function(mod) {
-        this.set(mod, !this.disabled.has(mod))
+        this.set(mod, !this.enabled.has(mod))
     },
-    set: function(mod, disabled) {
-        disabled ? this.disabled.add(mod) : this.disabled.delete(mod)
-        Console.log('Console', (disabled ? "Disabled " : "Enabled ") + "logging for " + mod.name)
+    set: function(mod, enabled) {
+        enabled ? this.enabled.add(mod) : this.enabled.delete(mod)
+        Console.log((enabled ? "Enabled " : "Disabled ") + "logging for " + mod, 'Console')
     },
-    log: function(mod, message) {
-        if (this.disabled.has(mod)) { return }
-        const msg = `[${mod.name}] ${message}`
-        this.onprint(msg)
-        // console.log(msg)
-    },
-    alert: function(mod, message) {
-        const msg = `[${mod.name}] ERROR: ${message}`
+    log: function(message, modName=null) {
+        if (modName && !this.enabled.has(modName)) { return }
+        const msg = `[${modName}] ${message}`
         this.onprint(msg)
         console.log(msg)
     },
-    onprint: function(message) {} // Dynamically set
-}
-/* */
-// const Console = { // Only print certain messages
-//     name: "Console",
-//     enabled: new Set(["Console"]),
+    alert: function(message, modName) {
+        const msg = `[${modName}] ERROR: ${message}`
+        this.onprint(msg)
+        console.log(msg)
+    },
+    onprint: function(message) {}, // Dynamically set
+}; Console.enabled.add('Console')
+// const Shelf = { // FAKE SHELF - REMOVE THIS WHEN PUSHING BETA 
+//     dict: { 
+//         auth: "ad1b033f4885a8bc3ae4f055f591a79c59ce73a6a7380b00c4fcb75ac3eefffb",
+//         p: "q",
+//     },
 
-//     toggle: function(mod) {
-//         this.set(mod, !this.enabled.has(mod))
+//     async set(items) { // Dictionary<String, any>
+//         for (const key in items) {
+//             Shelf.dict[key] = items[key]
+//         }
 //     },
-//     set: function(mod, enabled) {
-//         enabled ? this.enabled.add(mod) : this.enabled.delete(mod)
-//         Console.log('Console', (enabled ? "Enabled " : "Disabled ") + "logging for " + mod.name)
+//     async get(items) { // [String]
+//         switch (typeof items) {
+//             case 'string':
+//                 // t[items] = Shelf.dict[items]
+//                 // break;
+//                 return Shelf.dict[items]
+//             case 'object':
+//                 var t = {}
+//                 items.forEach((key) => {
+//                     t[key] = Shelf.dict[key]
+//                 })
+//                 return t
+//                 // break;
+//             default:
+//                 return Shelf.dict
+//                 // break;
+//         }
+//         // return t
 //     },
-//     log: function(mod, message) {
-//         if (!this.enabled.has(mod)) { return }
-//         const msg = `[${mod.name}] ${message}`
-//         this.onprint(msg)
-//         // console.log(msg)
+//     async remove(items) { // [String]
+//         for (const key in items) {
+//             delete Shelf.dict[key]
+//         }
 //     },
-//     alert: function(mod, message) {
-//         const msg = `[${mod.name}] ERROR: ${message}`
-//         this.onprint(msg)
-//         // console.log(msg)
+//     async clear() {
+//         Shelf.dict = { }
 //     },
-//     onprint: function(message) {} // Dynamically set
+//     async retrieveOrElse(key, defaultValue, write = false) {
+//         if (key in Shelf.dict) { return Shelf.data[key] }
+//         if (write) { Shelf[key] = defaultValue }
+//         return defaultValue
+//     }
 // }
 const Shelf = {
     // init() {
@@ -250,11 +276,11 @@ const SHAuth = {
     },
 
     hash: "ad1b033f4885a8bc3ae4f055f591a79c59ce73a6a7380b00c4fcb75ac3eefffb",
-    validated: false, //false,
+    validated: true, //false,
     storage: null,  
 
-    remember(str) {
-        _ = SHAuth.storage.set({"auth":str})
+    async remember(str) {
+        await SHAuth.storage.set({"auth":str})
     },
     validate(str) {
         const correct = str === SHAuth.hash
@@ -264,7 +290,7 @@ const SHAuth = {
     async tryLogin() {
         const r = await SHAuth.storage.get("auth")
         // console.log(r)
-        return SHAuth.validate(r.auth)
+        return SHAuth.validate(r)
     },
     async authenticate (message) {
         if (SHAuth.validated) { return true }
@@ -276,34 +302,98 @@ const SHAuth = {
         return SHAuth.validate(hashString)
     }
 }
+
+// Branches
 const Socket = {
     name: 'Socket',
-    handlers: [],
+    handlers: [{ filter:'log', handle:(data) => { Console.log(data, 'Socket') }}],
 
     init() {
         window.addEventListener('message', (event) => {
-            if (event.source !== window || event.data.direction !== 'messageFromSocket') { return; }
-            const func = event.data.function
+            if (event.source !== window || event.data.direction !== 'fromSocket') { return; }
+            const purp = event.data.purpose
             const data = event.data.data
-            Console.log(`incoming (${func}, ${data})`, Socket)
-            Socket.handlers.forEach(handler => { 
-                if (handler.filter == func) { handler.handle(data) }
-            })
+            Console.log(`incoming (${purp}, ${JSON.stringify(data)})`, 'Socket')
+            Socket.handle(purp, data)
+            // Socket.handlers.forEach(handler => { 
+            //     if (handler.filter == purp) { handler.handle(data) }
+            // })
         })
     },
-    post(func, data) {
-        Console.log(`outgoing (${func}, ${data})`, Socket)
+    backToLobby() {
+        Socket.post("backToLobby")
+    },
+    handle(purp, data){
+        Socket.handlers.forEach(handler => { 
+            if (handler.filter == purp) { handler.handle(data) }
+        })
+    },
+    post(purp, data) {
+        Console.log(`outgoing (${purp}, ${data})`, 'Socket')
         
         window.postMessage({
-            direction: "messageToSocket",
-            function: func,
+            direction: "toSocket",
+            purpose: purp,
             data: data
         }, 'https://garticphone.com')
     },
-    addMessageListener(func, handler) {
-        Socket.handlers.push({ filter:func, handle:handler });
+    addMessageListener(purp, handler) {
+        Socket.handlers.push({ filter:purp, handle:handler });
     }
 }
+const Xhr = {
+    name: 'XHR',
+    handlers: [{ filter:'log', handle:(data) => { Console.log(data, 'XHR') }}],
+
+    init() {
+        window.addEventListener('message', (event) => {
+            if (event.source !== window || event.data.direction !== 'fromXHR') { return; }
+            const purp = event.data.purpose
+            const data = event.data.data
+            Console.log(`incoming (${purp}, ${JSON.stringify(data)})`, 'XHR')
+            Xhr.handle(purp, data)
+            // Xhr.handlers.forEach(handler => { 
+            //     if (handler.filter == purp) { handler.handle(data) }
+            // })
+        })
+    },
+    handle(purp, data) {
+        Xhr.handlers.forEach(handler => { 
+            if (handler.filter == purp) { handler.handle(data) }
+        })
+    },
+    // post(purp, data) {
+    //     Console.log(`outgoing (${purp}, ${data})`, 'XHR')
+        
+    //     window.postMessage({
+    //         direction: "toXHR",
+    //         purpose: purp,
+    //         data: data
+    //     }, 'https://garticphone.com')
+    // },
+    addMessageListener(purp, handler) {
+        Xhr.handlers.push({ filter:purp, handle:handler });
+    }
+}
+// const Worker = {
+//     name: "Worker",
+
+//     keepAliveCallback: null,
+
+//     setKeepAlive(alive = true) {
+//         if (alive) {
+//             Worker.keepAliveCallback = setInterval(() => Worker.messageToWorker(2), 250)
+//         } else {
+//             if (Worker.keepAliveCallback) { clearInterval(Worker.keepAliveCallback); Worker.keepAliveCallback = null }
+//         }
+//     },
+//     async messageToWorker(purpose, data=undefined) {
+//         const message = (data === undefined) ? { function: purpose } : { function: purpose, data: data } 
+//         const response = await chrome.runtime.sendMessage(message);
+//         Console.log(response, 'Worker') 
+//         return response
+//     },
+// }
 
 // Utility functions
 const clamp = (min, n, max) => Math.min(Math.max(min, n), max)
@@ -314,8 +404,16 @@ const setAttributes = (node, attrs) => {
             case "parent": value.appendChild(node);  break;
             default: node.setAttribute(attr, value); break;
         }
-    }; 
+    }
     return node 
+}
+const getResource = (local) => {
+    try {
+        return chrome.runtime.getURL(local)
+    } catch {
+        console.log(`Could not find resource ${local}`)
+        return ''
+    }
 }
 
 // Constants
@@ -359,16 +457,151 @@ const modeParameters =
     "EXQUISITE CORPSE": { write: 90,  draw: 300, decay: 0, firstMultiplier: 1   , fallback: 1  }, // 15
 }
 
+
 // Global variables
 const game = {
+    host: "Kirsten Wright",
     user: "Joyce Moore", // used by Spotlight
-    turns: 0,            // used by Spotlight
     // The NORMAL settings follow
-    write: 40,             // used by Timer
-    draw: 150,             // used by Timer
-    decay: 0,              // used by Timer
-    firstMultiplier: 1.25, // used by Timer
-    fallback: 2            // used by Spotlight
+    players: [],
+    // flow: 'WRITING, DRAWING',
+    // speed: 'NORMAL',
+    turns: 0,
+
+    flowString: 'WRITING, DRAWING',
+    speedString: 'NORMAL',
+    turnsString: 'ALL',
+    // turns: () => 0,
+    // turns: 0,            // used by Timer and Spotlight
+
+    // write: 40,             // used by Timer
+    // draw: 150,             // used by Timer
+    // decay: () => 0,                                          // used by Timer
+    // firstMultiplier: 1.25, // used by Timer
+    // fallback: 2            // used by Spotlight
+    roundStart() {
+        this.turns = Converter.turnsStringToFunction(this.turnsString)(this.players.length)
+    }
+}
+const Converter = {
+    // user: 'Joyce Moore',
+    // turns: 0,
+
+    // mode: 'CUSTOM',
+    // write: 40,
+    // draw: 150,
+    // decay: () => 0,                            
+    // firstMultiplier: 1.25,
+    // fallback: 2,
+
+    // setMode(str) {
+    //     Converter.mode = str
+    // },
+    modeParameters: {
+        "NORMAL":           { speed: 'NORMAL', turns: 'ALL', flow: 'WRITING, DRAWING'  }, // 1 -> 1
+        "KNOCK-OFF":        { speed: 'REGRESSIVE', turns: 'ALL', flow: 'ONLY DRAWINGS'  }, // 2 -> 8
+        "SECRET":           { speed: 'FAST', turns: 'ALL', flow: 'WRITING, DRAWING' }, // 3 -> 3
+        "ANIMATION":        { speed: 'NORMAL', turns: 'ALL', flow: 'ONLY DRAWINGS' }, // 4 -> 11
+        "ICEBREAKER":       { speed: 'NORMAL', turns: 'ALL +1', flow: 'SINGLE SENTENCE'  }, // 5 -> 9
+        "COMPLEMENT":       { speed: 'FASTER FIRST TURN', turns: 'ALL +1', flow: 'DRAWINGS WITH A BACKGROUND, NO PREVIEW' }, // 6 -> 15
+        // speedrun is 7 (what? no it isn't???)
+        "MASTERPIECE":      { speed: "HOST'S DECISION", turns: 'SINGLE TURN', flow: 'SOLO DRAWING' }, // 15 -> 20
+        "STORY":            { speed: 'NORMAL', turns: 'ALL', flow: 'ONLY WRITING' },       // 17
+        "MISSING PIECE":    { speed: 'NORMAL', turns: 'ALL', flow: 'ONLY DRAWINGS' },       // 21 
+        "CO-OP":            { speed: 'FAST', turns: '6 TURNS', flow: 'SINGLE SENTENCE' },       // 18
+        "SCORE":            { speed: 'NORMAL', turns: 'ALL', flow: 'WRITING, DRAWING' },       // 10
+        "SANDWICH":         { speed: 'NORMAL', turns: 'ALL', flow: 'WRITING ONLY AT THE BEGINNING AND THE END' },      // 12 -> 5
+        // "CROWD":            { write: 20, draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25, fallback: 2  }, // 13 -> 7
+        "BACKGROUND":       { speed: 'SLOWER FIRST TURN', turns: '200%', flow: 'DRAWINGS WITH A BACKGROUND' }, // 14 -> 14
+        "SOLO":             { speed: 'DYNAMIC', turns: '5 TURNS', flow: 'SOLO DRAWING' }, // 15 -> 13
+        "EXQUISITE CORPSE": { speed: 'SLOW', turns: '3 TURNS', flow: 'ONLY DRAWINGS'}
+    },
+    speedParameters: {
+        "SLOW":              { write: 80, draw: 300, decayFunction: () => 0,                            firstMultiplier: 1.25 },
+        "NORMAL":            { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 1.25 }, // 1 -> 1
+        "FAST":              { write: 20, draw: 75,  decayFunction: () => 0,                            firstMultiplier: 1.25 }, // 3 -> 3
+        "PROGRESSIVE":       { write: 8,  draw: 30,  decayFunction: (turns) => Math.exp(8 / turns),     firstMultiplier: 1, },
+        "REGRESSIVE":        { write: 90, draw: 300, decayFunction: (turns) => 1 / Math.exp(8 / turns), firstMultiplier: 1   , fallback: 1  }, // 2 -> 8
+        "DYNAMIC":           { write: -1, draw: -1,  decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
+        "INFINITE":          { write: -1, draw: -1,  decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
+        "HOST'S DECISION":   { write: -1, draw: -1,  decayFunction: () => 0,                            firstMultiplier: 1   , fallback: 1  }, // 15 -> 13
+        "FASTER FIRST TURN": { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 0.2 , fallback: -1 }, // 6 -> 15
+        "SLOWER FIRST TURN": { write: 40, draw: 150, decayFunction: () => 0,                            firstMultiplier: 2   , fallback: 1  }, // 14 -> 14
+    },
+
+    getParameters(str) {
+        return Converter.modeParameters[str]
+    },
+
+    modeIndexToString(index) {
+        return ([0,'NORMAL',2,'SECRET',4,'SANDWICH',6,'CROWD','KNOCK-OFF','ICEBREAKER','SCORE','ANIMATION',12,'SOLO','BACKGROUND','COMPLEMENT',16,'STORY','CO-OP',19,'MASTERPIECE', 'MISSING PIECE',22,23,'EXQUISITE CORPSE'])[index]
+    },
+
+    speedIndexToString(index) {
+        return ([0,"SLOW","NORMAL","FAST","DYNAMIC","REGRESSIVE","INFINITE","HOST'S DECISION","PROGRESSIVE","FASTER FIRST TURN","SLOWER FIRST TURN"])[index]
+    },
+    speedStringToParameters(str) {
+        // switch (str) { // Setting custom game.parameters
+        //     case "SLOW":              return { "write": 80, "draw": 300, 'decayFunction': () => 0, "firstMultiplier": 1.25 };
+        //     case "NORMAL":            return Converter.getParameters(["NORMAL"]);
+        //     case "FAST":              return Converter.getParameters(["SECRET"]);
+        //     case "PROGRESSIVE":       return { "write": 8, "draw": 30, "firstMultiplier": 1, "decayFunction": (turns) => Math.exp(8 / turns)};
+        //     case "REGRESSIVE":        return /*{ ...*/Converter.getParameters(['KNOCK-OFF']) /*, "decay": 1 / Math.exp(8 / game.turns) }*/;
+        //     case "DYNAMIC":           return Converter.getParameters(["SOLO"]);
+        //     case "INFINITE":          return Converter.getParameters(["SOLO"]);
+        //     case "HOST'S DECISION":   return Converter.getParameters(["SOLO"]);
+        //     case "FASTER FIRST TURN": return Converter.getParameters(["COMPLEMENT"]);
+        //     case "SLOWER FIRST TURN": return Converter.getParameters(["BACKGROUND"]);
+        //     default: Console.alert("Could not identify the time setting being used", 'Converter'); return {}
+        // }
+        const k = Converter.speedParameters[str]
+        if (k) { return k }
+        Console.alert(`Could not identify the time setting being used (${str})`, 'Converter'); return {}
+        // return Converter.speedParameters[str]
+    },
+
+    flowIndexToString(index) {
+        return ([0,"WRITING, DRAWING","DRAWING, WRITING","ONLY DRAWING","WRITING ONLY AT THE BEGINNING AND END","WRITING ONLY AT THE BEGINNING","WRITING ONLY AT THE END","SINGLE SENTENCE",'SINGLE DRAWING','SOLO DRAWING','DRAWINGS WITH A BACKGROUND','DRAWINGS WITH A BACKGROUND, NO PREVIEW',"ONLY WRITING"])[index]
+    },
+    flowStringToFallback(str) {
+        switch (str) { 
+            case "WRITING, DRAWING":                     return 2;
+            case "DRAWING, WRITING":                     return 2;
+            case "SINGLE SENTENCE":                      return -1;
+            case "SINGLE DRAWING":                       return -1;
+            case "DRAWINGS WITH A BACKGROUND":             return -1;
+            case "DRAWINGS WITH A BACKGROUND, NO PREVIEW": return -1;
+            default:                                     return 1;
+        }
+    },
+
+    turnsIndexToString(index) {
+        return ([0,"FEW","MOST","ALL","200%","300%","SINGLE TURN","5 TURNS","10 TURNS","20 TURNS","2 TURNS","3 TURNS","ALL +1","6 TURNS","7 TURNS","8 TURNS","9 TURNS","4 TURNS",])[index]
+    },
+    turnsStringToFunction(str) {
+        switch (str) {
+            case "FEW":         return (players) => Math.floor(players / 2);     // [C3]
+            case "MOST":        return (players) => Math.floor(3 * players / 4); // [C3]
+            case "ALL":         return (players) => players; 
+            case "ALL +1":      return (players) => players + 1;
+            case "200%":        return (players) => 2 * players;
+            case "300%":        return (players) => 3 * players;
+            case "SINGLE TURN": return (players) => 1;
+            case "2 TURNS":     return (players) => 2;
+            case "3 TURNS":     return (players) => 3;
+            case "4 TURNS":     return (players) => 4;
+            case "5 TURNS":     return (players) => 5;
+            case "6 TURNS":     return (players) => 6;
+            case "7 TURNS":     return (players) => 7;
+            case "8 TURNS":     return (players) => 8;
+            case "9 TURNS":     return (players) => 9;
+            case "10 TURNS":    return (players) => 10;
+            case "20 TURNS":    return (players) => 20;
+            default: 
+                Console.alert("Could not identify the turn setting being used", 'Converter');
+                return (players) => { Console.alert("Could not identify the turn setting being used", 'Converter'); return 0; }
+        }
+    }
 }
 
 // Structures
@@ -379,9 +612,10 @@ class SettingsBelt { // derived from Circulator, derived from Iterator, trimmed
         this.index = defaultIndex || 0
         this.extension = extension
     }
-    current() { return this.items[this.index] }
-    next() { this.index = (this.index + 1              ) % this.length; return this.current()}
-    prev() { this.index = (this.index + this.length - 1) % this.length; return this.current()} // Unused
+    get current() { return this.items[this.index] }  // TODO: change this to get syntax
+    // isSetTo(thing) { return this.current == thing }
+    next() { this.index = (this.index + 1              ) % this.length; return this.current}
+    prev() { this.index = (this.index + this.length - 1) % this.length; return this.current} // Unused
 
     extend() {
         if (!this.extension) { return } 
@@ -393,6 +627,9 @@ class SettingsBelt { // derived from Circulator, derived from Iterator, trimmed
         this.length -= 1
         this.items.slice(0, this.length - 1)
         if (this.index == this.length) { this.index = this.length - 1 }
+    }
+    jump(setting) {
+        while (this.current != setting) { this.next() }
     }
 }
 class WhiteSettingsBelt extends SettingsBelt {
@@ -412,4 +649,29 @@ class Keybind {
         this.triggeredBy = triggeredBy;
         this.response = response;
     }
+}
+// class Throttle {
+//     semaphores = {}
+
+//     constructor(semaphores) {
+//         this.semaphores = semaphores
+//     }
+//     up (semaphore) {
+//         this.semaphores[semaphore] = true
+//     }
+//     down (semaphore) {
+//         this.semaphores[semaphore] = false
+//     }
+//     async get () {
+//         
+//     }
+// }
+
+
+// module.exports = { this.wdinwos }
+if (typeof exports !== 'undefined') {
+    module.exports = { gifenc, Inwindow, Console, Shelf, Keybinder, SHAuth, Socket, Xhr, clamp, preventDefaults, setAttributes, svgNS, configChildTrunk, game, Converter, SettingsBelt, WhiteSettingsBelt, RedSettingsBelt, Keybind };
+    // module.exports = { ...Object.entries(this) }
+    // module.exports = { ...Object.entries(window) }
+    // module.exports = { ...Object.values(this) }
 }
