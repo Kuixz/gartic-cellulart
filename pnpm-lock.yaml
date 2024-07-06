@@ -21,7 +21,7 @@ importers:
         specifier: ^9.4.0
         version: 9.4.0
       xhook:
-        specifier: ^1.6.0
+        specifier: ^1.6.2
         version: 1.6.2
     devDependencies:
       jest-environment-jsdom:

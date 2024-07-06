@@ -290,7 +290,7 @@ const SHAuth = {
     async tryLogin() {
         const r = await SHAuth.storage.get("auth")
         // console.log(r)
-        return SHAuth.validate(r)
+        return SHAuth.validate(r.auth)
     },
     async authenticate (message) {
         if (SHAuth.validated) { return true }
