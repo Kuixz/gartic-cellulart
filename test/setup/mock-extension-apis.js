@@ -4,7 +4,13 @@ global.chrome = {
         onMessage: {
             addListener: function() { }
         }
-    }
+    },
+    // storage: {
+    //     local:
+    //         {
+    //             set
+    //         }
+    // }
 };
 
 global.PATH = '/Users/zacharytsang/dev/HTML:CSS:JS/cellulart megafolder/cellulart'
