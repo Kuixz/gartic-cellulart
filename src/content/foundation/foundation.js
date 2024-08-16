@@ -10,174 +10,8 @@ var gifenc;
     gifenc = await import(src);
 })(); // setTimeout(function(){console.log(gifenc); console.log(gifenc.GIFEncoder); console.log(gifenc.quantize)}, 1000)
 
-class InwindowElement {
-    element = undefined
-    header = undefined
-    body = undefined
-
-    constructor(e, h=undefined, b=undefined) {
-        this.element = e
-        this.header = h ? h : e.querySelector('.wiw-header')
-        this.body = b ? b : e.querySelector('.wiw-body')
-    }
-
-    setVisibility(v) {
-        if (v === false) { 
-            this.element.style.visibility = 'hidden'
-        } else if (v === true) { 
-            this.element.style.visibility = 'visible'
-        } else {
-            this.element.style.visibility = v
-        }
-    }
-}
-
-const Inwindow = {
-    wiwNode: undefined, // HTMLDivElement
-    currentZIndex: 20,  // todo reset z index when a threshold is passed
-
-    constructNode(customNode) {
-        if (customNode) { Inwindow.wiwNode = customNode; return }
-        Inwindow.wiwNode = setAttributes(document.createElement("div"), { style: "visibility: hidden", class: "window-in-window" })
-        Inwindow.wiwNode.innerHTML = `
-            <div class = "wiw-header">≡<div class = "wiw-close"></div></div>
-            <div class = "wiw-body"></div>`
-    },
-    new(closeable, visible, ratio=(100/178)) {
-        const newWIW = Inwindow.wiwNode.cloneNode(true)
-        const v = visible ? "visible" : "hidden"
-        // const r = ratio ? ratio : (100/178)
-        closeable
-            ? newWIW.querySelector(".wiw-close").onmousedown = function() { newWIW.remove() }
-            : newWIW.querySelector(".wiw-close").remove()
-        Inwindow.initDragElement(newWIW)
-        Inwindow.initResizeElement(newWIW, ratio)
-        setAttributes(newWIW, { 
-            style: "visibility:" + v + "; min-height:" + (178 * ratio + 40) + "px; height:" + (178 * ratio + 40) + "px; max-height:" + (536 * ratio + 40) + "px", 
-            parent: document.body 
-        })
-        return new InwindowElement(newWIW)
-    },
-    // The below code is taken from Janith at https://codepen.io/jkasun/pen/QrLjXP
-    // and is used to make the various window-in-windows movable.
-    initDragElement(element) {
-        var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
-        var elmnt = null;
-        var header = getHeader(element);
-        
-        element.onmousedown = function() {
-            this.style.zIndex = String(++Inwindow.currentZIndex);
-        }
-        if (header) {
-            header.parentWindow = element;
-            header.onmousedown = dragMouseDown;
-        }
-        
-        function dragMouseDown(e) {
-            elmnt = this.parentWindow;
-
-            e = e || window.event;
-            // get the mouse cursor position at startup:
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            document.onmouseup = closeDragElement;
-            // call a function whenever the cursor moves:
-            document.onmousemove = elementDrag;
-        }
-
-        function elementDrag(e) {
-            if (!elmnt) {
-                return;
-            }
-
-            e = e || window.event;
-            // calculate the new cursor position:
-            pos1 = pos3 - e.clientX;
-            pos2 = pos4 - e.clientY;
-            pos3 = e.clientX;
-            pos4 = e.clientY;
-            // set the element's new position:
-            elmnt.style.top = elmnt.offsetTop - pos2 + "px";
-            elmnt.style.left = elmnt.offsetLeft - pos1 + "px";
-        }
-
-        function closeDragElement() {
-            /* stop moving when mouse button is released:*/
-            document.onmouseup = null;
-            document.onmousemove = null;
-        }
-
-        function getHeader(element) {
-            return element.querySelector(".wiw-header");
-        }
-    },
-    initResizeElement(element, ratio) {
-        var elmnt = null;
-        var startX, startY, startWidth, startHeight;
-        
-        var both = document.createElement("div");
-        both.classList.add("resizer-both");
-        element.appendChild(both);
-
-        both.addEventListener("mousedown", initDrag, false);
-        both.parentWindow = element;
-
-        function initDrag(e) {
-            elmnt = this.parentWindow;
-
-            startX = e.clientX;
-            startY = e.clientY;
-            startWidth = parseInt(
-                document.defaultView.getComputedStyle(elmnt).width,
-                10
-            );
-            startHeight = parseInt(
-                document.defaultView.getComputedStyle(elmnt).height,
-                10
-            );
-            document.documentElement.addEventListener("mousemove", doDrag, false);
-            document.documentElement.addEventListener("mouseup", stopDrag, false);
-        }
-
-        function doDrag(e) {
-            var dist = Math.max(e.clientX - startX, (e.clientY - startY) / ratio)
-            elmnt.style.width = startWidth + dist + "px";
-            elmnt.style.height = startHeight + ratio * dist + "px";
-        }
-
-        function stopDrag() {
-            document.documentElement.removeEventListener("mousemove", doDrag, false);
-            document.documentElement.removeEventListener("mouseup", stopDrag, false);
-        }
-    }
-}
 
 // Submodule functionalities
-const Console = { // Only print certain messages
-    name: "Console",
-    // enabled: new Set(),
-    enabled: new Set([/*'Observer',*//*'Socket', */'Spotlight', 'Xhr']),
-
-    toggle: function(mod) {
-        this.set(mod, !this.enabled.has(mod))
-    },
-    set: function(mod, enabled) {
-        enabled ? this.enabled.add(mod) : this.enabled.delete(mod)
-        Console.log((enabled ? "Enabled " : "Disabled ") + "logging for " + mod, 'Console')
-    },
-    log: function(message, modName=null) {
-        if (modName && !this.enabled.has(modName)) { return }
-        const msg = `[${modName}] ${message}`
-        this.onprint(msg)
-        console.log(msg)
-    },
-    alert: function(message, modName) {
-        const msg = `[${modName}] ERROR: ${message}`
-        this.onprint(msg)
-        console.log(msg)
-    },
-    onprint: function(message) {}, // Dynamically set
-}; Console.enabled.add('Console')
 const Shelf = { // FAKE SHELF - REMOVE THIS WHEN PUSHING BETA 
     dict: { 
         auth: "ad1b033f4885a8bc3ae4f055f591a79c59ce73a6a7380b00c4fcb75ac3eefffb",
@@ -251,24 +85,6 @@ const Shelf = { // FAKE SHELF - REMOVE THIS WHEN PUSHING BETA
 //         return defaultValue
 //     }
 // }
-const Keybinder = {
-    keybinds: undefined,   // [Keybind]
-    init() {
-        document.addEventListener("keydown", (e) => {  // console.log(e.code)
-            Keybinder.keybinds.forEach((bind) => bind.triggeredBy(e) && bind.response(e))
-        })
-        this.reset()
-    },
-    reset() {
-        Keybinder.keybinds = []
-    },
-    set(keybinds) {
-        Keybinder.keybinds = keybinds
-    },
-    add(keybinds) {
-        Keybinder.keybinds = Keybinder.keybinds.concat(keybinds)
-    }
-}
 const SHAuth = {
     using(storage) {
         SHAuth.storage = storage
@@ -395,32 +211,7 @@ const Xhr = {
 //     },
 // }
 
-// Utility functions
-const clamp = (min, n, max) => Math.min(Math.max(min, n), max)
-function preventDefaults (e) { e.preventDefault(); e.stopPropagation() }
-const setAttributes = (node, attrs) => { 
-    for (const [attr, value] of Object.entries(attrs)) { 
-        switch (attr) {
-            case "parent": value.appendChild(node);  break;
-            default: node.setAttribute(attr, value); break;
-        }
-    }
-    return node 
-}
-const getResource = (local) => {
-    try {
-        return chrome.runtime.getURL(local)
-    } catch {
-        console.log(`Could not find resource ${local}`)
-        return ''
-    }
-}
 
-// Constants
-const svgNS = "http://www.w3.org/2000/svg"
-const configChildTrunk = { childList: true };
-// const echo = (v) => v
-// const const0 = () => 0
 
 
 // Global variables
@@ -569,52 +360,6 @@ const Converter = {
     }
 }
 
-// Structures
-class SettingsBelt { // derived from Circulator, derived from Iterator, trimmed
-    constructor(array, defaultIndex, extension) {
-        this.items = array
-        this.length = array.length
-        this.index = defaultIndex || 0
-        this.extension = extension
-    }
-    get current() { return this.items[this.index] }  // TODO: change this to get syntax
-    // isSetTo(thing) { return this.current == thing }
-    next() { this.index = (this.index + 1              ) % this.length; return this.current}
-    prev() { this.index = (this.index + this.length - 1) % this.length; return this.current} // Unused
-
-    extend() {
-        if (!this.extension) { return } 
-        this.length += 1; 
-        this.items.push(this.extension) 
-    }
-    retract() {
-        if (!this.extension) { return } 
-        this.length -= 1
-        this.items.slice(0, this.length - 1)
-        if (this.index == this.length) { this.index = this.length - 1 }
-    }
-    jump(setting) {
-        while (this.current != setting) { this.next() }
-    }
-}
-class WhiteSettingsBelt extends SettingsBelt {
-    constructor(defaultState, extension) { 
-        super(['off', 'on'], [1,'on',true].includes(defaultState) ? 1 : 0, extension)
-    }
-}
-class RedSettingsBelt extends WhiteSettingsBelt {
-    constructor(defaultState) { 
-        super(defaultState, 'red')
-    }
-}
-class Keybind {
-    // triggeredBy   // Event => Bool
-    // response      // Event => Any
-    constructor(triggeredBy, response) {
-        this.triggeredBy = triggeredBy;
-        this.response = response;
-    }
-}
 // class Throttle {
 //     semaphores = {}
 
