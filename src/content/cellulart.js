@@ -14,7 +14,6 @@ const globalState = {
 }
 
 const Controller = { 
-    
     menu: null, // [C1]
     modules: [Timer, Koss, Refdrop, Spotlight, Geom, Red, Debug], //, Reveal]
     auth: SHAuth.using(Shelf),

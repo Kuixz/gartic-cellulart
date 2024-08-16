@@ -1,0 +1,25 @@
+const name: string = "Console"
+// enabled: new Set(),
+const enabledSet: Set<string> = new Set(['Console', 'Spotlight', 'Xhr'])
+
+function toggle(modName: string) {
+    set(modName, !enabledSet.has(modName))
+}
+function set(modName: string, enabled: boolean) {
+    enabled ? enabledSet.add(modName) : enabledSet.delete(modName)
+    log((enabled ? "Enabled " : "Disabled ") + "logging for " + modName, 'Console')
+}
+function log(message: string, modName?: string) {
+    if (modName !== undefined && !enabledSet.has(modName)) { return }
+    const msg = `[${modName}] ${message}`
+    // onprint(msg)
+    console.log(msg)
+}
+function alert(message: string, modName?: string) {
+    const msg = `[${modName}] ERROR: ${message}`
+    // onprint(msg)
+    console.log(msg)
+}
+// function onprint(message: string) {} // Dynamically set
+
+export { name, toggle, set, log, alert }
