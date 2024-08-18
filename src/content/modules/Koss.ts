@@ -1,5 +1,5 @@
 import { CellulartModule } from "./CellulartModule";
-import { Console, Inwindow, Phase, RedSettingsBelt, setAttributes } from "../foundation";
+import { Console, DOMLOADINGALLOWANCE, Inwindow, Phase, RedSettingsBelt, setAttributes } from "../foundation";
 
  /* ----------------------------------------------------------------------
   *                                  Koss 
@@ -20,7 +20,7 @@ class Koss extends CellulartModule { // [K1]
     constructor() {
         super()
 
-        const inwindow = new Inwindow(undefined, { close: false })
+        const inwindow = new Inwindow("default", { close: false, ratio:"default" })
         inwindow.body.style.position = 'relative';  // TODO: Too many dots
         this.kossInwindow = inwindow;
 
@@ -36,7 +36,7 @@ class Koss extends CellulartModule { // [K1]
         if (wiwBody.firstChild) { wiwBody.removeChild(wiwBody.firstChild) }
         if (newPhase == 'memory') {
             console.log(document.querySelector(".core canvas"))
-            setTimeout(() => { this.kossCanvas = document.querySelector(".core canvas")! as HTMLCanvasElement }, 10)
+            setTimeout(() => { this.kossCanvas = document.querySelector(".core canvas")! as HTMLCanvasElement }, DOMLOADINGALLOWANCE)
         }
         else if (newPhase == 'draw') {
             // document.querySelector(".core").querySelector("canvas")

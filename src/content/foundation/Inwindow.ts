@@ -15,26 +15,34 @@ class InwindowElement {
     close: HTMLElement | null
 
     constructor(
-        element: HTMLElement = wiwNode.cloneNode(true) as HTMLElement, 
+        element: HTMLElement | "default" = "default", 
         options?: {
             header?: HTMLElement, 
             body?: HTMLElement, 
             close?: HTMLElement | boolean,
             visible?: boolean,
-            ratio?: number
+            ratio?: number | "default"
         }) {
-        this.element = element
-        this.header = options?.header ?? element.querySelector('.wiw-header') ?? element
-        this.body = options?.body ?? element.querySelector('.wiw-body') ?? element
-        this.close = typeof options?.close != "boolean" ? options?.close ?? element.querySelector('.wiw-close') : options.close ? element.querySelector('.wiw-close') : null
-        const closeable = this.close == null
+        const e = element == "default" ? wiwNode.cloneNode(true) as HTMLElement : element
+        this.element = e
+        this.header = options?.header ?? e.querySelector('.wiw-header') ?? e
+        this.body = options?.body ?? e.querySelector('.wiw-body') ?? e
+        this.close = options?.close !== undefined ? (() => {
+            if(typeof options.close == "boolean") {
+                return e.querySelector('.wiw-close')
+            } else { return options.close }
+        })() : null
+        // this.close = options?.close !== undefined ? (options.close == true ? element.querySelector('.wiw-close') : options.close == false ? null : options.close) : null
+        // this.close = typeof options?.close != "boolean" ? options?.close ?? element.querySelector('.wiw-close') : options.close ? element.querySelector('.wiw-close') : null
+        const closeable = options?.close !== false
 
         const v = options?.visible ? "visible" : "hidden"
-        const initialRatio = options?.ratio ?? 100/178
+        const resizeRatio = options?.ratio == "default" ? 100/178 : options?.ratio
+        const initialRatio = resizeRatio ?? 100/178
         this.element.setAttribute("style", "visibility:" + v + "; min-height:" + (178 * initialRatio + 40) + "px; height:" + (178 * initialRatio + 40) + "px; max-height:" + (536 * initialRatio + 40) + "px") 
 
         initDragElement(this)
-        initResizeElement(this, options?.ratio)
+        initResizeElement(this, resizeRatio)
         initRemoveElement(this, closeable)
     
         setParent(this.element, document.body)
@@ -59,7 +67,7 @@ class InwindowElement {
 function initDragElement(inwindow: InwindowElement) {
     var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     var dragTarget: HTMLElement = inwindow.header;
-    var dragElement: HTMLElement = inwindow.body;
+    var dragElement: HTMLElement = inwindow.element;
     
     dragElement.onmousedown = () => {
         dragElement.style.zIndex = String(++currentZIndex);
@@ -124,8 +132,8 @@ function initResizeElement(inwindow: InwindowElement, ratio?: number) {
             elmnt.style.width = startWidth + dist + "px";
             elmnt.style.height = startHeight + ratio * dist + "px";
         } else {
-            elmnt.style.width = e.clientX - startX + "px";
-            elmnt.style.height = e.clientY - startY + "px";
+            elmnt.style.width = startWidth + (e.clientX - startX) + "px";
+            elmnt.style.height = startHeight + (e.clientY - startY) + "px";
         }
     }
 

@@ -10,39 +10,6 @@ var gifenc;
     gifenc = await import(src);
 })(); // setTimeout(function(){console.log(gifenc); console.log(gifenc.GIFEncoder); console.log(gifenc.quantize)}, 1000)
 
-
-// Submodule functionalities
-// const Shelf = {
-//     // init() {
-//     //     ;["session", "local"].forEach((zone) => {
-//     //         Box[zone] = { }
-//     //         ;["set, get"].forEach((func) => {
-//     //             Box[zone][func] = async function(items) { chrome.storage[zone][func](items) }
-//     //         })
-//     //     })
-//     // },
-
-//     async set(items) { // Dictionary<String, any>
-//         return await chrome.storage.local.set(items)
-//     },
-//     async get(items) { // [String]
-//         return await chrome.storage.local.get(items)
-//     },
-//     async remove(items) { // [String]
-//         return await chrome.storage.local.remove(items)
-//     },
-//     async clear() {
-//         chrome.storage.local.clear()
-//     },
-//     async retrieveOrElse(key, defaultValue, write = false) {
-//         const data = await chrome.storage.local.get(key)
-//         if (data[key] !== undefined) { return data[key] }
-//         if (write) { chrome.storage.local.set({ [key]:defaultValue }) }
-//         return defaultValue
-//     }
-// }
-
-
 // Branches
 const Socket = {
     name: 'Socket',

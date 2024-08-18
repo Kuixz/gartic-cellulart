@@ -1,6 +1,6 @@
 import { 
     Phase, Console, setAttributes, setParent,
-    WhiteSettingsBelt, Converter, globalGame, SpeedParameters, speedParameterDefaults, DOMLOADINGALLOWANCE 
+    WhiteSettingsBelt, Converter, globalGame, SpeedParameters, speedParameterDefaults, DOMUNLOADINGALLOWANCE 
 } from "../foundation";
 import { CellulartModule } from "./CellulartModule";
 
@@ -27,15 +27,15 @@ class Timer extends CellulartModule {
 
     constructor() { // Empty.
         super()
-    }
+    }  // TODO: Elements normally aren't actually destroyed when they're removed from DOM. Maybe this.display still exists between transitions? If so we can avoid the costly thing.
     mutation(oldPhase: Phase, newPhase: Phase): void {
         if (["book", "start"].includes(newPhase)) { return }
-        setTimeout(this.placeTimer.bind(this), DOMLOADINGALLOWANCE)
+        setTimeout(this.placeTimer.bind(this), DOMUNLOADINGALLOWANCE)
 
         // If we changed from a phase that warrants a reset in the timer, reset the timer.
         if (oldPhase == "memory" && newPhase != "memory") { return } // !["lobby", "write", "draw", "first"].includes(phase) && newPhase != "memory") { return }
         clearTimeout(this.countdown)
-        setTimeout(this.restartTimer.bind(this), DOMLOADINGALLOWANCE, newPhase)
+        setTimeout(this.restartTimer.bind(this), DOMUNLOADINGALLOWANCE, newPhase)
     }
     roundStart(): void {
         // const data = dict.custom

@@ -1,4 +1,8 @@
-import { IShelf, Shelf } from "./Shelf"
+import { IShelf } from "./Shelf"
+
+// interface IAuth {
+    
+// }
 
 class SHAuth {
     hash: string = "ad1b033f4885a8bc3ae4f055f591a79c59ce73a6a7380b00c4fcb75ac3eefffb"
@@ -34,6 +38,4 @@ class SHAuth {
     }
 }
 
-const SHAuthInstance = new SHAuth(Shelf)
-
-export { SHAuthInstance as SHAuth }
+export { SHAuth }

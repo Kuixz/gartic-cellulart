@@ -1,19 +1,21 @@
 // const dogSrc: string = 'https://media.tenor.com/fej4_qoxdHYAAAAM/cute-puppy.gif'
 import { 
-    Phase, Console, Converter, GarticXHRData, Setting,
+    Phase, Console, Converter, GarticXHRData, Setting, SHAuth,
+    // IAuth, SHAuth as SHAuth, 
+    IShelf, SandShelf as Shelf,
     setAttributes, setParent, configChildTrunk, globalGame 
 } from "./foundation"
-import { Timer, Koss } from "./modules"
+import { Timer, Koss, Refdrop } from "./modules"
 import { CellulartModule } from "./modules/CellulartModule"
 
 class Controller { 
     // static name: Controller
     menu: HTMLElement | undefined // [C1]
-    modules: (typeof CellulartModule)[] = [Timer, Koss]
+    modules: (typeof CellulartModule)[] = [Timer, Koss, Refdrop]
     metamodules: (typeof CellulartModule)[] = []
     liveModules: CellulartModule[] = []
     // modules: [Timer, Koss, Refdrop, Spotlight, Geom, Red, Debug], //, Reveal]
-    // auth: SHAuth.using(Shelf),
+    auth: SHAuth /*IAuth*/ = new SHAuth(new Shelf())
 
     constructor() {
         // Inwindow.constructNode();
@@ -43,9 +45,13 @@ class Controller {
     }
 
     initPopupAuth() {
-        chrome.runtime.onMessage.addListener(function(message, sender, sendResponse) {
+        chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             // console.log(message)
-            // if (message == "status") { sendResponse({open: Controller.auth.validated}) } else { Controller.authenticate(message, sendResponse) }
+            if (message == "status") { 
+                sendResponse({open: this.auth.validated}) 
+            } else { 
+                this.authenticate(message, sendResponse) 
+            }
             return true
         });
     }
@@ -103,11 +109,11 @@ class Controller {
             return item
         }
     }
-    // async authenticate(message, sendResponse) {
-    //     const correct = await Controller.auth.authenticate(message)
-    //     if (correct) { Controller.unhide(); }
-    //     sendResponse({open: correct})
-    // }
+    async authenticate(message: string, sendResponse: (response?: any) => void ) {
+        const correct = await this.auth.authenticate(message)
+        if (correct) { this.unhide(); }
+        sendResponse({open: correct})
+    }
 }   // [C2]
 
 class Observer { 

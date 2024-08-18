@@ -1,8 +1,8 @@
 class Keybind {
-    triggeredBy: (e: Event) => boolean
-    response: (e: Event) => any
+    triggeredBy: (e: KeyboardEvent) => boolean
+    response: (e: KeyboardEvent) => any
     
-    constructor(triggeredBy: (e: Event) => boolean, response: (e: Event) => any) {
+    constructor(triggeredBy: (e: KeyboardEvent) => boolean, response: (e: KeyboardEvent) => any) {
         this.triggeredBy = triggeredBy;
         this.response = response;
     }
