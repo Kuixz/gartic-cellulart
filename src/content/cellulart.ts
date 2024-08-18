@@ -1,30 +1,21 @@
-const dogSrc: string = 'https://media.tenor.com/fej4_qoxdHYAAAAM/cute-puppy.gif'
+// const dogSrc: string = 'https://media.tenor.com/fej4_qoxdHYAAAAM/cute-puppy.gif'
 import { 
-    Phase, Console, Converter, GarticXHRData,
-    setAttributes, setParent, getResource, configChildTrunk, globalGame 
+    Phase, Console, Converter, GarticXHRData, Setting,
+    setAttributes, setParent, configChildTrunk, globalGame 
 } from "./foundation"
-import { Timer, GeomOn } from "./modules"
+import { Timer, Koss } from "./modules"
 import { CellulartModule } from "./modules/CellulartModule"
 
-window.addEventListener('load', function() {
-    const dogImg: HTMLImageElement = document.createElement('img')
-    dogImg.src = dogSrc
-    document.body.appendChild(dogImg)
-
-    const localImg: HTMLImageElement = document.createElement('img')
-    localImg.src = GeomOn
-    document.body.appendChild(localImg)
-
-    console.log(Timer)
-}) 
-
-class ƎǃController { 
+class Controller { 
+    // static name: Controller
     menu: HTMLElement | undefined // [C1]
-    modules: CellulartModule[] = [Timer]
+    modules: (typeof CellulartModule)[] = [Timer, Koss]
+    metamodules: (typeof CellulartModule)[] = []
+    liveModules: CellulartModule[] = []
     // modules: [Timer, Koss, Refdrop, Spotlight, Geom, Red, Debug], //, Reveal]
     // auth: SHAuth.using(Shelf),
 
-    init() {
+    constructor() {
         // Inwindow.constructNode();
         // Keybinder.init()
         // Socket.init()
@@ -38,17 +29,17 @@ class ƎǃController {
         // })
     }
     mutation (oldPhase: Phase, newPhase: Phase) {
-        this.modules.forEach(mod => mod.mutation(oldPhase, newPhase))
+        this.liveModules.forEach(mod => mod.mutation(oldPhase, newPhase))
     }
     roundStart() {
         // game.roundStart()
-        this.modules.forEach(mod => mod.roundStart())
+        this.liveModules.forEach(mod => mod.roundStart())
     }
     roundEnd() {
         // Socket.post("backToLobby")
         // Socket.roundEnd()
         // Shelf.set({ strokeCount:data }) // Possibly redundant? Will have to test.
-        this.modules.forEach(mod => mod.roundEnd())
+        this.liveModules.forEach(mod => mod.roundEnd())
     }
 
     initPopupAuth() {
@@ -59,43 +50,8 @@ class ƎǃController {
         });
     }
     unhide() {}
-    async createMenu() {
-        const createMenuButtons = (green: boolean) => {
-            const menu = document.createElement("div")
-            setAttributes(menu, [["id", "cellulart-menu" ]])
-            setParent(menu, document.body)
-            this.menu = menu
-            // createButton(
-            //     collapse
-            // )
-            this.modules.forEach((mod: CellulartModule) => { 
-                mod.init()
-                if (mod.setting) { createModuleButton(mod, green) } 
-                // if (mod.keybinds) { Keybinder.add(mod.keybinds) }
-            })
-        }
-        const createModuleButton = (mod: CellulartModule, green: boolean) => {
-            createButton(
-                mod.name.toLowerCase() + "_" + mod.setting.current,
-                function() { return mod.name.toLowerCase() + "_" + mod.menuStep() },
-                mod.isCheat && green
-            )
-        }
-        const createButton = (defaultPicture: string, onclick: () => void, hidden: boolean) =>{
-            const item = document.createElement("div")
-            setAttributes(item, [["class", "cellulart-menu-item"]])
-
-            const itemIcon = document.createElement("img")
-            setAttributes(itemIcon, [["class", "cellulart-circular-icon"], ["src", GeomOn]])  // getResource("assets/menu-icons/" + defaultPicture + ".png")]])
-            setParent(itemIcon, item)
-
-            item.addEventListener("click", function() { 
-                const res = onclick(); 
-                itemIcon.src = getResource("assets/menu-icons/" + res + ".png")
-            })
-            if (hidden) { hiddenButtons.push(item); item.style.display = "none" } 
-            this.menu!.appendChild(item)
-        }
+    async createMenu() {  // TODO don't initalize all immediately, maybe? because some people will never use the RED mode
+        var hiddenButtons: HTMLElement[] = []
         function unhide() {
             hiddenButtons.forEach((button) => {
                 button.style.display = "initial"; 
@@ -103,13 +59,49 @@ class ƎǃController {
             hiddenButtons = []
         }
 
-        var hiddenButtons: HTMLElement[] = []
-
         // const green = !(await Controller.auth.tryLogin())
         const green = false
-        createMenuButtons(green)
+        const menu = createMenuElement()
+        this.modules.forEach((modTemplate: typeof CellulartModule) => { 
+            const mod = new (modTemplate as new() => CellulartModule)()
+            this.liveModules.push(mod)
+            menu.appendChild(createModuleButton(mod, green))
+            // if (mod.setting) { createModuleButton(mod, green) } 
+            // if (mod.keybinds) { Keybinder.add(mod.keybinds) }
+        })
+
+        this.menu = menu
         if (green) { this.unhide = unhide }
 
+        function createMenuElement () {
+            const menu = document.createElement("div")
+            setAttributes(menu, { id: "cellulart-menu" })
+            setParent(menu, document.body)
+            return menu
+        }
+        function createModuleButton (mod: CellulartModule, green: boolean): HTMLElement {
+            return createButton(
+                mod.setting.current.assetPath,
+                // mod.name.toLowerCase() + "_" + mod.setting.current,
+                function() { return mod.menuStep() },
+                mod.isCheat && green
+            )
+        }
+        function createButton (defaultPicture: string, onclick: () => Setting, hidden: boolean): HTMLElement {
+            const item = document.createElement("div")
+            setAttributes(item, { class: "cellulart-menu-item" })
+
+            const itemIcon = document.createElement("img")
+            setAttributes(itemIcon, { class: "cellulart-circular-icon", src: defaultPicture })  // getResource("assets/menu-icons/" + defaultPicture + ".png")]])
+            setParent(itemIcon, item)
+
+            item.addEventListener("click", function() { 
+                const newSetting = onclick(); 
+                itemIcon.src = newSetting.assetPath
+            })
+            if (hidden) { hiddenButtons.push(item); item.style.display = "none" } 
+            return item
+        }
     }
     // async authenticate(message, sendResponse) {
     //     const correct = await Controller.auth.authenticate(message)
@@ -118,92 +110,90 @@ class ƎǃController {
     // }
 }   // [C2]
 
-const Controller = new ƎǃController()
-
 class Observer { 
     // static name: string = "Observer"
-    static content: Element | undefined
-    static currentPhase: Phase = "start"
+    content: Element | undefined
+    controller: Controller
+    currentPhase: Phase = "start"
     
-    private constructor() {}
-    static init() { 
-        Observer.attachContentObserver(); 
+    constructor(controller: Controller) {
+        this.controller = controller;
         // Socket.addMessageListener('gameEvent', Observer.deduceSettingsFromSocket)
         // Socket.addMessageListener('gameEventScreenTransition', Observer.deduceSettingsFromSocket)
         // Socket.addMessageListener('updateLobbySettings', Observer.deduceSettingsFromSocket)
         // Xhr.addMessageListener('lobbySettings', Observer.deduceSettingsFromXHR)
         // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     }
-    static mutation(newPhase: Phase) {
-        const oldPhase = Observer.currentPhase
-        Observer.currentPhase = newPhase
+    mutation(newPhase: Phase) {
+        const oldPhase = this.currentPhase
+        this.currentPhase = newPhase
         Console.log(newPhase, "Observer")
 
         // Handle special cases
-        if (oldPhase == "lobby" && newPhase != "start") { Observer.roundStart(); }
-        if (newPhase == "waiting") { Observer.waiting(); return; } 
-        if (newPhase == "lobby")   { Observer.roundEnd(); return; } 
+        if (oldPhase == "lobby" && newPhase != "start") { this.roundStart(); }
+        if (newPhase == "waiting") { this.waiting(); return; } 
+        if (newPhase == "lobby")   { this.roundEnd(); return; } 
         // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
 
-        Controller.mutation(oldPhase, newPhase)
+        this.controller.mutation(oldPhase, newPhase)
     }
-    static roundStart() {
-        Controller.roundStart()
+    roundStart() {
+        this.controller.roundStart()
     }
-    static roundEnd() {
+    roundEnd() {
         const observeTarget = document.querySelector("#__next")
         if (!observeTarget) { Console.alert("Could not find id:__next to observe", "Observer"); }
-        else { Observer.nextObserver.observe(observeTarget, configChildTrunk); }
-        Controller.roundEnd() 
+        else { this.nextObserver.observe(observeTarget, configChildTrunk); }
+        this.controller.roundEnd() 
     }
 
-    static waiting() { Console.log("Waiting", "Observer") } // [C4]
+    waiting() { Console.log("Waiting", "Observer") } // [C4]
     // reconnect() {
         
     // },
 
-    // adjustSettings(data) {
-    // },
-
-    static nextObserver: MutationObserver = new MutationObserver((records) => {     
+    nextObserver: MutationObserver = new MutationObserver((records) => {     
         // todo: add a button to manually reattach the lobby observer in popup, if I try to disconnect the observer early.
 
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
-        Observer.deduceSettingsFromDocument()
+        this.deduceSettingsFromDocument()
         
         // console.log('next fired')
     })
-    static contentObserver: MutationObserver = new MutationObserver((records) => {
+    contentObserver: MutationObserver = new MutationObserver((records) => {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
         // Observer.nextObserver.disconnect()
-        const newPhaseElement = Observer.content?.firstChild?.firstChild
+        const newPhaseElement = this.content?.firstChild?.firstChild
         if (!newPhaseElement) { Console.alert("Cannot find element to read game phase from", "Observer"); return }
 
         const newPhaseString = (newPhaseElement as Element).classList.item(1)
-        if (!newPhaseString) { return }
+        if (!newPhaseString) { Console.alert("Cannot read game phase from selected element"); return }
 
-        Observer.mutation(newPhaseString as Phase)
+        this.mutation(newPhaseString as Phase)
 
         // console.log('content fired')
     })
-    static attachContentObserver() {
-        var frame = document.querySelector("#content");
+    observe(selector: string) {
+        var frame = document.querySelector(selector);
         if (!frame) {
-            setTimeout(Observer.attachContentObserver, 500);
-            Console.log('Waiting for target node', 'Observer')
+            setTimeout(this.observe, 500, selector);
+            Console.log(`Waiting for target node: ${selector}`, 'Observer')
             return
         }
-        Observer.contentObserver.observe(frame, configChildTrunk);
+
+        this.contentObserver.observe(frame, configChildTrunk);
         Console.log("Successfully attached observer", 'Observer');
-        Observer.content = frame;
+        this.content = frame;
     }
 
 
+    // TODO create DataExtractor interface?
+
     // Due to possible instability, I have judged that "perfect" settings tracking is infeasible.
     // Thus, the below two functions will primarily find use under Timer/Spotlight (precise reconnect), Scry (functionality), and Socket (stroke erasure).
-    static deduceSettingsFromXHR(data: GarticXHRData) {
+    deduceSettingsFromXHR(data: GarticXHRData) {
         const avatarElement = document.querySelector('.avatar > i')?.previousSibling
         const userAvatar = avatarElement ? getComputedStyle(avatarElement as Element).backgroundImage : ""
         // Console.log(data, 'Observer')
@@ -232,7 +222,7 @@ class Observer {
         globalGame.speedString = Converter.speedIndexToString(data.configs.speed)
         // turnsString: 'ALL',
     }
-    static deduceSettingsFromSocket(data: any) {
+    deduceSettingsFromSocket(data: any) {
         console.log(data)
         // Controller.updateLobbySettings(data[1], data[2])
         // if (data[1] == 5) {
@@ -276,7 +266,7 @@ class Observer {
         // Controller.updateLobbySettings(dict)
         // }
     }
-    static deduceSettingsFromDocument() {
+    deduceSettingsFromDocument() {
 
         // console.log("deduce")
         const playerCounter = document.querySelector(".left")?.firstChild
@@ -325,16 +315,18 @@ class Observer {
 }
 
 function main() {
-    Controller.init()
-    Observer.init()
+    const controller = new Controller()
+    const observer = new Observer(controller)
+    observer.observe("#content")
 
     // document.querySelector(".side").remove() // lol
     var side = document.querySelector(".side") as HTMLElement
     if (side) { side.style.display = "none" }
 }
+
 document.readyState === 'complete' ? main() : window.addEventListener('load', () => main());
 
-window.addEventListener('beforeunload', () => {
+// window.addEventListener('beforeunload', () => {
     // get states (including transient states) of all modules + 
     // shelve them
 
@@ -348,4 +340,4 @@ window.addEventListener('beforeunload', () => {
     // tell all modules to retrieve states
     // on first transition:
     // if transient i.e. if not backToLobby, tell all modules to retrieve transient states
-})
+// })

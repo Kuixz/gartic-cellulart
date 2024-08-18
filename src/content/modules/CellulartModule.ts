@@ -1,5 +1,12 @@
 import { Console, Phase, SettingsBelt, Keybind } from "../foundation"
 
+interface MutationInformation {
+  oldPhase: Phase
+  newPhase: Phase
+  currentTurn: number
+  maxTurn: number
+}
+
 /* ----------------------------------------------------------------------
   *                            CellulartModule 
   * ---------------------------------------------------------------------- */
@@ -17,7 +24,7 @@ abstract class CellulartModule { // [F2]
 
     // Initialization. 
     // To be overridden by each module.
-    abstract init(): void
+    // constructor() { }
 
     // This function is called whenever the game transitions to a new phase.
     // To be overridden by each module.
@@ -79,11 +86,17 @@ abstract class CellulartModule { // [F2]
     // }
 
     // Syntactic getter for the setting. Generally shared between modules.
-    isSetTo(thing: string) { return this.setting.current == thing } // TODO: bad coupling
+    isSetTo(thing: string) { return this.setting.current.internalName == thing } // TODO: bad coupling
     // isSetTo(thing) { return this.setting.isSetTo(thing) },
 
     // These functions receive messages from the in-window menu and are generally shared between modules.
-    menuStep() { const c = this.setting.current; const n = this.setting.next(); this.adjustSettings(c,n); Console.log(n, this.name); return n }
+    menuStep() { 
+      const c = this.setting.current; 
+      const n = this.setting.next(); 
+      this.adjustSettings(c.internalName,n.internalName); 
+      Console.log(n.internalName, this.name); 
+      return n 
+    }
     togglePlus(plus: boolean) { if (plus) { this.setting.extend() } else { this.setting.retract() } }
     // current() { return this.setting.current }
     // An unstated assumption is that the following is always equal to 0 or 1:

@@ -1,4 +1,7 @@
-import { Phase, WhiteSettingsBelt, Console, Converter, globalGame, SpeedParameters, speedParameterDefaults, DOMLOADINGALLOWANCE, setAttributes, setParent } from "../foundation";
+import { 
+    Phase, Console, setAttributes, setParent,
+    WhiteSettingsBelt, Converter, globalGame, SpeedParameters, speedParameterDefaults, DOMLOADINGALLOWANCE 
+} from "../foundation";
 import { CellulartModule } from "./CellulartModule";
 
 enum Count {
@@ -12,25 +15,27 @@ enum Count {
 /** Timer adds a digital timer displaying time remaining (or elapsed) 
   * in the top right corner, just under the analog clock.              
   * ---------------------------------------------------------------------- */
-class ƎǃTimer extends CellulartModule {
+class Timer extends CellulartModule {
     name = "Timer"
-    setting = new WhiteSettingsBelt(true)
+    setting = WhiteSettingsBelt(this.name.toLowerCase(), true)
+
     // Timer variables 
     display : HTMLDivElement | undefined // HTMLDivElement
     countdown: number | undefined        // timeoutID
-
     parameters: SpeedParameters = speedParameterDefaults
     decay: number = 0              // used by Timer
 
-    init(): void {} // Empty.
+    constructor() { // Empty.
+        super()
+    }
     mutation(oldPhase: Phase, newPhase: Phase): void {
         if (["book", "start"].includes(newPhase)) { return }
-        setTimeout(() => { this.placeTimer() }, DOMLOADINGALLOWANCE)
+        setTimeout(this.placeTimer.bind(this), DOMLOADINGALLOWANCE)
 
         // If we changed from a phase that warrants a reset in the timer, reset the timer.
         if (oldPhase == "memory" && newPhase != "memory") { return } // !["lobby", "write", "draw", "first"].includes(phase) && newPhase != "memory") { return }
         clearTimeout(this.countdown)
-        setTimeout(this.restartTimer, DOMLOADINGALLOWANCE, newPhase)
+        setTimeout(this.restartTimer.bind(this), DOMLOADINGALLOWANCE, newPhase)
     }
     roundStart(): void {
         // const data = dict.custom
@@ -53,18 +58,18 @@ class ƎǃTimer extends CellulartModule {
         if (!clock) { Console.alert("Could not find clock", "Timer"); return }
 
         const clockFrame = document.createElement("div")
-        setAttributes(clockFrame, [["id", "clocksticles"]])
+        setAttributes(clockFrame, { id: "clocksticles" })
         clock.insertAdjacentElement("beforebegin", clockFrame) // These two lines
         clockFrame.appendChild(clock)                          // finesse the clock into its holder.
 
         const timerDisplay = document.createElement("div")
-        setAttributes(timerDisplay, [["id", "timerHolder"]])
+        setAttributes(timerDisplay, { id: "timerHolder" })
         setParent(timerDisplay, clockFrame)
 
         // console.log(this.setting.current)
         // console.log(this.isSetTo('off'))
         const display = document.createElement("div")
-        setAttributes(display, [["id", "timer"], ["style", `visibility:${this.isSetTo('off') ? "hidden" : "visible"}`]])
+        setAttributes(display, { id: "timer", style: `visibility:${this.isSetTo('off') ? "hidden" : "visible"}` })
         setParent(display, timerDisplay)
         this.display = display
 
@@ -119,7 +124,7 @@ class ƎǃTimer extends CellulartModule {
         return Math.floor(toReturn)
     }
     tick(seconds: number, increaseStep: Count) {
-        const display = this.display
+        const display = this.display ?? document.querySelector("#timer")
         if (!display) { Console.alert("Houston we've lost our clock", "Timer"); return }
 
         const h = String(Math.floor(seconds / 3600)) + ":"
@@ -129,7 +134,7 @@ class ƎǃTimer extends CellulartModule {
         display.textContent = h == "0:" ? m + s : h + m + s
 
         if (seconds <= 0 || !this.display) { Console.log("Countdown ended", 'Timer'); return }
-        this.countdown = setTimeout(this.tick, 1000, seconds + increaseStep, increaseStep)
+        this.countdown = setTimeout(this.tick.bind(this), 1000, seconds + increaseStep, increaseStep)
     }
     interpolate(times: number) {
         if (this.decay != 0) {
@@ -139,7 +144,5 @@ class ƎǃTimer extends CellulartModule {
         } 
     }
 }
-
-const Timer = new ƎǃTimer()
 
 export { Timer }

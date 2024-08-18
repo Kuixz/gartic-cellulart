@@ -1,7 +1,7 @@
 import { setAttributes, setParent } from "./Util"
 
 const wiwNode = document.createElement("div")
-setAttributes(wiwNode, [["style", "visibility: hidden"], ["class", "window-in-window"]])
+setAttributes(wiwNode, { style: "visibility: hidden", class: "window-in-window" })
 wiwNode.innerHTML = `
 <div class = "wiw-header">≡<div class = "wiw-close"></div></div>
 <div class = "wiw-body"></div>`
@@ -19,15 +19,15 @@ class InwindowElement {
         options?: {
             header?: HTMLElement, 
             body?: HTMLElement, 
-            close?: HTMLElement
+            close?: HTMLElement | boolean,
             visible?: boolean,
             ratio?: number
         }) {
         this.element = element
         this.header = options?.header ?? element.querySelector('.wiw-header') ?? element
         this.body = options?.body ?? element.querySelector('.wiw-body') ?? element
-        this.close = options?.close ?? element.querySelector('.wiw-close') 
-        const closeable = this.close !== undefined
+        this.close = typeof options?.close != "boolean" ? options?.close ?? element.querySelector('.wiw-close') : options.close ? element.querySelector('.wiw-close') : null
+        const closeable = this.close == null
 
         const v = options?.visible ? "visible" : "hidden"
         const initialRatio = options?.ratio ?? 100/178

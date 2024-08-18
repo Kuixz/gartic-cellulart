@@ -1,8 +1,6 @@
 import { Phase, WhiteSettingsBelt, Console, Inwindow, svgNS, setAttributes, setParent } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
-const GeomOn = chrome.runtime.getURL("assets/menu-icons/geom_on.png")
-
 // extract to SemaphoreArray class
 // extract to BuffChan class
 class GeomFlags {  
@@ -25,10 +23,10 @@ class GeomFlags {
   * after rate limiting culled the first generation.     
   * The longest module at 360 lines. Previously some of my finer work.                  
   * ---------------------------------------------------------------------- */
-class ƎǃGeom extends CellulartModule {
+class Geom extends CellulartModule {
     name = "Geom"        
     isCheat = true
-    setting = new WhiteSettingsBelt()
+    setting = WhiteSettingsBelt(this.name.toLowerCase())
 
     geomInwindow? : Inwindow        // HTMLDivElement
     geomPreview? : SVGElement        // SVGElement
@@ -56,7 +54,7 @@ class ƎǃGeom extends CellulartModule {
         }
         this.flags.mode = true
         const preview = document.createElementNS(svgNS, "svg")
-        setAttributes(preview, [["class", "geom-svg"], ["viewBox", "0 0 758 424"], ["width", "758"], ["height", "424"]])
+        setAttributes(preview, { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424" })
         setParent(preview, document.querySelector(".core")!)
         this.geomPreview = preview
     }
@@ -397,4 +395,6 @@ class ƎǃGeom extends CellulartModule {
     }
 }
 
-export default GeomOn
+const GeomInstance = new Geom()
+
+export { GeomInstance as Geom }

@@ -1,10 +1,22 @@
+import { getMenuIcon } from "./Util"
+
+class Setting {
+    internalName: string
+    assetPath: string
+
+    constructor(name: string, asset: string) {
+        this.internalName = name
+        this.assetPath = asset
+    }
+}
+
 class SettingsBelt {
-    items: string[] // derived from Circulator, derived from Iterator, trimmed
+    items: Setting[] // derived from Circulator, derived from Iterator, trimmed
     length: number
     index: number
-    extension: string | undefined
+    extension: Setting | undefined
 
-    constructor(array: string[], defaultIndex?: number, extension?: string) {
+    constructor(array: Setting[], defaultIndex?: number, extension?: Setting) {
         this.items = array
         this.length = array.length
         this.index = defaultIndex || 0
@@ -27,19 +39,29 @@ class SettingsBelt {
         this.items.slice(0, this.length - 1)
         if (this.index == this.length) { this.index = this.length - 1 }
     }
-    jump(setting: string) {
-        while (this.current != setting) { this.next() }
-    }
-}
-class WhiteSettingsBelt extends SettingsBelt {
-    constructor(enabledByDefault: boolean = false, extension?: string) { 
-        super(['off', 'on'], enabledByDefault ? 1 : 0, extension)
-    }
-}
-class RedSettingsBelt extends WhiteSettingsBelt {
-    constructor(enabledByDefault: boolean = false) { 
-        super(enabledByDefault, 'red')
+    jump(settingName: string) {
+        while (this.current.internalName != settingName) { this.next() }
     }
 }
 
-export { SettingsBelt, WhiteSettingsBelt, RedSettingsBelt }
+function SettingFrom(moduleName: string, settingName: string): Setting {
+    return new Setting(settingName, getMenuIcon(`${moduleName}-${settingName}.png`))
+}
+
+function SettingsBeltFrom(moduleName: string, settingNames: string[], defaultIndex: number, extension?: string): SettingsBelt {
+    return new SettingsBelt(
+        settingNames.map((s) => SettingFrom(moduleName, s)),
+        defaultIndex,
+        extension ? SettingFrom(moduleName, extension) : undefined
+    )
+}
+
+function WhiteSettingsBelt(moduleName: string, enabledByDefault: boolean = false, extension?: string): SettingsBelt { 
+    return SettingsBeltFrom(moduleName, ['off', 'on'], enabledByDefault ? 1 : 0, extension)
+}
+
+function RedSettingsBelt(moduleName: string, enabledByDefault: boolean = false): SettingsBelt { 
+    return WhiteSettingsBelt(moduleName, enabledByDefault, 'red')
+}
+
+export { Setting, SettingsBelt, SettingFrom, SettingsBeltFrom, WhiteSettingsBelt, RedSettingsBelt }
