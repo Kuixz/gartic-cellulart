@@ -1,6 +1,7 @@
 
 
-import { RedSettingsBelt, Console, Keybind, Phase, setAttributes, Inwindow, setParent, getResource, preventDefaults, clamp } from "../foundation"
+import { RedSettingsBelt, Console, Keybind, Phase, setAttributes, Inwindow, 
+         setParent, getModuleAsset, preventDefaults, clamp } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
  /* ----------------------------------------------------------------------
@@ -49,24 +50,24 @@ class Refdrop extends CellulartModule { // [R1]
         this.refBridge = refBridge
 
         const refSocket = document.createElement("div")
-        setAttributes(refSocket, { class: "ref-border upload-socket hover-button", style: "background-image:url(" + getResource("assets/module-assets/ref-ul.png") + ")" });
+        setAttributes(refSocket, { class: "ref-border upload-socket hover-button", style: "background-image:url(" + getModuleAsset("ref-ul.png") + ")" });
         setParent(refSocket, refForm)
         this.refSocket = refSocket
 
 
         window.addEventListener("dragenter", (e) => {
             // Console.log("dragenter", Refdrop); Console.log(e.relatedTarget, Refdrop)
-            refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")"; 
+            refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ul.png") + ")"; 
         })
         window.addEventListener("dragleave", (e: any) => {
             // Console.log("dragleave", Refdrop); Console.log(e.relatedTarget, Refdrop)
             if (e.fromElement || e.relatedTarget !== null) { return }
             Console.log("Dragging back to OS", 'Refdrop')
-            if (this.isSetTo('red')) { refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
+            if (this.isSetTo('red')) { refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ss.png") + ")"; }
         })
         window.addEventListener("drop", (e) => {
             Console.log("drop", 'Refdrop')
-            if (this.isSetTo('red')) { refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")"; }
+            if (this.isSetTo('red')) { refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ss.png") + ")"; }
         }, true)
         window.addEventListener("dragover", (e) => {
             e.preventDefault()
@@ -140,10 +141,10 @@ class Refdrop extends CellulartModule { // [R1]
             if (this.refCtrl) { this.refCtrl.style.visibility = "hidden"; }
         } else if (this.isSetTo("on")) {
             this.refUpload.style.visibility = "visible"
-            this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ul.png") + ")";
+            this.refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ul.png") + ")";
         } else if (this.isSetTo("red")) {
             if (this.refCtrl) { this.refCtrl.style.visibility = "visible"; }
-            this.refSocket.style.backgroundImage = "url(" + getResource("assets/module-assets/ref-ss.png") + ")";
+            this.refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ss.png") + ")";
         } 
     }
     togglePlus(plus: boolean) { 

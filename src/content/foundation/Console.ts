@@ -1,4 +1,4 @@
-class ƎǃConsole { // Only print certain messages
+class Console { // Only print certain messages
     name: string = "Console"
     // enabled: new Set(),
     enabled: Set<string> = new Set(['Console', 'Spotlight', 'Xhr'])
@@ -24,6 +24,6 @@ class ƎǃConsole { // Only print certain messages
     onprint(message: string) {} // Dynamically set
 }
 
-const Console = new ƎǃConsole()
+const ConsoleInstance = new Console()
 
-export { Console }
+export { ConsoleInstance as Console }

@@ -28,11 +28,14 @@ const setParent = function(node: Element, parent: HTMLElement): typeof node {
 const clamp = (min: number, n: number, max: number) => Math.min(Math.max(min, n), max)
 function preventDefaults (e: Event) { e.preventDefault(); e.stopPropagation() }
 
-const getResource = (local: string) => {
+const getResource = (local: string) => {  // TODO package these three in an Asset interface (to make procedural / tinting later easy)
     return chrome.runtime.getURL(local)
 }
 const getMenuIcon = (local: string) => {
     return chrome.runtime.getURL(`assets/menu-icons/${local}`)
 }
+const getModuleAsset = (local: string) => {
+    return chrome.runtime.getURL(`assets/module-assets/${local}`)
+}
 
-export { clamp, preventDefaults, getResource, getMenuIcon, setAttributes, setParent }
+export { clamp, preventDefaults, getResource, getMenuIcon, getModuleAsset, setAttributes, setParent }

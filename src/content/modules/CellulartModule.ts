@@ -7,6 +7,10 @@ interface MutationInformation {
   maxTurn: number
 }
 
+// abstract class Auxmodule {
+//   constructor() {}
+// }
+
 /* ----------------------------------------------------------------------
   *                            CellulartModule 
   * ---------------------------------------------------------------------- */
@@ -24,7 +28,7 @@ abstract class CellulartModule { // [F2]
 
     // Initialization. 
     // To be overridden by each module.
-    // constructor() { }
+    constructor() { }
 
     // This function is called whenever the game transitions to a new phase.
     // To be overridden by each module.
@@ -36,7 +40,7 @@ abstract class CellulartModule { // [F2]
 
     // This function "cleans the slate" when a game ends. 
     // To be overridden by each module.
-    abstract roundEnd(): void
+    abstract roundEnd(oldPhase: Phase): void
 
     // This function makes required changes when switching between settings. 
     // To be overridden by each (controllable) module.
@@ -103,4 +107,13 @@ abstract class CellulartModule { // [F2]
     // the number of times togglePlus(true) is called minus the number of times togglePlus(false) is called.
 }
 
-export { CellulartModule }
+abstract class Metamodule {
+  constructor(num: CellulartModule[]) {}
+}
+
+// type AuxChamber = (typeof Auxmodule)[]
+type ModuleChamber = (typeof CellulartModule)[]
+type MetaChamber = (typeof Metamodule)[]
+
+export { CellulartModule, Metamodule }
+export type { /*AuxChamber, */ ModuleChamber, MetaChamber }

@@ -1,30 +1,42 @@
 // const dogSrc: string = 'https://media.tenor.com/fej4_qoxdHYAAAAM/cute-puppy.gif'
 import { 
-    Phase, Console, Converter, GarticXHRData, Setting, SHAuth,
+    Phase, Console, Converter, GarticXHRData, 
+    Keybinder, Setting, SHAuth,
     // IAuth, SHAuth as SHAuth, 
     IShelf, SandShelf as Shelf,
-    setAttributes, setParent, configChildTrunk, globalGame 
+    setAttributes, setParent, configChildTrunk, globalGame, 
 } from "./foundation"
-import { Timer, Koss, Refdrop } from "./modules"
-import { CellulartModule } from "./modules/CellulartModule"
+import { Timer, Koss, Refdrop, Spotlight, Geom } from "./modules"
+import { Red } from "./metamodules"
+import { 
+    CellulartModule, Metamodule,
+    ModuleChamber, MetaChamber
+} from "./modules/CellulartModule"
 
 class Controller { 
     // static name: Controller
     menu: HTMLElement | undefined // [C1]
-    modules: (typeof CellulartModule)[] = [Timer, Koss, Refdrop]
-    metamodules: (typeof CellulartModule)[] = []
     liveModules: CellulartModule[] = []
+    liveMetamodules: Metamodule[] = []
     // modules: [Timer, Koss, Refdrop, Spotlight, Geom, Red, Debug], //, Reveal]
     auth: SHAuth /*IAuth*/ = new SHAuth(new Shelf())
 
-    constructor() {
-        // Inwindow.constructNode();
+    constructor(
+        // auxmodules: AuxChamber,
+        modules: ModuleChamber, 
+        metamodules: MetaChamber,
+    ) {
         // Keybinder.init()
         // Socket.init()
         // Xhr.init()
 
         this.initPopupAuth()
-        this.createMenu()
+
+        ;(async () => { 
+            this.liveModules = await this.createMenu(modules, metamodules)
+        } )()
+        // this.liveModules = this.createMenu(modules, metamodules)
+
         // Socket.addMessageListener('strokeCount', (data) => {
         //     console.log('Stroke count set to ' + data)
         //     Shelf.set({ strokeCount:data })
@@ -37,11 +49,11 @@ class Controller {
         // game.roundStart()
         this.liveModules.forEach(mod => mod.roundStart())
     }
-    roundEnd() {
+    roundEnd(oldPhase: Phase) {
         // Socket.post("backToLobby")
         // Socket.roundEnd()
         // Shelf.set({ strokeCount:data }) // Possibly redundant? Will have to test.
-        this.liveModules.forEach(mod => mod.roundEnd())
+        this.liveModules.forEach(mod => mod.roundEnd(oldPhase))
     }
 
     initPopupAuth() {
@@ -56,7 +68,11 @@ class Controller {
         });
     }
     unhide() {}
-    async createMenu() {  // TODO don't initalize all immediately, maybe? because some people will never use the RED mode
+    async createMenu(  // TODO separate into two functions: initialize ([], [], []) and createMenu([], [])
+        // auxmodules: AuxChamber,
+        modules: ModuleChamber, 
+        metamodules: MetaChamber,
+    ){  // TODO don't initalize all immediately, maybe? because some people will never use the RED mode
         var hiddenButtons: HTMLElement[] = []
         function unhide() {
             hiddenButtons.forEach((button) => {
@@ -67,10 +83,11 @@ class Controller {
 
         // const green = !(await Controller.auth.tryLogin())
         const green = false
+        const liveModules: CellulartModule[] = []
         const menu = createMenuElement()
-        this.modules.forEach((modTemplate: typeof CellulartModule) => { 
+        modules.forEach((modTemplate: typeof CellulartModule) => { 
             const mod = new (modTemplate as new() => CellulartModule)()
-            this.liveModules.push(mod)
+            liveModules.push(mod)
             menu.appendChild(createModuleButton(mod, green))
             // if (mod.setting) { createModuleButton(mod, green) } 
             // if (mod.keybinds) { Keybinder.add(mod.keybinds) }
@@ -78,6 +95,8 @@ class Controller {
 
         this.menu = menu
         if (green) { this.unhide = unhide }
+
+        return liveModules
 
         function createMenuElement () {
             const menu = document.createElement("div")
@@ -136,9 +155,9 @@ class Observer {
         Console.log(newPhase, "Observer")
 
         // Handle special cases
-        if (oldPhase == "lobby" && newPhase != "start") { this.roundStart(); }
-        if (newPhase == "waiting") { this.waiting(); return; } 
-        if (newPhase == "lobby")   { this.roundEnd(); return; } 
+        if (oldPhase == "lobby" && newPhase != "start")   { this.roundStart(); }
+        if (oldPhase != "start" && newPhase == "lobby")   { this.roundEnd(oldPhase); return; }  // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
+        if (                       newPhase == "waiting") { this.waiting(); return; } 
         // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
 
         this.controller.mutation(oldPhase, newPhase)
@@ -146,11 +165,12 @@ class Observer {
     roundStart() {
         this.controller.roundStart()
     }
-    roundEnd() {
+    roundEnd(oldPhase: Phase) {
         const observeTarget = document.querySelector("#__next")
         if (!observeTarget) { Console.alert("Could not find id:__next to observe", "Observer"); }
         else { this.nextObserver.observe(observeTarget, configChildTrunk); }
-        this.controller.roundEnd() 
+
+        this.controller.roundEnd(oldPhase) 
     }
 
     waiting() { Console.log("Waiting", "Observer") } // [C4]
@@ -321,7 +341,11 @@ class Observer {
 }
 
 function main() {
-    const controller = new Controller()
+    // const auxmodules: AuxChamber = [Keybinder]
+    const modules: ModuleChamber = [Timer, Koss, Refdrop, Spotlight, Geom]
+    const metamodules: MetaChamber = [Red]
+
+    const controller = new Controller(modules, metamodules)
     const observer = new Observer(controller)
     observer.observe("#content")
 

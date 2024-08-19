@@ -11,7 +11,7 @@ const globalGame = {
         // name: "Joyce Moore", // used by Spotlight
         // avatar: "."
     } as GarticUser,
-    players: [] as Object[],
+    players: [] as GarticUser[],
     turns: 0,
 
     flowString: 'WRITING, DRAWING',
