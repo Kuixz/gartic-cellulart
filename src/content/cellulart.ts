@@ -7,9 +7,9 @@ import {
     setAttributes, setParent, configChildTrunk, globalGame, 
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom } from "./modules"
-import { Red } from "./metamodules"
+import { Red, Debug } from "./metamodules"
 import { 
-    CellulartModule, Metamodule,
+    ModuleLike, CellulartModule, Metamodule,
     ModuleChamber, MetaChamber
 } from "./modules/CellulartModule"
 
@@ -32,9 +32,7 @@ class Controller {
 
         this.initPopupAuth()
 
-        ;(async () => { 
-            this.liveModules = await this.createMenu(modules, metamodules)
-        } )()
+        this.createMenu(modules, metamodules)
         // this.liveModules = this.createMenu(modules, metamodules)
 
         // Socket.addMessageListener('strokeCount', (data) => {
@@ -83,11 +81,17 @@ class Controller {
 
         // const green = !(await Controller.auth.tryLogin())
         const green = false
-        const liveModules: CellulartModule[] = []
         const menu = createMenuElement()
         modules.forEach((modTemplate: typeof CellulartModule) => { 
             const mod = new (modTemplate as new() => CellulartModule)()
-            liveModules.push(mod)
+            this.liveModules.push(mod)
+            menu.appendChild(createModuleButton(mod, green))
+            // if (mod.setting) { createModuleButton(mod, green) } 
+            // if (mod.keybinds) { Keybinder.add(mod.keybinds) }
+        })
+        metamodules.forEach((modTemplate: typeof Metamodule) => { 
+            const mod = new (modTemplate as new(modules: CellulartModule[]) => Metamodule)(this.liveModules)
+            this.liveMetamodules.push(mod)
             menu.appendChild(createModuleButton(mod, green))
             // if (mod.setting) { createModuleButton(mod, green) } 
             // if (mod.keybinds) { Keybinder.add(mod.keybinds) }
@@ -96,15 +100,13 @@ class Controller {
         this.menu = menu
         if (green) { this.unhide = unhide }
 
-        return liveModules
-
         function createMenuElement () {
             const menu = document.createElement("div")
             setAttributes(menu, { id: "cellulart-menu" })
             setParent(menu, document.body)
             return menu
         }
-        function createModuleButton (mod: CellulartModule, green: boolean): HTMLElement {
+        function createModuleButton (mod: ModuleLike, green: boolean): HTMLElement {
             return createButton(
                 mod.setting.current.assetPath,
                 // mod.name.toLowerCase() + "_" + mod.setting.current,
@@ -343,7 +345,7 @@ class Observer {
 function main() {
     // const auxmodules: AuxChamber = [Keybinder]
     const modules: ModuleChamber = [Timer, Koss, Refdrop, Spotlight, Geom]
-    const metamodules: MetaChamber = [Red]
+    const metamodules: MetaChamber = [Red, Debug]
 
     const controller = new Controller(modules, metamodules)
     const observer = new Observer(controller)

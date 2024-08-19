@@ -1,4 +1,4 @@
-import { ShapeTypes } from "geometrizejs/dist/src/shapeTypes"
+import { ShapeTypes } from "geometrizejs"
 import { WorkerResultShape } from "../../shared/WorkerResultShape"
 import { Phase, WhiteSettingsBelt, Console, Inwindow, Socket,
     svgNS, setAttributes, setParent, preventDefaults, getResource

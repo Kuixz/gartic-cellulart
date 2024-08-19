@@ -11,6 +11,22 @@ interface MutationInformation {
 //   constructor() {}
 // }
 
+abstract class ModuleLike {
+  abstract name: string           // All modules have a name property
+  abstract setting: SettingsBelt  // All modules have a SettingsBelt
+  isCheat: boolean = false        // Most modules declare if they are unfair or not
+
+  abstract adjustSettings(previous: string, current: string): void
+
+  menuStep() { 
+    const c = this.setting.current; 
+    const n = this.setting.next(); 
+    this.adjustSettings(c.internalName,n.internalName); 
+    Console.log(n.internalName, this.name); 
+    return n 
+  }
+}
+
 /* ----------------------------------------------------------------------
   *                            CellulartModule 
   * ---------------------------------------------------------------------- */
@@ -19,7 +35,7 @@ interface MutationInformation {
   * to the lobby), amongst other frameworks to make adding new functionalities
   * easy as pie.
   * ---------------------------------------------------------------------- */
-abstract class CellulartModule { // [F2]
+abstract class CellulartModule extends ModuleLike{ // [F2]
     abstract name: string           // All modules have a name property
     abstract setting: SettingsBelt  // All modules have a SettingsBelt
     hasMenuButton: boolean = true   // Some modules aren't directly controllable
@@ -28,7 +44,7 @@ abstract class CellulartModule { // [F2]
 
     // Initialization. 
     // To be overridden by each module.
-    constructor() { }
+    constructor() { super() }
 
     // This function is called whenever the game transitions to a new phase.
     // To be overridden by each module.
@@ -107,8 +123,8 @@ abstract class CellulartModule { // [F2]
     // the number of times togglePlus(true) is called minus the number of times togglePlus(false) is called.
 }
 
-abstract class Metamodule {
-  constructor(num: CellulartModule[]) {}
+abstract class Metamodule extends ModuleLike{
+  constructor(num: CellulartModule[]) { super() }
 }
 
 // type AuxChamber = (typeof Auxmodule)[]
@@ -116,4 +132,4 @@ type ModuleChamber = (typeof CellulartModule)[]
 type MetaChamber = (typeof Metamodule)[]
 
 export { CellulartModule, Metamodule }
-export type { /*AuxChamber, */ ModuleChamber, MetaChamber }
+export type { /*AuxChamber, */ ModuleChamber, MetaChamber, ModuleLike }
