@@ -19,6 +19,12 @@
             "matches": ["https://garticphone.com/*"],
             "css": ["content.css"],
             "js": ["content.js"]
+        },
+        {
+            "matches": ["https://garticphone.com/*"],
+            "js": ["injector.js"],
+            "run_at": "document_start",
+            "all_frames": true
         }
     ],
     "host_permissions": [

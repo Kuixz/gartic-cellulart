@@ -10,7 +10,7 @@ PACKAGE_VERSION := 1.2.0
 MANIFEST ?= Chrome
 
 define package-for
-	npm run build --manifest=$(call LC,${1})
+	pnpm run build --manifest=$(call LC,${1})
 	zip -r $(call UC,${1})_$(PACKAGE_VERSION).zip dist/* -x '**/.*' -x '**/__MACOSX'; 
 endef
 

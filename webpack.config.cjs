@@ -30,18 +30,21 @@ module.exports = (env) => {
             //     filename: "[name].css",
             //     // chunkFilename: "[id].css"
             // }),
-            new HtmlWebpackPlugin({
+            // new HtmlWebpackPlugin({
                 // template: './src/index.html',
                 // chunks: ['popup'],
                 // filename: 'index.html'
                 // template: './src/popup/popup.html',
                 // chunks: ['popup'],
                 // filename: 'popup.html'
-            }),
+            // }),
             new CopyPlugin({
                 patterns: [{
                     from: path.resolve(`manifest-${env.manifest}.json`),
                     to: path.resolve('dist')
+                },{
+                    from: path.resolve('src/inject'),
+                    to: path.resolve('dist'),
                 },{
                     from: path.resolve('icons'),
                     to: path.resolve('dist')
