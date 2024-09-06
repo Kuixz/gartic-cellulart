@@ -158,23 +158,31 @@ class Observer {
 
         // Handle special cases
         if (oldPhase == "lobby" && newPhase != "start")   { this.roundStart(); }
+        if (oldPhase == "start" && newPhase == "lobby")   { this.enterLobby(); return; }
         if (oldPhase != "start" && newPhase == "lobby")   { this.roundEnd(oldPhase); return; }  // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
         if (                       newPhase == "waiting") { this.waiting(); return; } 
         // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
 
         this.controller.mutation(oldPhase, newPhase)
     }
+    enterLobby() {
+        this.attachNextObserver()
+    }
     roundStart() {
+        globalGame.roundStart()
         this.controller.roundStart()
     }
     roundEnd(oldPhase: Phase) {
-        const observeTarget = document.querySelector("#__next")
-        if (!observeTarget) { Console.alert("Could not find id:__next to observe", "Observer"); }
-        else { this.nextObserver.observe(observeTarget, configChildTrunk); }
+        this.attachNextObserver()
 
         this.controller.roundEnd(oldPhase) 
     }
 
+    attachNextObserver() {
+        const observeTarget = document.querySelector("#__next")
+        if (!observeTarget) { Console.alert("Could not find id:__next to observe", "Observer"); }
+        else { this.nextObserver.observe(observeTarget, configChildTrunk); }
+    }
     waiting() { Console.log("Waiting", "Observer") } // [C4]
     // reconnect() {
         

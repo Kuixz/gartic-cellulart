@@ -25,7 +25,7 @@ class Debug extends Metamodule {
         // const preactivated = [ Observer ]
         modules.map(mod => mod.name).concat(["Socket", "Xhr", "Worker", "Observer"]).forEach((mod) => {
             const modIcon = document.createElement("img")
-            setAttributes(modIcon, { class: "cellulart-circular-icon", src: getMenuIcon(mod.toLowerCase() + "_on" + ".png") })
+            setAttributes(modIcon, { class: "cellulart-circular-icon", src: getMenuIcon(mod.toLowerCase() + "-on" + ".png") })
             setParent(modIcon, iconSelect)
             modIcon.addEventListener("click", toggle)
             if (Console.enabled.has(mod)) { 

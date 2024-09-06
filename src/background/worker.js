@@ -1,4 +1,4 @@
-import { Bitmap, ImageRunner, ShapeTypes } from '../lib/geometrize.esm.mjs'
+import { Bitmap, ImageRunner, ShapeTypes } from 'geometrizejs'
 
 const options = {
     shapeTypes: [ShapeTypes.RECTANGLE, ShapeTypes.ELLIPSE],//, ShapeTypes.LINE], //0, 3, and 6 in geometrize, but 6, 7, and (? 1 ?) in gartic

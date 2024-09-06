@@ -79,7 +79,7 @@ class Koss extends CellulartModule { // [K1]
 
     placeCanvas() {
         if (!this.kossCanvas) { 
-            Console.alert("Cannot place canvas: no canvas", "Koss")
+            // Console.alert("Cannot place canvas: no canvas", "Koss")
             return 
         }
        /* if (this.kossCanvas) { */ this.kossCanvas.classList.add('koss-canvas') // }

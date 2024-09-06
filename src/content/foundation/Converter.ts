@@ -3,18 +3,19 @@ import { Console } from "./Console"
 type Phase = "start" | "lobby" | "draw" | "write" | "memory" | "book" | "first" | "mod" | "waiting"
 
 interface GarticUser {
-    access: string
-    alert:  boolean
-    authId: string
-    avatar: string
-    change: number
-    id:     number
-    mirror: string
     nick:   string
-    owner:  boolean
-    points: number
-    uid:    string
-    viewer: boolean
+    avatar: string
+
+    access?: string
+    alert?:  boolean
+    authId?: string
+    change?: number
+    id?:     number
+    mirror?: string
+    owner?: boolean
+    points?: number
+    uid?:    string
+    viewer?: boolean
 }
 interface GarticXHRData {
     animationConfigs : {speed: number, loop: number} 

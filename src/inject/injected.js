@@ -42,7 +42,7 @@
     //     }
     // })
 
-    // console.log("[Cellulart] WebSocket proxified")   TODO: Uncomment this
+    console.log("[Cellulart] WebSocket proxified") // TODO: Uncomment this
 
         /* OrigWebSocket.prototype.send = new Proxy(OrigWebSocket.prototype.send, {
             apply: function(data) {
@@ -94,7 +94,7 @@ const Socket = {
     interceptIncoming(data) {
         // if (data.indexOf('42[') == -1) { return }
         // Socket.post('gameEvent', data)
-        // console.log(data)
+        console.log(data)
         // console.log(data.slice(0,8))
         // if (data.slice(0,8) != '42[2,11,') { return }
         if (data.slice(0,5) != '42[2,') { return }
@@ -344,7 +344,7 @@ const Socket = {
 //     //     // }
 //     // });
     
-//     console.log("[Cellulart] XHR proxified")
+    console.log("[Cellulart] XHR proxified")
 // })()
 /* */
 

@@ -42,7 +42,7 @@ class Timer extends CellulartModule {
         const parameters = Converter.speedStringToParameters(globalGame.speedString)
         this.decay = parameters.decayFunction(globalGame.turns)
         // delete parameters.turns
-        Object.assign(this, parameters)  // TODO: unsafe and unscalable
+        Object.assign(this.parameters, parameters)  // TODO: unsafe and unscalable
     }
     roundEnd(): void {} // Empty.
     adjustSettings(previous: string, current: string): void {
@@ -97,20 +97,19 @@ class Timer extends CellulartModule {
     }
     getSecondsForPhase(newPhase: Phase): number {
         Console.log("I think this phase is " + newPhase, 'Timer');
+
+        const step = document.querySelector(".step")
+        if (!step) { Console.alert("Could not find turn counter", "Timer"); return -1 }
+        if (!(step.textContent)) { Console.alert("Could not read turn counter", "Timer"); return -1 }
+
         var toReturn = 0;
         switch (newPhase) {
             case "draw": 
             case "memory": 
                 // Checks if first turn && the firstMultiplier is so extreme that it must be either FASTER FIRST or SLOWER FIRST
 
-                if (![1,1.25].includes(this.parameters.firstMultiplier)){
-                    const step = document.querySelector(".step")
-                    if (!step) { Console.alert("Could not find turn counter", "Timer"); return -1 }
-                    if (!(step.textContent)) { Console.alert("Could not read turn counter", "Timer"); return -1 }
-
-                    if (step.textContent.slice(0, 2) == "1/") {
-                        toReturn = 150 * this.parameters.firstMultiplier;  // Bad premature optimization replacing this.draw with flat 150
-                    } 
+                if (step.textContent.slice(0, 2) == "1/" && ![1,1.25].includes(this.parameters.firstMultiplier)){
+                    toReturn = 150 * this.parameters.firstMultiplier;  // Bad premature optimization replacing this.draw with flat 150
                 } else { 
                     toReturn = this.parameters.draw;
                 } break;
@@ -134,7 +133,7 @@ class Timer extends CellulartModule {
         display.textContent = h == "0:" ? m + s : h + m + s
 
         if (seconds <= 0 || !this.display) { Console.log("Countdown ended", 'Timer'); return }
-        this.countdown = setTimeout(this.tick.bind(this), 1000, seconds + increaseStep, increaseStep)
+        this.countdown = window.setTimeout(this.tick.bind(this), 1000, seconds + increaseStep, increaseStep)
     }
     interpolate(times: number) {
         if (this.decay != 0) {

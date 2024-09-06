@@ -11,13 +11,13 @@ import { CellulartModule } from "./CellulartModule"
 class GeomFlags {  
     interval: boolean = true
     queue: boolean = false
-    pause: boolean = true
+    unpause: boolean = true
     mode: boolean = false
     ws: boolean = false
     generate: boolean = true
 
     notClearToSend(): boolean { 
-        return !(this.interval && this.queue && !this.pause && this.mode && this.ws) 
+        return !(this.interval && this.queue && this.unpause && this.mode && this.ws) 
     } 
 }
 
@@ -25,8 +25,6 @@ type GeomScreenData = {
     elements: { [key:string]:HTMLElement }
     functions: { [key:string]:(...args: any[]) => void }
 }
-
-type PauseStatus = "paused" | "play"
 
  /* ----------------------------------------------------------------------
   *                                  Geom 
@@ -162,7 +160,7 @@ class Geom extends CellulartModule {
             setAttributes(echo, { id: "geom-echo", class: "hover-button canvas-in-square" }); setParent(echo, body)
             toReturn.elements.echo = echo
             const back = document.createElement("div")
-            setAttributes(echo, { id: "geom-reselect", class: "geom-border hover-button" }); setParent(back, echo)
+            setAttributes(back, { id: "geom-reselect", class: "geom-border hover-button" }); setParent(back, echo)
             const tray = document.createElement("div")
             setAttributes(tray, { id: "geom-lower-tray", class: "canvas-square-lower-tray" }); setParent(tray, body)
 
@@ -187,23 +185,23 @@ class Geom extends CellulartModule {
             }
             toReturn.functions.updateLabel = updateLabel
 
-            const setSendPause = (pause: PauseStatus) => {  // TODO refactor using PauseStatus
-                Console.log("Send " + pause, 'Geom')
+            const setSendPause = (newIsUnpaused: boolean) => {
+                Console.log("Send " + newIsUnpaused ? "play" : "pause", 'Geom')
                 if (!this.flags.mode) {  // TODO: This is kind of a bad place to put the mode check, in the middle of someone else's setter.
                     sendPauser.style.backgroundImage = iconPlay
-                    this.flags.pause = true
+                    this.flags.unpause = true
                     return
                 } 
-                sendPauser.style.backgroundImage = pause ? iconPlay : iconPause
-                this.flags.pause = pause == "paused"
-                if (pause == "play") { this.trySend() }
+                sendPauser.style.backgroundImage = newIsUnpaused ? iconPlay : iconPause
+                this.flags.unpause = newIsUnpaused
+                if (newIsUnpaused) { this.trySend() }
             }
             toReturn.functions.setSendPause = setSendPause
 
-            const setGenPause = (pause: PauseStatus) => {
-                Console.log("Gen " + pause, 'Geom')
-                genPauser.style.backgroundImage = pause ? iconPlay : iconPause
-                this.flags.generate = !pause
+            const setGenPause = (newIsPaused: boolean) => {
+                Console.log("Gen " + newIsPaused ? "pause" : "play", 'Geom')
+                genPauser.style.backgroundImage = newIsPaused ? iconPause : iconPlay
+                this.flags.generate = newIsPaused
             }
             toReturn.functions.setGenPause = setGenPause
 
@@ -214,10 +212,10 @@ class Geom extends CellulartModule {
             }
             toReturn.functions.setGeomConfigWindow = setGeomConfigWindow
 
-            sendPauser.addEventListener("click", () => { setSendPause(!this.flags.pause ? "paused" : "play") })
+            sendPauser.addEventListener("click", () => { setSendPause(!this.flags.unpause) })
             sendPauser.style.backgroundImage = iconPlay;
             back.addEventListener("click", () => { stopGeometrize() }) // TODO put a semi-transparent negative space cancel icon instead of hover-button
-            genPauser.addEventListener("click", () => { setGenPause(this.flags.generate ? "paused" : "play") })
+            genPauser.addEventListener("click", () => { setGenPause(!this.flags.generate) })
             genPauser.style.backgroundImage = iconPause;
             genLabel.addEventListener("click", () => { setGeomConfigWindow(!configActive) })
 
@@ -271,12 +269,12 @@ class Geom extends CellulartModule {
         const geomInwindow = new Inwindow("default", { close:false, visible:false, ratio:1 })
         setAttributes(geomInwindow.element, { "id":"geom-wiw" })
 
-        const geomScreen1 = new Lazy<GeomScreenData>(constructScreen1)
+        const geomScreen1 = constructScreen1()
         const geomScreen2 = new Lazy<GeomScreenData>(constructScreen2)
         const geomScreen3 = new Lazy<GeomScreenData>(constructScreen3)
 
         const stopGeometrize = () => {  // TODO this init can be lazier
-            geomScreen1.value.elements.body.style.display = 'flex';
+            geomScreen1.elements.body.style.display = 'flex';
             geomScreen2.value.elements.body.style.display = 'none'; // TODO lazy init
             geomScreen3.value.elements.body.style.display = 'none';
             // other stopping stuff
@@ -289,7 +287,7 @@ class Geom extends CellulartModule {
             if (!item) { return }
 
             const dataURL = URL.createObjectURL(item)
-            geomScreen1.value.elements.body.style.display = 'none';
+            geomScreen1.elements.body.style.display = 'none';
             geomScreen2.value.elements.body.style.display = 'flex';
             geomScreen2.value.elements.echo.style.backgroundImage = "url(" + dataURL + ")"
 
@@ -468,6 +466,7 @@ class Geom extends CellulartModule {
         const shape = this.shapeQueue.shift()!  // !DANGER: Empty queue suppression
         if(this.shapeQueue.length == 0) { this.flags.queue = false }
         const packet = gartic_format(shape)
+        if (!packet) { return }
         const svg = svg_format(shape)
         if (!svg) { return }
     

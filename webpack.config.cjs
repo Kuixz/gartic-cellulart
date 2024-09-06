@@ -15,7 +15,8 @@ module.exports = (env) => {
         entry: {
             content: './src/content/cellulart.ts',
             background: './src/background/index.ts',
-            popup: './src/popup/popup.js'
+            popup: './src/popup/popup.js',
+            injected: './src/inject/index.ts'
         },
         output: {
             path: path.resolve(__dirname, "dist"),
@@ -41,11 +42,14 @@ module.exports = (env) => {
             new CopyPlugin({
                 patterns: [{
                     from: path.resolve(`manifest-${env.manifest}.json`),
-                    to: path.resolve('dist')
+                    to: path.resolve('dist/manifest.json')
                 },{
-                    from: path.resolve('src/inject'),
+                    from: path.resolve('src/inject/injector.js'),
                     to: path.resolve('dist'),
                 },{
+                //     from: path.resolve('src/inject/injected.js'),
+                //     to: path.resolve('dist'),
+                // },{
                     from: path.resolve('icons'),
                     to: path.resolve('dist')
                 },{
