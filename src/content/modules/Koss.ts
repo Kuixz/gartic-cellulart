@@ -16,6 +16,7 @@ class Koss extends CellulartModule { // [K1]
     kossInwindow: Inwindow    // HTMLDivElement
     kossImage: HTMLElement    // HTMLImageElement
     kossCanvas: HTMLElement | undefined   // HTMLCanvasElement
+    kossCanvasLock: boolean = false
 
     constructor() {
         super()
@@ -35,10 +36,14 @@ class Koss extends CellulartModule { // [K1]
         
         if (wiwBody.firstChild) { wiwBody.removeChild(wiwBody.firstChild) }
         if (newPhase == 'memory') {
-            console.log(document.querySelector(".core canvas"))
-            setTimeout(() => { this.kossCanvas = document.querySelector(".core canvas")! as HTMLCanvasElement }, DOMLOADINGALLOWANCE)
+            this.kossCanvasLock = true
+            this.discardCanvas()
+            setTimeout(() => { 
+                this.kossCanvas = document.querySelector(".core canvas")! as HTMLCanvasElement
+            }, DOMLOADINGALLOWANCE)
         }
         else if (newPhase == 'draw') {
+            this.kossCanvasLock = false
             // document.querySelector(".core").querySelector("canvas")
             // this.kossCanvas
             this.placeCanvas()
@@ -47,51 +52,45 @@ class Koss extends CellulartModule { // [K1]
     roundStart() {}
     roundEnd() {
         // this.kossImage.src = "";
-        if (this.kossCanvas) {
-            this.kossCanvas.remove();
-            this.kossCanvas = undefined;
-        }
+        this.discardCanvas()
     }
     adjustSettings(previous: string, current: string) {
         // alert(current)
         switch (current) {
             case 'off':
                 this.kossInwindow.setVisibility("hidden");
-                if (this.kossCanvas) { this.kossInwindow.body.appendChild(this.kossCanvas); }
                 break;
             case 'on':
                 this.kossInwindow.setVisibility("visible");
-                if (this.kossCanvas) { 
-                    this.kossCanvas.style.opacity = "1"; 
-                    this.kossInwindow.body.appendChild(this.kossCanvas); 
-                }
                 break;
             case 'red':
-                this.kossInwindow.setVisibility("visible");
-                if (this.kossCanvas) { 
-                    this.kossCanvas.style.opacity = "0.25"; 
-                    this.tryUnderlayKossCanvas();
-                }
+                this.kossInwindow.setVisibility("hidden");
                 break;
-            default: Console.alert("KOSS location not recognised", 'Koss')
+            default: Console.alert("KOSS setting not recognised", 'Koss')
         }
+        this.placeCanvas()
     }
 
     placeCanvas() {
         if (!this.kossCanvas) { 
-            // Console.alert("Cannot place canvas: no canvas", "Koss")
+            Console.alert("Cannot place canvas: no canvas", "Koss")
             return 
         }
-       /* if (this.kossCanvas) { */ this.kossCanvas.classList.add('koss-canvas') // }
+        if (this.kossCanvasLock) { 
+            Console.alert("Cannot place canvas: locked", "Koss")
+            return 
+        }
+
+        this.kossCanvas.classList.add('koss-canvas')
         switch (this.setting.current.internalName) {
             case 'off':
-                this.kossInwindow.body.appendChild(this.kossCanvas);
+                this.placeOffCanvas()
                 break;
             case 'on':
-                this.kossInwindow.body.appendChild(this.kossCanvas);
+                this.placeOnCanvas()
                 break;
             case 'red':
-                setTimeout(() => { this.tryUnderlayKossCanvas() }, 1000);
+                this.placeRedCanvas()
                 break;
             default: Console.alert("KOSS location not recognised", 'Koss')
         }
@@ -107,13 +106,25 @@ class Koss extends CellulartModule { // [K1]
     //         Console.alert("KOSS location not recognised", 'Koss')
     //     }
     }
-    tryUnderlayKossCanvas() {
-        if (!this.kossCanvas) { 
-            Console.alert("Cannot underlay canvas: no canvas", "Koss")
-            return 
-        }
-        this.kossCanvas.style.opacity = "0.25";
+    placeOffCanvas() {
+        this.kossInwindow.setVisibility("hidden");
+    
+        if (!this.kossCanvas) { return }
+        this.kossCanvas.style.opacity = "1"; 
+        this.kossInwindow.body.appendChild(this.kossCanvas);
+    }
+    placeOnCanvas() {
+        this.kossInwindow.setVisibility("visible");
 
+        if (!this.kossCanvas) { return }
+        this.kossCanvas.style.opacity = "1"; 
+        this.kossInwindow.body.appendChild(this.kossCanvas); 
+    }
+    placeRedCanvas() {
+        this.kossInwindow.setVisibility("hidden");
+
+        if (!this.kossCanvas) { return }
+        this.kossCanvas.style.opacity = "0.25";
         const drawingContainer = document.querySelector(".drawingContainer")
         if (!drawingContainer) {
             Console.alert("Cannot underlay canvas: cannot find active drawing canvas", "Koss")
@@ -121,6 +132,11 @@ class Koss extends CellulartModule { // [K1]
         }
         drawingContainer.insertAdjacentElement("beforebegin", this.kossCanvas);
         Console.log("Koss image underlaid", 'Koss')
+    }
+    discardCanvas() {
+        if (!this.kossCanvas) { return }
+        this.kossCanvas.remove();
+        this.kossCanvas = undefined;
     }
 }
 

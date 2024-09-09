@@ -146,6 +146,9 @@ class Refdrop extends CellulartModule { // [R1]
             if (this.refCtrl) { this.refCtrl.style.visibility = "visible"; }
             this.refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ss.png") + ")";
         } 
+        console.log(this.isSetTo("off"))
+        console.log(this.isSetTo("on"))
+        console.log(this.isSetTo("red"))
     }
     togglePlus(plus: boolean) { 
         super.togglePlus(plus)
