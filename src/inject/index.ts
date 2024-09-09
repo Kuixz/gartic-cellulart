@@ -83,7 +83,7 @@ class SocketInterceptor extends Interceptor {
             const purp = event.data.purpose
             const data = event.data.data
             if (!(purp in commandMap)) { this.post('log', "No such GSH command: " + purp)}
-            try   { commandMap[purp](data) } 
+            try { (commandMap[purp].bind(this))(data) } 
             catch (e) { this.post('log', "Socket error executing " + purp + "(" + JSON.stringify(data) + ")" + ":" + e) }
         })
     }

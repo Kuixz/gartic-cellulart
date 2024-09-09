@@ -8,6 +8,7 @@ wiwNode.innerHTML = `
 
 var currentZIndex: number = 20  // todo reset z index when a threshold is passed
 
+// TODO: Turning a window from invisible to visible should give it z-priority
 class InwindowElement {
     element: HTMLElement
     header: HTMLElement

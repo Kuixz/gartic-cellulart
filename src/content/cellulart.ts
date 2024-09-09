@@ -2,6 +2,7 @@
 import { 
     Phase, Console, Converter, GarticXHRData, 
     Keybinder, Setting, SHAuth,
+    Socket,
     // IAuth, SHAuth as SHAuth, 
     IShelf, SandShelf as Shelf,
     setAttributes, setParent, configChildTrunk, globalGame, 
@@ -27,7 +28,7 @@ class Controller {
         metamodules: MetaChamber,
     ) {
         // Keybinder.init()
-        // Socket.init()
+        Socket.init()
         // Xhr.init()
 
         this.initPopupAuth()

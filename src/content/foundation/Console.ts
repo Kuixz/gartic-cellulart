@@ -1,7 +1,7 @@
 class Console { // Only print certain messages
     name: string = "Console"
     // enabled: new Set(),
-    enabled: Set<string> = new Set(['Console', 'Spotlight', 'Xhr'])
+    enabled: Set<string> = new Set(['Console', 'Spotlight', 'Socket', 'Xhr'])
 
     toggle(modName: string) {
         this.set(modName, !this.enabled.has(modName))

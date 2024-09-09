@@ -8,10 +8,11 @@ import { CellulartModule } from "./CellulartModule"
 
 // extract to SemaphoreArray class
 // extract to BuffChan class
+// TODO: I don't think there's a gen pause flag for checking if Geom (the module) is turned off in the menu icons
 class GeomFlags {  
     interval: boolean = true
     queue: boolean = false
-    unpause: boolean = true
+    unpause: boolean = false
     mode: boolean = false
     ws: boolean = false
     generate: boolean = true
@@ -73,6 +74,7 @@ class Geom extends CellulartModule {
     }
     roundEnd(): void {
         this.flags.mode = false; 
+        this.geomPreview.innerHTML = ""
         // if (oldPhase != 'start') { this.stopGeometrize() }  // Technically redundant.
     }
     adjustSettings(previous: string, current: string) { 
@@ -186,22 +188,17 @@ class Geom extends CellulartModule {
             toReturn.functions.updateLabel = updateLabel
 
             const setSendPause = (newIsUnpaused: boolean) => {
-                Console.log("Send " + newIsUnpaused ? "play" : "pause", 'Geom')
-                if (!this.flags.mode) {  // TODO: This is kind of a bad place to put the mode check, in the middle of someone else's setter.
-                    sendPauser.style.backgroundImage = iconPlay
-                    this.flags.unpause = true
-                    return
-                } 
-                sendPauser.style.backgroundImage = newIsUnpaused ? iconPlay : iconPause
+                Console.log("Send " + (newIsUnpaused ? "play" : "pause"), 'Geom')
+                sendPauser.style.backgroundImage = newIsUnpaused ? iconPause : iconPlay
                 this.flags.unpause = newIsUnpaused
                 if (newIsUnpaused) { this.trySend() }
             }
             toReturn.functions.setSendPause = setSendPause
 
-            const setGenPause = (newIsPaused: boolean) => {
-                Console.log("Gen " + newIsPaused ? "pause" : "play", 'Geom')
-                genPauser.style.backgroundImage = newIsPaused ? iconPause : iconPlay
-                this.flags.generate = newIsPaused
+            const setGenPause = (newIsUnpaused: boolean) => {
+                Console.log("Gen " + (newIsUnpaused ? "play" : "pause"), 'Geom')
+                genPauser.style.backgroundImage = newIsUnpaused ? iconPause : iconPlay
+                this.flags.generate = newIsUnpaused
             }
             toReturn.functions.setGenPause = setGenPause
 
@@ -212,15 +209,19 @@ class Geom extends CellulartModule {
             }
             toReturn.functions.setGeomConfigWindow = setGeomConfigWindow
 
-            sendPauser.addEventListener("click", () => { setSendPause(!this.flags.unpause) })
-            sendPauser.style.backgroundImage = iconPlay;
+            setSendPause(this.flags.mode);
+            setGenPause(true);
+
+            sendPauser.addEventListener("click", () => { setSendPause(
+                (this.flags.mode && !this.flags.unpause) 
+            )})
             back.addEventListener("click", () => { stopGeometrize() }) // TODO put a semi-transparent negative space cancel icon instead of hover-button
             genPauser.addEventListener("click", () => { setGenPause(!this.flags.generate) })
-            genPauser.style.backgroundImage = iconPause;
             genLabel.addEventListener("click", () => { setGeomConfigWindow(!configActive) })
 
             return toReturn
         }
+        // TODO: Make it so that you can click anywhere in the geom screen to dismiss Screen 3.
         const constructScreen3 = () => {
             const toReturn: GeomScreenData = {
                 elements: {},
@@ -278,7 +279,7 @@ class Geom extends CellulartModule {
             geomScreen2.value.elements.body.style.display = 'none'; // TODO lazy init
             geomScreen3.value.elements.body.style.display = 'none';
             // other stopping stuff
-            geomScreen2.value.functions.setSendPause(true) 
+            geomScreen2.value.functions.setSendPause(false) 
             clearTimeout(this.stepCallback)
         }
         const startGeometrize = (files: FileList | null) => { // [G1]
@@ -291,7 +292,7 @@ class Geom extends CellulartModule {
             geomScreen2.value.elements.body.style.display = 'flex';
             geomScreen2.value.elements.echo.style.backgroundImage = "url(" + dataURL + ")"
 
-            geomScreen2.value.functions.setGenPause(false)
+            geomScreen2.value.functions.setGenPause(true)
             geomScreen2.value.functions.updateLabel('both', 0)
             this.counters = { created:0, sent:0 }
             this.shapeQueue = [];
@@ -365,6 +366,7 @@ class Geom extends CellulartModule {
         //     }
         // }
         const step = async() => {
+            // TODO: Step consistently overshoots the config max by 1 and config distance
             if (!this.flags.generate || this.counters.created >= this.config.max || this.counters.created - this.counters.sent >= this.config.distance) { 
                 await this.queryGW(2)
                 this.stepCallback = window.setTimeout(step, 250); 
@@ -459,7 +461,7 @@ class Geom extends CellulartModule {
 
         // console.log(this.flags)
 
-        if(this.flags.notClearToSend()) { return }
+        if(this.flags.notClearToSend()) { console.log(this.flags); return }
         this.flags.interval = false
         window.setTimeout(() => { this.flags.interval = true; this.trySend() }, 125)
     
