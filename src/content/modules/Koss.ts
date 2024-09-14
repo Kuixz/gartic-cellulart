@@ -1,5 +1,5 @@
 import { CellulartModule } from "./CellulartModule";
-import { Console, DOMLOADINGALLOWANCE, Inwindow, Phase, RedSettingsBelt, setAttributes } from "../foundation";
+import { Console, DOMLOADINGALLOWANCE, globalGame, Inwindow, Phase, RedSettingsBelt, setAttributes } from "../foundation";
 
  /* ----------------------------------------------------------------------
   *                                  Koss 
@@ -16,7 +16,6 @@ class Koss extends CellulartModule { // [K1]
     kossInwindow: Inwindow    // HTMLDivElement
     kossImage: HTMLElement    // HTMLImageElement
     kossCanvas: HTMLElement | undefined   // HTMLCanvasElement
-    kossCanvasLock: boolean = false
 
     constructor() {
         super()
@@ -36,14 +35,12 @@ class Koss extends CellulartModule { // [K1]
         
         if (wiwBody.firstChild) { wiwBody.removeChild(wiwBody.firstChild) }
         if (newPhase == 'memory') {
-            this.kossCanvasLock = true
             this.discardCanvas()
             setTimeout(() => { 
                 this.kossCanvas = document.querySelector(".core canvas")! as HTMLCanvasElement
             }, DOMLOADINGALLOWANCE)
         }
         else if (newPhase == 'draw') {
-            this.kossCanvasLock = false
             // document.querySelector(".core").querySelector("canvas")
             // this.kossCanvas
             this.placeCanvas()
@@ -71,15 +68,15 @@ class Koss extends CellulartModule { // [K1]
         this.placeCanvas()
     }
 
+    canPlace(): boolean {
+        return globalGame.currentPhase == "draw"
+    }
     placeCanvas() {
         if (!this.kossCanvas) { 
             Console.alert("Cannot place canvas: no canvas", "Koss")
             return 
         }
-        if (this.kossCanvasLock) { 
-            Console.alert("Cannot place canvas: locked", "Koss")
-            return 
-        }
+        if (!this.canPlace()) { return }
 
         this.kossCanvas.classList.add('koss-canvas')
         switch (this.setting.current.internalName) {

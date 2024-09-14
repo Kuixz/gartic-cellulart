@@ -164,6 +164,19 @@ class Observer {
         if (                       newPhase == "waiting") { this.waiting(); return; } 
         // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
 
+        const step = document.querySelector(".step")
+        if (!step) { Console.alert("Could not find turn counter", "Observer"); return -1 }
+        if (!(step.textContent)) { Console.alert("Could not read turn counter", "Observer"); return -1 }
+
+        const slashIndex = step.textContent.indexOf("/")
+        const turnCount = Number(step.textContent.slice(0, slashIndex))
+        if (isNaN(turnCount)) {
+            Console.alert("Could not parse turn counter", "Observer"); return -1
+        }
+
+        globalGame.currentTurn = turnCount
+        globalGame.currentPhase = newPhase
+
         this.controller.mutation(oldPhase, newPhase)
     }
     enterLobby() {

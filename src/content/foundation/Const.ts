@@ -1,4 +1,4 @@
-import { Converter, GarticUser } from "./Converter";
+import { Converter, GarticUser, Phase } from "./Converter";
 
 const svgNS = "http://www.w3.org/2000/svg"
 const configChildTrunk = { childList: true };
@@ -13,6 +13,9 @@ const globalGame = {
     } as GarticUser,
     players: [] as GarticUser[],
     turns: 0,
+
+    currentTurn: 0,
+    currentPhase: "start" as Phase,
 
     flowString: 'WRITING, DRAWING',
     speedString: 'NORMAL',
