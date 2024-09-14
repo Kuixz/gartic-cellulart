@@ -205,7 +205,7 @@ class Geom extends CellulartModule {
             const setGeomConfigWindow = (active: boolean) => {
                 configActive = active
                 // geomScreen3 = geomScreen3 || constructScreen3()
-                geomScreen3.value.elements.body.style.display = active ? 'flex' : 'none';
+                geomScreen3.elements.body.style.display = active ? 'flex' : 'none';
             }
             toReturn.functions.setGeomConfigWindow = setGeomConfigWindow
 
@@ -271,15 +271,15 @@ class Geom extends CellulartModule {
         setAttributes(geomInwindow.element, { "id":"geom-wiw" })
 
         const geomScreen1 = constructScreen1()
-        const geomScreen2 = new Lazy<GeomScreenData>(constructScreen2)
-        const geomScreen3 = new Lazy<GeomScreenData>(constructScreen3)
+        const geomScreen2 = Lazy<GeomScreenData>(constructScreen2)
+        const geomScreen3 = Lazy<GeomScreenData>(constructScreen3)
 
         const stopGeometrize = () => {  // TODO this init can be lazier
             geomScreen1.elements.body.style.display = 'flex';
-            geomScreen2.value.elements.body.style.display = 'none'; // TODO lazy init
-            geomScreen3.value.elements.body.style.display = 'none';
+            geomScreen2.elements.body.style.display = 'none'; // TODO lazy init
+            geomScreen3.elements.body.style.display = 'none';
             // other stopping stuff
-            geomScreen2.value.functions.setSendPause(false) 
+            geomScreen2.functions.setSendPause(false) 
             clearTimeout(this.stepCallback)
         }
         const startGeometrize = (files: FileList | null) => { // [G1]
@@ -289,11 +289,11 @@ class Geom extends CellulartModule {
 
             const dataURL = URL.createObjectURL(item)
             geomScreen1.elements.body.style.display = 'none';
-            geomScreen2.value.elements.body.style.display = 'flex';
-            geomScreen2.value.elements.echo.style.backgroundImage = "url(" + dataURL + ")"
+            geomScreen2.elements.body.style.display = 'flex';
+            geomScreen2.elements.echo.style.backgroundImage = "url(" + dataURL + ")"
 
-            geomScreen2.value.functions.setGenPause(true)
-            geomScreen2.value.functions.updateLabel('both', 0)
+            geomScreen2.functions.setGenPause(true)
+            geomScreen2.functions.updateLabel('both', 0)
             this.counters = { created:0, sent:0 }
             this.shapeQueue = [];
             this.flags.queue = false;
@@ -305,9 +305,9 @@ class Geom extends CellulartModule {
             };
         }
 
-        this.setSendPause = (newState: boolean) => { geomScreen2.value.functions.setSendPause(newState) }
+        this.setSendPause = (newState: boolean) => { geomScreen2.functions.setSendPause(newState) }
         this.stopGeometrize = stopGeometrize
-        this.updateLabel = (which: 'total'|'sent'|'both', newValue: string) => { geomScreen2.lazyValue?.functions.updateLabel(which, newValue) }
+        this.updateLabel = (which: 'total'|'sent'|'both', newValue: string) => { geomScreen2.functions.updateLabel(which, newValue) }
 
         return geomInwindow 
     }
