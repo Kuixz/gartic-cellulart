@@ -1,8 +1,7 @@
 import { ShapeTypes } from "geometrizejs"
 import { WorkerResultShape } from "../../shared/WorkerResultShape"
 import { Phase, WhiteSettingsBelt, Console, Inwindow, Socket,
-    svgNS, setAttributes, setParent, preventDefaults, getResource,
-    Lazy
+    svgNS, setAttributes, setParent, preventDefaults, getResource
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
@@ -271,8 +270,8 @@ class Geom extends CellulartModule {
         setAttributes(geomInwindow.element, { "id":"geom-wiw" })
 
         const geomScreen1 = constructScreen1()
-        const geomScreen2 = Lazy<GeomScreenData>(constructScreen2)
-        const geomScreen3 = Lazy<GeomScreenData>(constructScreen3)
+        const geomScreen2 = constructScreen2()
+        const geomScreen3 = constructScreen3()
 
         const stopGeometrize = () => {  // TODO this init can be lazier
             geomScreen1.elements.body.style.display = 'flex';
