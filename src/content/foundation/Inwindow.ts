@@ -32,7 +32,7 @@ class InwindowElement {
             if(typeof options.close == "boolean") {
                 return e.querySelector('.wiw-close')
             } else { return options.close }
-        })() : null
+        })() : e.querySelector('.wiw-close')
         // this.close = options?.close !== undefined ? (options.close == true ? element.querySelector('.wiw-close') : options.close == false ? null : options.close) : null
         // this.close = typeof options?.close != "boolean" ? options?.close ?? element.querySelector('.wiw-close') : options.close ? element.querySelector('.wiw-close') : null
         const closeable = options?.close !== false
@@ -145,9 +145,11 @@ function initResizeElement(inwindow: InwindowElement, ratio?: number) {
 }
 function initRemoveElement(inwindow: InwindowElement, closeable: boolean = true) {
     if (!inwindow.close){ return }
-    closeable
-        ? inwindow.close.onmousedown = function() { inwindow.element.remove() }
-        : inwindow.close?.remove()
+    if (closeable) {
+        inwindow.close.onmousedown = function() { inwindow.element.remove() }
+    } else {
+        inwindow.close.remove()
+    }
 }
 
 export { InwindowElement as Inwindow }
