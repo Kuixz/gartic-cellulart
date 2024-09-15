@@ -1,7 +1,9 @@
 
 
 import { RedSettingsBelt, Console, Keybind, Phase, setAttributes, Inwindow, 
-         setParent, getModuleAsset, preventDefaults, clamp } from "../foundation"
+         setParent, getModuleAsset, preventDefaults, clamp, 
+         DOMUNLOADINGALLOWANCE,
+         globalGame} from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
  /* ----------------------------------------------------------------------
@@ -36,7 +38,7 @@ class Refdrop extends CellulartModule { // [R1]
         this.refImage = refImage
 
         const refUpload = document.createElement("div")
-        setAttributes(refUpload, { style: "display: none; visibility: hidden", class: "ref-square", id: "ref-se" })
+        setAttributes(refUpload, { style:"visibility: hidden", class: "ref-square", id: "ref-se" })
         setParent(refUpload, document.body)
         this.refUpload = refUpload
 
@@ -97,36 +99,11 @@ class Refdrop extends CellulartModule { // [R1]
         // this.refCtrl = this.initRefctrl()
     }
     mutation(oldPhase: Phase, newPhase: Phase) {
-        // Recover the ref controls from the lower corners so that we don't lose track of them.
-        // document.body.appendChild(this.refUpload);
-        // document.body.appendChild(this.refCtrl)
-        // Recover the refimg from the overlay position so that we don't lose track of it.
-        // this.refUpload.appendChild(this.refImage);
         this.refImage.style.visibility = "hidden";
-    
-        // console.log(this.setting.current)
-        // console.log(this.isSetTo('off'))
 
-        if (newPhase == "draw" && !(this.isSetTo('off'))) {
-            const tools = document.querySelector(".tools")
-            if (!tools) { Console.alert("Couldn't find where to insert Refdrop controls", "Refdrop"); return }
-
-            if (this.isSetTo("on")) {
-                setTimeout(() => { this.placeRefUpload(tools) }, 200)
-            }
-            if (this.isSetTo("red")) {
-                setTimeout(() => { this.placeRefUpload(tools) }, 200)
-                setTimeout(() => { this.placeRefCtrl(tools) }, 200)
-            }
-            Console.log("Refdrop controls placed", "Refdrop")
-        } else {
-            this.refUpload.style.display = "none";
-            if (this.refCtrl) { this.refCtrl.style.display = "none" }
-        }
+        this.place()
     }
-    roundStart() {
-
-    }
+    roundStart() {} // Empty.
     roundEnd() {
         this.refImage.src = "";
     }
@@ -137,25 +114,55 @@ class Refdrop extends CellulartModule { // [R1]
             }; this.refFloating = []
             // document.querySelectorAll(".wiw-close").forEach(v => v.parentNode.parentNode.remove()) // This closes all references, forcing you to drag them in again.
             this.refImage.src = "";
-            this.refUpload.style.visibility = "hidden";
-            if (this.refCtrl) { this.refCtrl.style.visibility = "hidden"; }
         } else if (this.isSetTo("on")) {
-            this.refUpload.style.visibility = "visible"
             this.refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ul.png") + ")";
         } else if (this.isSetTo("red")) {
-            if (this.refCtrl) { this.refCtrl.style.visibility = "visible"; }
             this.refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ss.png") + ")";
         } 
-        console.log(this.isSetTo("off"))
-        console.log(this.isSetTo("on"))
-        console.log(this.isSetTo("red"))
+        this.place()
     }
     togglePlus(plus: boolean) { 
         super.togglePlus(plus)
 
-        if (plus) { this.refCtrl = this.initRefctrl() }
+        // TODO: This needs refactoring.
+        if (plus && this.refCtrl === undefined) { this.refCtrl = this.initRefctrl() }
     }
 
+    canPlace(): boolean { 
+        return globalGame.currentPhase == "draw"
+    }
+    place() {
+        if (!this.canPlace()) { return }
+        
+        if (this.isSetTo("off")) {
+            this.refUpload.style.visibility = "hidden";
+            if (this.refCtrl) { this.refCtrl.style.visibility = "hidden"; }
+        } else if (this.isSetTo("on")) {
+            this.placeRefUpload()
+        } else if (this.isSetTo("red")) {
+            this.placeRefUpload()
+            this.placeRefCtrl()
+        } 
+
+        console.log(this.refUpload)
+        console.log(this.refCtrl)
+    }
+    placeRefUpload() {
+        const tools = document.querySelector(".tools")
+        if (!tools) { Console.alert("Couldn't find where to insert Refdrop controls", "Refdrop"); return }
+
+        tools.insertAdjacentElement("beforebegin", this.refUpload);
+        this.refUpload.style.visibility = "visible"
+    }
+    placeRefCtrl() {
+        if (!this.refCtrl) { return }
+
+        const tools = document.querySelector(".tools")
+        if (!tools) { Console.alert("Couldn't find where to insert Refdrop controls", "Refdrop"); return }
+
+        tools.insertAdjacentElement("afterend", this.refCtrl);
+        this.refCtrl!.style.visibility = "visible" 
+    }
     screenshot() {
         const core = document.querySelector(".core")
         if (!core) { Console.alert("Could not find core", "Refdrop"); return }
@@ -276,14 +283,6 @@ class Refdrop extends CellulartModule { // [R1]
         } else {
             Console.alert(`No behaviour is defined for onSocketClick in setting ${this.setting.current.internalName}`)
         }
-    }
-    placeRefUpload(tools: Element) {
-        tools.insertAdjacentElement("beforebegin", this.refUpload);
-        this.refUpload.style.visibility = "visible"
-    }
-    placeRefCtrl(tools: Element){
-        tools.insertAdjacentElement("afterend", this.refCtrl!);
-        this.refCtrl!.style.visibility = "visible" 
     }
     newRefimgInwindow(object: File): Inwindow {
         const i = new Image()
