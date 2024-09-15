@@ -16,7 +16,7 @@ const CHANNELSCHEMA: Record<DEFINEDCHANNEL, CHANNELDEFINITION> = {
         "enforceMap": {}
     },
     "Worker": {
-        "enforceWindow": true,
+        "enforceWindow": false,
         "enforceMap": {
             "log": "string", 
             "image": isGeomRawImage,
