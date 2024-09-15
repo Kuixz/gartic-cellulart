@@ -143,9 +143,6 @@ class Refdrop extends CellulartModule { // [R1]
             this.placeRefUpload()
             this.placeRefCtrl()
         } 
-
-        console.log(this.refUpload)
-        console.log(this.refCtrl)
     }
     placeRefUpload() {
         const tools = document.querySelector(".tools")
@@ -195,12 +192,13 @@ class Refdrop extends CellulartModule { // [R1]
             // Precondition: small.parentElement && large.parentElement !== undefined
             var parentCoords: { top:number, left:number } = { top:0, left:0 }; 
             var ratio = 1
+            
             const smallParent = small.parentElement!
-            const largeParent = large.parentElement!
-
             small.onmousedown = function (e) {
                 e.preventDefault();
             
+                // largeParent may not yet exist at the time of initPantograph, so retrieve it as needed.
+                const largeParent = large.parentElement!
                 parentCoords = getCoords(smallParent)
                 ratio = largeParent.clientWidth / smallParent.clientWidth
                 document.onmouseup = closeDragElement;
@@ -209,6 +207,7 @@ class Refdrop extends CellulartModule { // [R1]
         
             function elementDrag(e: MouseEvent) {
                 e.preventDefault();
+            
                 // set the element's new position:
                 const left = clamp(0, e.clientX - parentCoords.left, smallParent.offsetWidth)
                 const top = clamp(0, e.clientY - parentCoords.top, smallParent.offsetHeight)
@@ -287,7 +286,7 @@ class Refdrop extends CellulartModule { // [R1]
     newRefimgInwindow(object: File): Inwindow {
         const i = new Image()
         setAttributes(i, { class: "wiw-img", src: URL.createObjectURL(object) })
-        const newRefWindow = new Inwindow("default", { visible:true, ratio:i.height / i.width });
+        const newRefWindow = new Inwindow("default", { visible:true, ratio:i.height / i.width, close:true });
         i.onload = function() {
             newRefWindow.body.appendChild(i)
         }
