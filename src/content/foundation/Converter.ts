@@ -12,7 +12,7 @@ interface GarticUser {
     change?: number
     id?:     number
     mirror?: string
-    owner?: boolean
+    owner?:  boolean
     points?: number
     uid?:    string
     viewer?: boolean
@@ -160,6 +160,26 @@ const Converter = {
             default: 
                 Console.alert("Could not identify the turn setting being used", 'Converter');
                 return () => 0
+        }
+    },
+
+    tryToUser(elem: HTMLElement): GarticUser|undefined {
+        if (elem.classList.contains("empty")) { return }
+
+        const contentElems = elem.getElementsByTagName("span")
+        if (contentElems.length < 2) { return }
+
+        const avatar = getComputedStyle(contentElems[0]).backgroundImage
+
+        const nick = contentElems[1].textContent
+        if (!nick) { return }
+
+        const isOwner = elem.getElementsByClassName("owner").length > 0
+
+        return {
+            nick:   nick,
+            avatar: avatar,
+            owner:  isOwner
         }
     }
 }

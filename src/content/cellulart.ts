@@ -142,7 +142,6 @@ class Observer {
     // static name: string = "Observer"
     content: Element | undefined
     controller: Controller
-    currentPhase: Phase = "start"
     
     constructor(controller: Controller) {
         this.controller = controller;
@@ -152,30 +151,31 @@ class Observer {
         // Xhr.addMessageListener('lobbySettings', Observer.deduceSettingsFromXHR)
         // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     }
-    mutation(newPhase: Phase) {
-        const oldPhase = this.currentPhase
-        this.currentPhase = newPhase
-        Console.log(newPhase, "Observer")
+    mutation(newPhase: Phase): void {
+        // Set variables
+        const oldPhase = globalGame.currentPhase
+        globalGame.currentPhase = newPhase
+        Console.log(`Transitioned to ${newPhase}`, "Observer")
 
-        // Handle special cases
+        globalGame.currentTurn = (function():number {
+            if (["first", "draw", "write", "memory", "mod"].includes(newPhase)) {
+                const step = document.querySelector(".step")
+                if (!step) { Console.alert("Could not find turn counter", "Observer"); return -1 }
+                if (!(step.textContent)) { Console.alert("Could not read turn counter", "Observer"); return -1 }
+
+                const slashIndex = step.textContent.indexOf("/")
+                const turnCount = Number(step.textContent.slice(0, slashIndex))
+                if (isNaN(turnCount)) { Console.alert("Could not parse turn counter", "Observer"); return -1 }
+            }
+            return 0
+        })()
+
+        // Handle special transitions
         if (oldPhase == "lobby" && newPhase != "start")   { this.roundStart(); }
         if (oldPhase == "start" && newPhase == "lobby")   { this.enterLobby(); return; }
         if (oldPhase != "start" && newPhase == "lobby")   { this.roundEnd(oldPhase); return; }  // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
         if (                       newPhase == "waiting") { this.waiting(); return; } 
         // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
-
-        const step = document.querySelector(".step")
-        if (!step) { Console.alert("Could not find turn counter", "Observer"); return -1 }
-        if (!(step.textContent)) { Console.alert("Could not read turn counter", "Observer"); return -1 }
-
-        const slashIndex = step.textContent.indexOf("/")
-        const turnCount = Number(step.textContent.slice(0, slashIndex))
-        if (isNaN(turnCount)) {
-            Console.alert("Could not parse turn counter", "Observer"); return -1
-        }
-
-        globalGame.currentTurn = turnCount
-        globalGame.currentPhase = newPhase
 
         this.controller.mutation(oldPhase, newPhase)
     }
@@ -326,6 +326,29 @@ class Observer {
         } else {  // THe below line shouldn't have a ! because the above selector doesn't read confidently
             const players = Number(playerCounter.textContent!.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
             globalGame.players = new Array(players)
+        }
+
+        globalGame.players = []
+        const playerList = document.querySelector(".players .scrollElements")
+        if (playerList) { 
+            for (const playerElem of playerList.children) {
+                if (!(playerElem instanceof HTMLElement)) { continue }
+                console.log(playerElem)
+                const player = Converter.tryToUser(playerElem)
+                if (!player) { continue }
+                console.log(player)
+
+                globalGame.players.push(player)
+                if (player.owner) {
+                    globalGame.host = player.nick
+                }
+                if (playerElem.getElementsByTagName("i").length > 0) {
+                    globalGame.user = player
+                }
+            }
+            globalGame.players
+        } else {
+            Console.alert("Could not find player list", "Observer")
         }
 
         // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
