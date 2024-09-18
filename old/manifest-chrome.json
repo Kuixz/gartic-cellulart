@@ -1,28 +1,31 @@
 {
     "manifest_version": 3,
     "name": "Gartic Cellulart for Gartic Phone",
-    "version": "1.2.1",
+    "version": "1.1.3",
     "description": "Level up your Gart.",
     "icons":{
-        "48": "ico48.png",
-        "128": "ico128.png"
+        "48": "assets/icons/ico48.png",
+        "128": "assets/icons/ico128.png"
     },
     "action": {
-        "default_popup": "popup/popup.html"
+        "default_popup": "src/popup/popup.html"
     },
     "background": {
-        "scripts": ["background.js"],
+        "service_worker": "src/branches/worker.js",
         "type": "module"
     },
     "content_scripts": [
         {
             "matches": ["https://garticphone.com/*"],
-            "css": ["content.css"],
-            "js": ["content.js"]
+            "css": ["src/content/cellulart.css"],
+            "js": [ 
+                "src/content/foundation.js", 
+                "src/content/modules.js",
+                "src/content/cellulart.js"]
         },
         {
             "matches": ["https://garticphone.com/*"],
-            "js": ["injector.js"],
+            "js": ["src/branches/injector.js"],
             "run_at": "document_start",
             "all_frames": true
         }
@@ -36,12 +39,7 @@
     "web_accessible_resources": [
         {
             "matches": [ "https://garticphone.com/*" ],
-            "resources": [ "*.png", "injected.js" ]
+            "resources": [ "assets/*", "src/lib/*", "src/branches/injected/*" ]
         }
-    ],
-    "browser_specific_settings" : {
-        "gecko": {
-            "id": "{9c773d26-5b2c-4c3e-ad36-a5a98e2d1d0f}"
-        }
-    }
+    ]
 }
