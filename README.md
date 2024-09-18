@@ -10,10 +10,10 @@ Gartic Cellulart is a browser extension for Gartic Phone that adds several featu
 
 You're looking at the code for the BETA channel.
 
-Subscribe to the stable RELEASE channel:
-chrome.google.com/webstore/detail/pjeenahidnpjaajbiidagnackjdhnlam
+Subscribe to the stable RELEASE channel for
+[Chrome](chrome.google.com/webstore/detail/pjeenahidnpjaajbiidagnackjdhnlam)
 or
-addons.mozilla.org/addon/gartic-cellulart/
+[Firefox](hereaddons.mozilla.org/addon/gartic-cellulart/)
 
 # How to use the BETA channel
 Installing the latest BETA version of Cellulart is simple:
