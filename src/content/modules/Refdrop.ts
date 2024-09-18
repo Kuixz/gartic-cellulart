@@ -65,11 +65,11 @@ class Refdrop extends CellulartModule { // [R1]
             // Console.log("dragleave", Refdrop); Console.log(e.relatedTarget, Refdrop)
             if (e.fromElement || e.relatedTarget !== null) { return }
             Console.log("Dragging back to OS", 'Refdrop')
-            if (this.isSetTo('red')) { refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ss.png") + ")"; }
+            if (this.isRed()) { refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ss.png") + ")"; }
         })
         window.addEventListener("drop", (e) => {
             Console.log("drop", 'Refdrop')
-            if (this.isSetTo('red')) { refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ss.png") + ")"; }
+            if (this.isRed()) { refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ss.png") + ")"; }
         }, true)
         window.addEventListener("dragover", (e) => {
             e.preventDefault()
@@ -108,15 +108,15 @@ class Refdrop extends CellulartModule { // [R1]
         this.refImage.src = "";
     }
     adjustSettings(previous: string, current: string) {
-        if (this.isSetTo("off")) {
+        if (this.isOff()) {
             for (const floating of this.refFloating) {
                 floating.element.remove()
             }; this.refFloating = []
             // document.querySelectorAll(".wiw-close").forEach(v => v.parentNode.parentNode.remove()) // This closes all references, forcing you to drag them in again.
             this.refImage.src = "";
-        } else if (this.isSetTo("on")) {
+        } else if (this.isOn()) {
             this.refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ul.png") + ")";
-        } else if (this.isSetTo("red")) {
+        } else if (this.isRed()) {
             this.refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ss.png") + ")";
         } 
         this.place()
@@ -134,12 +134,12 @@ class Refdrop extends CellulartModule { // [R1]
     place() {
         if (!this.canPlace()) { return }
         
-        if (this.isSetTo("off")) {
+        if (this.isOff()) {
             this.refUpload.style.visibility = "hidden";
             if (this.refCtrl) { this.refCtrl.style.visibility = "hidden"; }
-        } else if (this.isSetTo("on")) {
+        } else if (this.isOn()) {
             this.placeRefUpload()
-        } else if (this.isSetTo("red")) {
+        } else if (this.isRed()) {
             this.placeRefUpload()
             this.placeRefCtrl()
         } 
@@ -275,9 +275,9 @@ class Refdrop extends CellulartModule { // [R1]
         }
     } // [R6]
     onSocketClick() {
-        if (this.isSetTo("on")) {
+        if (this.isOn()) {
             this.refBridge.click()
-        } else if (this.isSetTo("red")) {
+        } else if (this.isRed()) {
             this.screenshot()
         } else {
             Console.alert(`No behaviour is defined for onSocketClick in setting ${this.setting.current.internalName}`)
@@ -302,12 +302,12 @@ class Refdrop extends CellulartModule { // [R1]
         if (!core) { Console.alert("Could not find core", "Refdrop"); return }
         core.classList.remove("watermark")
 
-        if (this.isSetTo('on')) {
+        if (this.isOn()) {
             for (const file of files) {
                 const newRefWindow = this.newRefimgInwindow(file)
                 this.refFloating.push(newRefWindow);
             }
-        } else if (this.isSetTo('red')) {
+        } else if (this.isRed()) {
             this.refImage.style.visibility = "visible";
             this.refImage.src = URL.createObjectURL(files.item(0)!)
 

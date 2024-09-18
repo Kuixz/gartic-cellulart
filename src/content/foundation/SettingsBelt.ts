@@ -44,6 +44,12 @@ class SettingsBelt {
     }
 }
 
+const DefaultSettings = {
+    on: "on",
+    off: "off",
+    red: "red"
+}
+
 function SettingFrom(moduleName: string, settingName: string): Setting {
     return new Setting(settingName, getMenuIcon(`${moduleName}-${settingName}.png`))
 }
@@ -57,11 +63,11 @@ function SettingsBeltFrom(moduleName: string, settingNames: string[], defaultInd
 }
 
 function WhiteSettingsBelt(moduleName: string, enabledByDefault: boolean = false, extension?: string): SettingsBelt { 
-    return SettingsBeltFrom(moduleName, ['off', 'on'], enabledByDefault ? 1 : 0, extension)
+    return SettingsBeltFrom(moduleName, [DefaultSettings.off, DefaultSettings.on], enabledByDefault ? 1 : 0, extension)
 }
 
 function RedSettingsBelt(moduleName: string, enabledByDefault: boolean = false): SettingsBelt { 
-    return WhiteSettingsBelt(moduleName, enabledByDefault, 'red')
+    return WhiteSettingsBelt(moduleName, enabledByDefault, DefaultSettings.red)
 }
 
-export { Setting, SettingsBelt, SettingFrom, SettingsBeltFrom, WhiteSettingsBelt, RedSettingsBelt }
+export { Setting, SettingsBelt, SettingFrom, SettingsBeltFrom, WhiteSettingsBelt, RedSettingsBelt, DefaultSettings }

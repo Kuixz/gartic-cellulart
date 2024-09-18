@@ -1,4 +1,4 @@
-import { Console, Phase, SettingsBelt, Keybind } from "../foundation"
+import { Console, Phase, SettingsBelt, Keybind, DefaultSettings } from "../foundation"
 
 interface MutationInformation {
   oldPhase: Phase
@@ -106,14 +106,17 @@ abstract class CellulartModule extends ModuleLike{ // [F2]
     // }
 
     // Syntactic getter for the setting. Generally shared between modules.
-    isSetTo(thing: string) { return this.setting.current.internalName == thing } // TODO: bad coupling
+    isSetTo(internalName: string): boolean { return this.setting.current.internalName == internalName } // TODO: bad coupling
+    isOn(): boolean { return this.isSetTo(DefaultSettings.on) }
+    isOff(): boolean { return this.isSetTo(DefaultSettings.off) }
+    isRed(): boolean { return this.isSetTo(DefaultSettings.red) }
     // isSetTo(thing) { return this.setting.isSetTo(thing) },
 
     // These functions receive messages from the in-window menu and are generally shared between modules.
     menuStep() { 
       const c = this.setting.current; 
       const n = this.setting.next(); 
-      this.adjustSettings(c.internalName,n.internalName); 
+      this.adjustSettings(c.internalName, n.internalName); 
       Console.log(n.internalName, this.name); 
       return n 
     }

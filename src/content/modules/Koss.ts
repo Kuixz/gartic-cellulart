@@ -1,5 +1,5 @@
 import { CellulartModule } from "./CellulartModule";
-import { Console, DOMLOADINGALLOWANCE, globalGame, Inwindow, Phase, RedSettingsBelt, setAttributes } from "../foundation";
+import { Console, DefaultSettings, DOMLOADINGALLOWANCE, globalGame, Inwindow, Phase, RedSettingsBelt, setAttributes } from "../foundation";
 
  /* ----------------------------------------------------------------------
   *                                  Koss 
@@ -41,9 +41,7 @@ class Koss extends CellulartModule { // [K1]
             }, DOMLOADINGALLOWANCE)
         }
         else if (newPhase == 'draw') {
-            // document.querySelector(".core").querySelector("canvas")
-            // this.kossCanvas
-            this.placeCanvas()
+            this.place()
         }
     }
     roundStart() {}
@@ -53,79 +51,45 @@ class Koss extends CellulartModule { // [K1]
     }
     adjustSettings(previous: string, current: string) {
         // alert(current)
-        switch (current) {
-            case 'off':
-                this.kossInwindow.setVisibility("hidden");
-                break;
-            case 'on':
-                this.kossInwindow.setVisibility("visible");
-                break;
-            case 'red':
-                this.kossInwindow.setVisibility("hidden");
-                break;
-            default: Console.alert("KOSS setting not recognised", 'Koss')
-        }
-        this.placeCanvas()
+        this.place()
     }
 
     canPlace(): boolean {
         return globalGame.currentPhase == "draw"
     }
-    placeCanvas() {
-        if (!this.kossCanvas) { return }
+    place() {
         if (!this.canPlace()) { return }
 
-        this.kossCanvas.classList.add('koss-canvas')
-        switch (this.setting.current.internalName) {
-            case 'off':
-                this.placeOffCanvas()
-                break;
-            case 'on':
-                this.placeOnCanvas()
-                break;
-            case 'red':
-                this.placeRedCanvas()
-                break;
-            default: Console.alert("KOSS location not recognised", 'Koss')
-        }
-    //     if (!this.kossCanvas) { return }
-    //    /* if (this.kossCanvas) { */ this.kossCanvas.classList.add('koss-canvas') // }
-    //     if (this.isSetTo('off')) {
-    //         this.kossInwindow.body.appendChild(this.kossCanvas);
-    //     } else if (this.isSetTo('on')) {
-    //         this.kossInwindow.body.appendChild(this.kossCanvas);
-    //     } else if (this.isSetTo('red')) {
-    //         setTimeout(() => { this.tryUnderlayKossImage() }, 1000);
-    //     } else {
-    //         Console.alert("KOSS location not recognised", 'Koss')
-    //     }
-    }
-    placeOffCanvas() {
-        this.kossInwindow.setVisibility("hidden");
+        if (this.isOff()) {
+            this.kossInwindow.setVisibility("hidden");
+        
+            if (!this.kossCanvas) { return }
+            this.kossCanvas.classList.add('koss-canvas')
+            this.kossCanvas.style.opacity = "1"; 
+            this.kossInwindow.body.appendChild(this.kossCanvas);
+        } else if (this.isOn()) {
+            this.kossInwindow.setVisibility("visible");
     
-        if (!this.kossCanvas) { return }
-        this.kossCanvas.style.opacity = "1"; 
-        this.kossInwindow.body.appendChild(this.kossCanvas);
-    }
-    placeOnCanvas() {
-        this.kossInwindow.setVisibility("visible");
-
-        if (!this.kossCanvas) { return }
-        this.kossCanvas.style.opacity = "1"; 
-        this.kossInwindow.body.appendChild(this.kossCanvas); 
-    }
-    placeRedCanvas() {
-        this.kossInwindow.setVisibility("hidden");
-
-        if (!this.kossCanvas) { return }
-        this.kossCanvas.style.opacity = "0.25";
-        const drawingContainer = document.querySelector(".drawingContainer")
-        if (!drawingContainer) {
-            Console.alert("Cannot underlay canvas: cannot find active drawing canvas", "Koss")
-            return 
+            if (!this.kossCanvas) { return }
+            this.kossCanvas.classList.add('koss-canvas')
+            this.kossCanvas.style.opacity = "1"; 
+            this.kossInwindow.body.appendChild(this.kossCanvas); 
+        } else if (this.isRed()) {
+            this.kossInwindow.setVisibility("hidden");
+    
+            if (!this.kossCanvas) { return }
+            this.kossCanvas.classList.add('koss-canvas')
+            this.kossCanvas.style.opacity = "0.25";
+            const drawingContainer = document.querySelector(".drawingContainer")
+            if (!drawingContainer) {
+                Console.alert("Cannot underlay canvas: cannot find active drawing canvas", "Koss")
+                return 
+            }
+            drawingContainer.insertAdjacentElement("beforebegin", this.kossCanvas);
+            Console.log("Koss image underlaid", 'Koss')
+        } else {
+            Console.alert("KOSS location not recognised", 'Koss')
         }
-        drawingContainer.insertAdjacentElement("beforebegin", this.kossCanvas);
-        Console.log("Koss image underlaid", 'Koss')
     }
     discardCanvas() {
         if (!this.kossCanvas) { return }

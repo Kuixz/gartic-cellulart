@@ -69,7 +69,7 @@ class Timer extends CellulartModule {
         // console.log(this.setting.current)
         // console.log(this.isSetTo('off'))
         const display = document.createElement("div")
-        setAttributes(display, { id: "timer", style: `visibility:${this.isSetTo('off') ? "hidden" : "visible"}` })
+        setAttributes(display, { id: "timer", style: `visibility:${this.isOff() ? "hidden" : "visible"}` })
         setParent(display, timerDisplay)
         this.display = display
 
