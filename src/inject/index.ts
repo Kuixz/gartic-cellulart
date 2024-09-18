@@ -92,7 +92,7 @@ class SocketInterceptor extends Interceptor {
         this.clearStrokes()
     }
     interceptIncoming(data: string) {
-        console.log(data)
+        // console.log(data)
 
         if (data.slice(0,5) != '42[2,') { return }
 

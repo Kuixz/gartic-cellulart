@@ -72,10 +72,7 @@ class Koss extends CellulartModule { // [K1]
         return globalGame.currentPhase == "draw"
     }
     placeCanvas() {
-        if (!this.kossCanvas) { 
-            Console.alert("Cannot place canvas: no canvas", "Koss")
-            return 
-        }
+        if (!this.kossCanvas) { return }
         if (!this.canPlace()) { return }
 
         this.kossCanvas.classList.add('koss-canvas')

@@ -460,7 +460,7 @@ class Geom extends CellulartModule {
 
         // console.log(this.flags)
 
-        if(this.flags.notClearToSend()) { console.log(this.flags); return }
+        if(this.flags.notClearToSend()) { return }
         this.flags.interval = false
         window.setTimeout(() => { this.flags.interval = true; this.trySend() }, 125)
     
