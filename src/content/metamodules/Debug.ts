@@ -46,6 +46,8 @@ class Debug extends Metamodule {
         }
         this.debugWIW.setVisibility('hidden')
     }
+
+    // TODO: Hide Red modules while not authenticated.
 }
 
 export { Debug }
