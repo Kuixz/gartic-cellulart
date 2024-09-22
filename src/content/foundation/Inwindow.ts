@@ -1,14 +1,13 @@
 import { setAttributes, setParent } from "./Util"
 
-const wiwNode = document.createElement("div")
-setAttributes(wiwNode, { style: "visibility: hidden", class: "window-in-window" })
-wiwNode.innerHTML = `
+const defaultInwindowNode = document.createElement("div")
+setAttributes(defaultInwindowNode, { style: "visibility: hidden", class: "window-in-window" })
+defaultInwindowNode.innerHTML = `
 <div class = "wiw-header">≡<div class = "wiw-close"></div></div>
 <div class = "wiw-body"></div>`
 
-var currentZIndex: number = 20  // todo reset z index when a threshold is passed
+var currentZIndex: number = 20 
 
-// TODO: Turning a window from invisible to visible should give it z-priority
 class InwindowElement {
     element: HTMLElement
     header: HTMLElement
@@ -24,7 +23,7 @@ class InwindowElement {
             visible?: boolean,
             ratio?: number | "default"
         }) {
-        const e = element == "default" ? wiwNode.cloneNode(true) as HTMLElement : element
+        const e = element == "default" ? defaultInwindowNode.cloneNode(true) as HTMLElement : element
         this.element = e
         this.header = options?.header ?? e.querySelector('.wiw-header') ?? e
         this.body = options?.body ?? e.querySelector('.wiw-body') ?? e
@@ -53,12 +52,15 @@ class InwindowElement {
         // if (!!v === v) {
         //     this.element.style.visibility = v ? "visible" : "hidden"
         // }
+
         if (v === false) { 
             this.element.style.visibility = 'hidden'
         } else if (v === true) { 
             this.element.style.visibility = 'visible'
+            giveZPriority(this)
         } else {
             this.element.style.visibility = v
+            // 
         }
     }
 }
@@ -71,7 +73,7 @@ function initDragElement(inwindow: InwindowElement) {
     var dragElement: HTMLElement = inwindow.element;
     
     dragElement.onmousedown = () => {
-        dragElement.style.zIndex = String(++currentZIndex);
+        giveZPriority(inwindow)
     }
 
     dragTarget.onmousedown = function(e: MouseEvent) {
@@ -150,6 +152,10 @@ function initRemoveElement(inwindow: InwindowElement, closeable: boolean = true)
     } else {
         inwindow.close.remove()
     }
+}
+
+function giveZPriority(inwindow: InwindowElement) {
+    inwindow.element.style.zIndex = String(++currentZIndex);
 }
 
 export { InwindowElement as Inwindow }
