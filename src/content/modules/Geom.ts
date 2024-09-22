@@ -80,9 +80,9 @@ class Geom extends CellulartModule {
         // hide or show Geom window without stopping web worker (just like Koss)
         if (current == 'off') {
             this.setSendPause(true)
-            this.geomInwindow?.setVisibility("hidden");
+            this.geomInwindow?.setVisibility(false);
         } else {
-            this.geomInwindow?.setVisibility("visible");
+            this.geomInwindow?.setVisibility(true);
         }
     }
 

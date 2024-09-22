@@ -61,21 +61,21 @@ class Koss extends CellulartModule { // [K1]
         if (!this.canPlace()) { return }
 
         if (this.isOff()) {
-            this.kossInwindow.setVisibility("hidden");
+            this.kossInwindow.setVisibility(false);
         
             if (!this.kossCanvas) { return }
             this.kossCanvas.classList.add('koss-canvas')
             this.kossCanvas.style.opacity = "1"; 
             this.kossInwindow.body.appendChild(this.kossCanvas);
         } else if (this.isOn()) {
-            this.kossInwindow.setVisibility("visible");
+            this.kossInwindow.setVisibility(true);
     
             if (!this.kossCanvas) { return }
             this.kossCanvas.classList.add('koss-canvas')
             this.kossCanvas.style.opacity = "1"; 
             this.kossInwindow.body.appendChild(this.kossCanvas); 
         } else if (this.isRed()) {
-            this.kossInwindow.setVisibility("hidden");
+            this.kossInwindow.setVisibility(false);
     
             if (!this.kossCanvas) { return }
             this.kossCanvas.classList.add('koss-canvas')

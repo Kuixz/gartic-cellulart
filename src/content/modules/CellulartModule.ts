@@ -106,7 +106,7 @@ abstract class CellulartModule extends ModuleLike{ // [F2]
     // }
 
     // Syntactic getter for the setting. Generally shared between modules.
-    isSetTo(internalName: string): boolean { return this.setting.current.internalName == internalName } // TODO: bad coupling
+    isSetTo(internalName: string): boolean { return this.setting.isSetTo(internalName) } 
     isOn(): boolean { return this.isSetTo(DefaultSettings.on) }
     isOff(): boolean { return this.isSetTo(DefaultSettings.off) }
     isRed(): boolean { return this.isSetTo(DefaultSettings.red) }
