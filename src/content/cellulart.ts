@@ -333,10 +333,10 @@ class Observer {
         if (playerList) { 
             for (const playerElem of playerList.children) {
                 if (!(playerElem instanceof HTMLElement)) { continue }
-                console.log(playerElem)
+                // console.log(playerElem)
                 const player = Converter.tryToUser(playerElem)
                 if (!player) { continue }
-                console.log(player)
+                // console.log(player)
 
                 globalGame.players.push(player)
                 if (player.owner) {
