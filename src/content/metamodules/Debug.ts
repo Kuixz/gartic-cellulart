@@ -1,4 +1,4 @@
-import { WhiteSettingsBelt, Inwindow, Console, setAttributes, getMenuIcon, setParent } from "../foundation";
+import { WhiteSettingsBelt, Inwindow, Console, setAttributes, getMenuIcon, setParent, DefaultSettings } from "../foundation";
 import { CellulartModule, Metamodule } from "../modules";
 
 /* ----------------------------------------------------------------------
@@ -41,10 +41,7 @@ class Debug extends Metamodule {
         this.debugWIW = debugWIW;
     }
     adjustSettings(previous: string, current: string) {
-        if (current == 'on') { 
-            this.debugWIW.setVisibility('initial'); return 
-        }
-        this.debugWIW.setVisibility('hidden')
+        this.debugWIW.setVisibility(current == DefaultSettings.on)
     }
 
     // TODO: Hide Red modules while not authenticated.

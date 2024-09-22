@@ -23,8 +23,8 @@ class SettingsBelt {
         this.extension = extension
     }
 
-    get current() { return this.items[this.index] }  // TODO: change this to get syntax
-    // isSetTo(thing) { return this.current == thing }
+    get current() { return this.items[this.index] }
+    isSetTo(internalName: string): boolean { return this.current.internalName == internalName }
     next() { this.index = (this.index + 1              ) % this.length; return this.current}
     prev() { this.index = (this.index + this.length - 1) % this.length; return this.current} // Unused
 
