@@ -23,10 +23,25 @@ class SettingsBelt {
         this.extension = extension
     }
 
-    get current() { return this.items[this.index] }
+    // this.items[this.index] will only be undefined after retracting while set to the extension.
+    get current() { return (this.items[this.index] || this.extension) }
     isSetTo(internalName: string): boolean { return this.current.internalName == internalName }
-    next() { this.index = (this.index + 1              ) % this.length; return this.current}
-    prev() { this.index = (this.index + this.length - 1) % this.length; return this.current} // Unused
+    next() { 
+        if (this.index >= this.length) {
+            this.index = 0
+        } else {
+            this.index = (this.index + 1) % this.length; 
+        }
+        return this.current
+    }
+    prev() {  // Unused
+        if (this.index >= this.length) {
+            this.index = this.length - 1
+        } else {
+            this.index = (this.index + this.length - 1) % this.length; 
+        }
+        return this.current
+    }
 
     extend() {
         if (!this.extension) { return } 
@@ -36,8 +51,7 @@ class SettingsBelt {
     retract() {
         if (!this.extension) { return } 
         this.length -= 1
-        this.items.slice(0, this.length - 1)
-        if (this.index == this.length) { this.index = this.length - 1 }
+        this.items.pop()
     }
     jump(settingName: string) {
         while (this.current.internalName != settingName) { this.next() }
@@ -62,10 +76,12 @@ function SettingsBeltFrom(moduleName: string, settingNames: string[], defaultInd
     )
 }
 
+/** State order: Off, On */ 
 function WhiteSettingsBelt(moduleName: string, enabledByDefault: boolean = false, extension?: string): SettingsBelt { 
     return SettingsBeltFrom(moduleName, [DefaultSettings.off, DefaultSettings.on], enabledByDefault ? 1 : 0, extension)
 }
 
+/** State order: Off, On, Red */ 
 function RedSettingsBelt(moduleName: string, enabledByDefault: boolean = false): SettingsBelt { 
     return WhiteSettingsBelt(moduleName, enabledByDefault, DefaultSettings.red)
 }
