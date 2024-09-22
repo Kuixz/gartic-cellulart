@@ -23,7 +23,8 @@ class SettingsBelt {
         this.extension = extension
     }
 
-    get current() { return this.items[this.index] }
+    // this.items[this.index] will only be undefined after retracting while set to the extension.
+    get current() { return (this.items[this.index] || this.extension) }
     isSetTo(internalName: string): boolean { return this.current.internalName == internalName }
     next() { 
         if (this.index >= this.length) {
@@ -75,10 +76,12 @@ function SettingsBeltFrom(moduleName: string, settingNames: string[], defaultInd
     )
 }
 
+/** State order: Off, On */ 
 function WhiteSettingsBelt(moduleName: string, enabledByDefault: boolean = false, extension?: string): SettingsBelt { 
     return SettingsBeltFrom(moduleName, [DefaultSettings.off, DefaultSettings.on], enabledByDefault ? 1 : 0, extension)
 }
 
+/** State order: Off, On, Red */ 
 function RedSettingsBelt(moduleName: string, enabledByDefault: boolean = false): SettingsBelt { 
     return WhiteSettingsBelt(moduleName, enabledByDefault, DefaultSettings.red)
 }
