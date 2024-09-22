@@ -25,8 +25,22 @@ class SettingsBelt {
 
     get current() { return this.items[this.index] }
     isSetTo(internalName: string): boolean { return this.current.internalName == internalName }
-    next() { this.index = (this.index + 1              ) % this.length; return this.current}
-    prev() { this.index = (this.index + this.length - 1) % this.length; return this.current} // Unused
+    next() { 
+        if (this.index >= this.length) {
+            this.index = 0
+        } else {
+            this.index = (this.index + 1) % this.length; 
+        }
+        return this.current
+    }
+    prev() {  // Unused
+        if (this.index >= this.length) {
+            this.index = this.length - 1
+        } else {
+            this.index = (this.index + this.length - 1) % this.length; 
+        }
+        return this.current
+    }
 
     extend() {
         if (!this.extension) { return } 
@@ -36,8 +50,7 @@ class SettingsBelt {
     retract() {
         if (!this.extension) { return } 
         this.length -= 1
-        this.items.slice(0, this.length - 1)
-        if (this.index == this.length) { this.index = this.length - 1 }
+        this.items.pop()
     }
     jump(settingName: string) {
         while (this.current.internalName != settingName) { this.next() }
