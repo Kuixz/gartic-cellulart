@@ -21,7 +21,7 @@ abstract class ModuleLike {
   menuStep() { 
     const c = this.setting.current; 
     const n = this.setting.next(); 
-    this.adjustSettings(c.internalName,n.internalName); 
+    this.adjustSettings(c.internalName, n.internalName); 
     Console.log(n.internalName, this.name); 
     return n 
   }
@@ -35,7 +35,7 @@ abstract class ModuleLike {
   * to the lobby), amongst other frameworks to make adding new functionalities
   * easy as pie.
   * ---------------------------------------------------------------------- */
-abstract class CellulartModule extends ModuleLike{ // [F2]
+abstract class CellulartModule extends ModuleLike { // [F2]
     abstract name: string           // All modules have a name property
     abstract setting: SettingsBelt  // All modules have a SettingsBelt
     hasMenuButton: boolean = true   // Some modules aren't directly controllable
@@ -112,21 +112,15 @@ abstract class CellulartModule extends ModuleLike{ // [F2]
     isRed(): boolean { return this.isSetTo(DefaultSettings.red) }
     // isSetTo(thing) { return this.setting.isSetTo(thing) },
 
-    // These functions receive messages from the in-window menu and are generally shared between modules.
-    menuStep() { 
-      const c = this.setting.current; 
-      const n = this.setting.next(); 
-      this.adjustSettings(c.internalName, n.internalName); 
-      Console.log(n.internalName, this.name); 
-      return n 
-    }
+    // menuStep and togglePlus receive messages from the in-window menu and are almost universally shared between modules.
+    // menuStep() { /* as defined in ModuleLike */ }
     togglePlus(plus: boolean) { if (plus) { this.setting.extend() } else { this.setting.retract() } }
-    // current() { return this.setting.current }
-    // An unstated assumption is that the following is always equal to 0 or 1:
-    // the number of times togglePlus(true) is called minus the number of times togglePlus(false) is called.
+    //// current() { return this.setting.current }
+    //// An unstated assumption is that the following is always equal to 0 or 1:
+    //// the number of times togglePlus(true) is called minus the number of times togglePlus(false) is called.
 }
 
-abstract class Metamodule extends ModuleLike{
+abstract class Metamodule extends ModuleLike {
   constructor(num: CellulartModule[]) { super() }
 }
 

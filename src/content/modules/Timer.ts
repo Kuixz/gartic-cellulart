@@ -27,7 +27,11 @@ class Timer extends CellulartModule {
 
     constructor() { // Empty.
         super()
-    }  // TODO: Elements normally aren't actually destroyed when they're removed from DOM. Maybe this.display still exists between transitions? If so we can avoid the costly thing.
+    }  
+    // TODO: Elements normally aren't actually destroyed when they're removed from DOM. 
+    // Maybe this.display still exists between transitions? If so we can avoid the costly thing.
+    // But is it even possible, given that we pluck the clock and stick it in the holder?
+    
     mutation(oldPhase: Phase, newPhase: Phase): void {
         if (["book", "start"].includes(newPhase)) { return }
         setTimeout(this.placeTimer.bind(this), DOMUNLOADINGALLOWANCE)
@@ -52,8 +56,6 @@ class Timer extends CellulartModule {
 
     placeTimer() {  // [T3]
         // const p = document.querySelector("p.jsx-3561292207"); if (p) { p.remove() }
-
-        // todo: is it even possible to run a rescue scheme, given that we pluck the clock and stick it in the holder?
         const clock = document.querySelector(".time") 
         if (!clock) { Console.alert("Could not find clock", "Timer"); return }
 
