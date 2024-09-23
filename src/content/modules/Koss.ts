@@ -51,6 +51,14 @@ class Koss extends CellulartModule { // [K1]
     }
     adjustSettings(previous: string, current: string) {
         // alert(current)
+        if (this.isOff()) {
+            this.kossInwindow.setVisibility(false);
+        } else if (this.isOn()) {
+            this.kossInwindow.setVisibility(true);
+        } else if (this.isRed()) {
+            this.kossInwindow.setVisibility(false);
+        }
+
         this.place()
     }
 
@@ -59,25 +67,17 @@ class Koss extends CellulartModule { // [K1]
     }
     place() {
         if (!this.canPlace()) { return }
+        if (!this.kossCanvas) { return }
 
         if (this.isOff()) {
-            this.kossInwindow.setVisibility(false);
-        
-            if (!this.kossCanvas) { return }
             this.kossCanvas.classList.add('koss-canvas')
             this.kossCanvas.style.opacity = "1"; 
             this.kossInwindow.body.appendChild(this.kossCanvas);
         } else if (this.isOn()) {
-            this.kossInwindow.setVisibility(true);
-    
-            if (!this.kossCanvas) { return }
             this.kossCanvas.classList.add('koss-canvas')
             this.kossCanvas.style.opacity = "1"; 
             this.kossInwindow.body.appendChild(this.kossCanvas); 
         } else if (this.isRed()) {
-            this.kossInwindow.setVisibility(false);
-    
-            if (!this.kossCanvas) { return }
             this.kossCanvas.classList.add('koss-canvas')
             this.kossCanvas.style.opacity = "0.25";
             const drawingContainer = document.querySelector(".drawingContainer")
@@ -87,8 +87,6 @@ class Koss extends CellulartModule { // [K1]
             }
             drawingContainer.insertAdjacentElement("beforebegin", this.kossCanvas);
             Console.log("Koss image underlaid", 'Koss')
-        } else {
-            Console.alert("KOSS location not recognised", 'Koss')
         }
     }
     discardCanvas() {
