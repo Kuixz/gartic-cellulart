@@ -2,10 +2,11 @@
 import { 
     Phase, Console, Converter, GarticXHRData, 
     Keybinder, Setting, SHAuth,
-    Socket,
+    Socket, Xhr,
     // IAuth, SHAuth as SHAuth, 
     IShelf, SandShelf as Shelf,
-    setAttributes, setParent, configChildTrunk, globalGame, 
+    setAttributes, setParent, configChildTrunk, globalGame,
+    GarticUser, 
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom } from "./modules"
 import { Red, Debug } from "./metamodules"
@@ -29,7 +30,7 @@ class Controller {
     ) {
         // Keybinder.init()
         Socket.init()
-        // Xhr.init()
+        Xhr.init()
 
         this.initPopupAuth()
 
@@ -148,7 +149,7 @@ class Observer {
         // Socket.addMessageListener('gameEvent', Observer.deduceSettingsFromSocket)
         // Socket.addMessageListener('gameEventScreenTransition', Observer.deduceSettingsFromSocket)
         // Socket.addMessageListener('updateLobbySettings', Observer.deduceSettingsFromSocket)
-        // Xhr.addMessageListener('lobbySettings', Observer.deduceSettingsFromXHR)
+        Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR)
         // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     }
     mutation(newPhase: Phase): void {
@@ -244,9 +245,11 @@ class Observer {
     // Due to possible instability, I have judged that "perfect" settings tracking is infeasible.
     // Thus, the below two functions will primarily find use under Timer/Spotlight (precise reconnect), Scry (functionality), and Socket (stroke erasure).
     deduceSettingsFromXHR(data: GarticXHRData) {
+        Console.log(`Deducing from XHR ${JSON.stringify(data)}`, "Observer")
+
         const avatarElement = document.querySelector('.avatar > i')?.previousSibling
         const userAvatar = avatarElement ? getComputedStyle(avatarElement as Element).backgroundImage : ""
-        // Console.log(data, 'Observer')
+        // console.log(userAvatar)
 
         // if (data.turnMax > 0) {
             // todo: in theory we should pass these through to all the modules, but ehh.
@@ -254,25 +257,16 @@ class Observer {
             // Timer.interpolate(data.turnNum)
         //     Socket.post('setStrokeStack', data.draw)
         // }
-        // Controller.updateLobbySettings(1, data)
-        // Controller.updateLobbySettings(data[0], data[1])
 
-        // const configs = data.configs
-        // Controller.updateLobbySettings({
-        //     "custom": [Converter.speedIndexToString(configs.speed), Converter.flowIndexToString(configs.first), Converter.turnsIndexToString(configs.turns)],
-        //     "self": data.user,
-        //     "usersIn": data.users
-        // })
-        globalGame.host = data.users.find((x: { owner?:boolean }) => x.owner === true)!.nick
+        globalGame.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
         globalGame.user = data.user
         globalGame.user.avatar = userAvatar
         globalGame.players = data.users
         globalGame.turnsString = Converter.turnsIndexToString(data.configs.turns)
         globalGame.flowString = Converter.flowIndexToString(data.configs.first)
         globalGame.speedString = Converter.speedIndexToString(data.configs.speed)
-        // turnsString: 'ALL',
     }
-    deduceSettingsFromSocket(data: any) {
+    deduceSettingsFromSocket(data: any) {  // Currently unused.
         console.log(data)
         // Controller.updateLobbySettings(data[1], data[2])
         // if (data[1] == 5) {

@@ -1,3 +1,7 @@
+
+type Maybe<T> = T | undefined
+
+
 type GeomRawImage = {
     width: number;
     height: number;
@@ -17,6 +21,7 @@ Object.defineProperty(isGeomRawImage, Symbol.hasInstance, {
         return isGeomRawImage(instance);
     },
 })
+
 
 type GeomRawShape = {
     type: number;
@@ -40,6 +45,7 @@ Object.defineProperty(isGeomRawShape, Symbol.hasInstance, {
         return isGeomRawShape(instance);
     },
 })
+
 
 type GeomSerializedShape = {
     fst: string
