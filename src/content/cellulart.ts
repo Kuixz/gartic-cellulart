@@ -8,7 +8,7 @@ import {
     setAttributes, setParent, configChildTrunk, globalGame,
     GarticUser, 
 } from "./foundation"
-import { Timer, Koss, Refdrop, Spotlight, Geom } from "./modules"
+import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
 import { 
     ModuleLike, CellulartModule, Metamodule,
@@ -359,7 +359,7 @@ class Observer {
 
 function main() {
     // const auxmodules: AuxChamber = [Keybinder]
-    const modules: ModuleChamber = [Timer, Koss, Refdrop, Spotlight, Geom]
+    const modules: ModuleChamber = [Timer, Koss, Refdrop, Spotlight, Geom, Scry]
     const metamodules: MetaChamber = [Red, Debug]
 
     const controller = new Controller(modules, metamodules)
