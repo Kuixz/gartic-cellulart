@@ -16,10 +16,10 @@ class Debug extends Metamodule {
     constructor(modules: CellulartModule[]) {
         super(modules)
 
-        const debugWIW = new Inwindow("default", { visible:false, close:false, ratio:0.2 })
-        setAttributes(debugWIW.body, { id:"debug-body" });
+        const debugWIW = new Inwindow("default", { visible:false, close:false, ratio:0.2, maxGrowFactor: 2 })
+        debugWIW.body.classList.add("debug-body");
         const iconSelect = document.createElement("div")
-        setAttributes(iconSelect, { id: 'debug-header' })
+        iconSelect.classList.add('debug-scroll-window')
         setParent(iconSelect, debugWIW.body)
 
         // const preactivated = [ Observer ]

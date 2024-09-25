@@ -2,12 +2,13 @@
 import { 
     Phase, Console, Converter, GarticXHRData, 
     Keybinder, Setting, SHAuth,
-    Socket,
+    Socket, Xhr,
     // IAuth, SHAuth as SHAuth, 
     IShelf, SandShelf as Shelf,
-    setAttributes, setParent, configChildTrunk, globalGame, 
+    setAttributes, setParent, configChildTrunk, globalGame,
+    GarticUser, 
 } from "./foundation"
-import { Timer, Koss, Refdrop, Spotlight, Geom } from "./modules"
+import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
 import { 
     ModuleLike, CellulartModule, Metamodule,
@@ -29,7 +30,7 @@ class Controller {
     ) {
         // Keybinder.init()
         Socket.init()
-        // Xhr.init()
+        Xhr.init()
 
         this.initPopupAuth()
 
@@ -44,6 +45,9 @@ class Controller {
     mutation (oldPhase: Phase, newPhase: Phase) {
         this.liveModules.forEach(mod => mod.mutation(oldPhase, newPhase))
     }
+    enterLobby() {
+        this.liveModules.forEach(mod => mod.enterLobby())
+    }
     roundStart() {
         // game.roundStart()
         this.liveModules.forEach(mod => mod.roundStart())
@@ -53,6 +57,9 @@ class Controller {
         // Socket.roundEnd()
         // Shelf.set({ strokeCount:data }) // Possibly redundant? Will have to test.
         this.liveModules.forEach(mod => mod.roundEnd(oldPhase))
+    }
+    exitLobby(oldPhase: Phase) {
+        this.liveModules.forEach(mod => mod.exitLobby(oldPhase))
     }
 
     initPopupAuth() {
@@ -147,8 +154,8 @@ class Observer {
         this.controller = controller;
         // Socket.addMessageListener('gameEvent', Observer.deduceSettingsFromSocket)
         // Socket.addMessageListener('gameEventScreenTransition', Observer.deduceSettingsFromSocket)
-        // Socket.addMessageListener('updateLobbySettings', Observer.deduceSettingsFromSocket)
-        // Xhr.addMessageListener('lobbySettings', Observer.deduceSettingsFromXHR)
+        Socket.addMessageListener('lobbySettings', this.deduceSettingsFromSocket)
+        Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR)
         // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     }
     mutation(newPhase: Phase): void {
@@ -175,12 +182,15 @@ class Observer {
         if (oldPhase == "start" && newPhase == "lobby")   { this.enterLobby(); return; }
         if (oldPhase != "start" && newPhase == "lobby")   { this.roundEnd(oldPhase); return; }  // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
         if (                       newPhase == "waiting") { this.waiting(); return; } 
+        if (                       newPhase == "start")   { this.exitLobby(oldPhase); return; } 
         // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
 
         this.controller.mutation(oldPhase, newPhase)
     }
     enterLobby() {
         this.attachNextObserver()
+
+        this.controller.enterLobby() 
     }
     roundStart() {
         globalGame.roundStart()
@@ -190,6 +200,11 @@ class Observer {
         this.attachNextObserver()
 
         this.controller.roundEnd(oldPhase) 
+    }
+    exitLobby(oldPhase: Phase) {
+        globalGame.players = []
+
+        this.controller.exitLobby(oldPhase) 
     }
 
     attachNextObserver() {
@@ -244,9 +259,11 @@ class Observer {
     // Due to possible instability, I have judged that "perfect" settings tracking is infeasible.
     // Thus, the below two functions will primarily find use under Timer/Spotlight (precise reconnect), Scry (functionality), and Socket (stroke erasure).
     deduceSettingsFromXHR(data: GarticXHRData) {
+        Console.log(`Deducing from XHR ${JSON.stringify(data)}`, "Observer")
+
         const avatarElement = document.querySelector('.avatar > i')?.previousSibling
         const userAvatar = avatarElement ? getComputedStyle(avatarElement as Element).backgroundImage : ""
-        // Console.log(data, 'Observer')
+        // console.log(userAvatar)
 
         // if (data.turnMax > 0) {
             // todo: in theory we should pass these through to all the modules, but ehh.
@@ -254,26 +271,20 @@ class Observer {
             // Timer.interpolate(data.turnNum)
         //     Socket.post('setStrokeStack', data.draw)
         // }
-        // Controller.updateLobbySettings(1, data)
-        // Controller.updateLobbySettings(data[0], data[1])
 
-        // const configs = data.configs
-        // Controller.updateLobbySettings({
-        //     "custom": [Converter.speedIndexToString(configs.speed), Converter.flowIndexToString(configs.first), Converter.turnsIndexToString(configs.turns)],
-        //     "self": data.user,
-        //     "usersIn": data.users
-        // })
-        globalGame.host = data.users.find((x: { owner?:boolean }) => x.owner === true)!.nick
+        globalGame.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
         globalGame.user = data.user
         globalGame.user.avatar = userAvatar
         globalGame.players = data.users
+        for (const player of globalGame.players) {
+            player.avatar = "https://garticphone.com/images/avatar/" + player.avatar + ".svg"
+        }
         globalGame.turnsString = Converter.turnsIndexToString(data.configs.turns)
         globalGame.flowString = Converter.flowIndexToString(data.configs.first)
         globalGame.speedString = Converter.speedIndexToString(data.configs.speed)
-        // turnsString: 'ALL',
     }
-    deduceSettingsFromSocket(data: any) {
-        console.log(data)
+    deduceSettingsFromSocket(data: [number, number, any]) {  // Currently unused.
+        // console.log(data)
         // Controller.updateLobbySettings(data[1], data[2])
         // if (data[1] == 5) {
             // game.turns = data[2]  // it's not that easy...
@@ -281,75 +292,52 @@ class Observer {
         // }
         // if (data[1] == 1) {
         // var dict = {}
-        // switch (data[1]) {
-        //     // case 2: 
-        //     //     game.players.push(data[2])
-        //     //     // dict["usersIn"] = [data[2]]; 
-        //     //     break;
-        //     // case 3: 
-        //     //     // game.players.push(data[2])
-        //     //     // dict["userOut"] = data[2]; 
-        //     //     break;
-        //     case 18:
-        //         for (const key in data[2]) {
-        //             if (key == 'speed') {
-        //                 globalGame.speedString = Converter.speedIndexToString(data[2][key])
-        //             }
-        //             if (key == 'first') {
-        //                 globalGame.flowString = Converter.flowIndexToString(data[2][key])
-        //             }
-        //             if (key == 'turns') {
-        //                 globalGame.turnsString = Converter.turnsIndexToString(data[2][key])
-        //             }
-        //         }
-        //         break;
-        //     // case 26:
-        //     //     break;
-        //     case 27:
-        //         globalGame.flowString = 'WRITING, DRAWING'
-        //         globalGame.speedString = 'NORMAL'
-        //         globalGame.turnsString = 'ALL'
-        //         break;
-        //     default:
-        //         break;
-        // }
-        // Controller.updateLobbySettings(dict)
-        // }
+        const messageType = data[1]
+        const messageData = data[2]
+
+        switch (messageType) {
+            case 2: 
+                const newUser = messageData as GarticUser
+                newUser.avatar = "https://garticphone.com/images/avatar/" + newUser.avatar + ".svg"
+                globalGame.players.push(newUser)
+                // dict["usersIn"] = [data[2]]; 
+                break;
+            case 3: 
+                const index = globalGame.players.findIndex((user) => user.id === messageData.userLeft)
+                if (index == -1) {
+                    Console.alert(`Could not remove user: no user with id ${messageData.userLeft} found`, "Observer")
+                    break
+                }
+                globalGame.players.splice(index, 1)
+                // dict["userOut"] = data[2]; 
+                break;
+        }
     }
     deduceSettingsFromDocument() {
+        // const playerList = document.querySelector(".players .scrollElements")
+        // if (playerList) { 
+        //     for (const playerElem of playerList.children) {
+        //         if (!(playerElem instanceof HTMLElement)) { continue }
+        //         // console.log(playerElem)
+        //         const player = Converter.tryToUser(playerElem)
+        //         if (!player) { continue }
+        //         // console.log(player)
 
-        // console.log("deduce")
-        const playerCounter = document.querySelector(".left")?.firstChild
-        if (!playerCounter) { 
-            Console.alert("Could not find player counter", "Observer"); 
-            globalGame.players = new Array(16)
-        } else {  // THe below line shouldn't have a ! because the above selector doesn't read confidently
-            const players = Number(playerCounter.textContent!.slice(7, -3)) // : document.querySelector(".step").textContent.slice(2))
-            globalGame.players = new Array(players)
-        }
+        //         // Do not overwrite XHR players wherever possible
+        //         if (globalGame.players.findIndex((user) => user.nick === player.nick)) { continue }
 
-        globalGame.players = []
-        const playerList = document.querySelector(".players .scrollElements")
-        if (playerList) { 
-            for (const playerElem of playerList.children) {
-                if (!(playerElem instanceof HTMLElement)) { continue }
-                // console.log(playerElem)
-                const player = Converter.tryToUser(playerElem)
-                if (!player) { continue }
-                // console.log(player)
-
-                globalGame.players.push(player)
-                if (player.owner) {
-                    globalGame.host = player.nick
-                }
-                if (playerElem.getElementsByTagName("i").length > 0) {
-                    globalGame.user = player
-                }
-            }
-            globalGame.players
-        } else {
-            Console.alert("Could not find player list", "Observer")
-        }
+        //         globalGame.players.push(player)
+        //         if (player.owner) {
+        //             globalGame.host = player.nick
+        //         }
+        //         if (playerElem.getElementsByTagName("i").length > 0) {
+        //             globalGame.user = player
+        //         }
+        //     }
+        //     // globalGame.players
+        // } else {
+        //     Console.alert("Could not find player list", "Observer")
+        // }
 
         // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
         const defaultMode = document.querySelector(".checked")?.querySelector("h4")?.textContent;
@@ -389,7 +377,7 @@ class Observer {
 
 function main() {
     // const auxmodules: AuxChamber = [Keybinder]
-    const modules: ModuleChamber = [Timer, Koss, Refdrop, Spotlight, Geom]
+    const modules: ModuleChamber = [Timer, Koss, Refdrop, Spotlight, Geom, Scry]
     const metamodules: MetaChamber = [Red, Debug]
 
     const controller = new Controller(modules, metamodules)

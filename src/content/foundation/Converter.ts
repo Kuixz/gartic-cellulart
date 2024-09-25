@@ -2,7 +2,7 @@ import { Console } from "./Console"
 
 type Phase = "start" | "lobby" | "draw" | "write" | "memory" | "book" | "first" | "mod" | "waiting"
 
-interface GarticUser {
+type GarticUser = {
     nick:   string
     avatar: string
 
@@ -17,35 +17,35 @@ interface GarticUser {
     uid?:    string
     viewer?: boolean
 }
-interface GarticXHRData {
-    animationConfigs : {speed: number, loop: number} 
-    bookAutomatic :    boolean 
-    bookNum :          number
-    bookOrder :        boolean 
-    bookVoice :        boolean 
-    code :             string
-    configs :          {animate:number, first:number, keep:number, maxUsers:number, mod:number, mode:number, score:number, speed:number, tab:number, turns:number, visible:number} 
-    countDown :        boolean 
-    invite :           string
-    modCode :          string
-    resultConfigs :    {speed: number, type: number} 
-    roundNum :         number
-    screen :           number
-    sentence :         string
-    timeStarted :      boolean 
-    turnMax :          number
-    turnNum :          number
-    user :             GarticUser
-    users :            GarticUser[]
+type GarticXHRData = {
+    animationConfigs: {speed: number, loop: number} 
+    bookAutomatic:    boolean 
+    bookNum:          number
+    bookOrder:        boolean 
+    bookVoice:        boolean 
+    code:             string
+    configs:          {animate:number, first:number, keep:number, maxUsers:number, mod:number, mode:number, score:number, speed:number, tab:number, turns:number, visible:number} 
+    countDown:        boolean 
+    invite:           string
+    modCode:          string
+    resultConfigs:    {speed: number, type: number} 
+    roundNum:         number
+    screen:           number
+    sentence:         string
+    timeStarted:      boolean 
+    turnMax:          number
+    turnNum:          number
+    user:             GarticUser
+    users:            GarticUser[]
 }
 
-interface ModeParameters {
+type ModeParameters = {
     speed: string
     turns: string
-    flow: string
+    flow:  string
 }
 const modeParameterDefaults = { speed: 'NORMAL', turns: 'ALL', flow: 'WRITING, DRAWING' }
-interface SpeedParameters {
+type SpeedParameters = {
     write: number
     draw: number
     decayFunction: (n: number) => number
@@ -169,7 +169,10 @@ const Converter = {
         const contentElems = elem.getElementsByTagName("span")
         if (contentElems.length < 2) { return }
 
-        const avatar = getComputedStyle(contentElems[0]).backgroundImage
+        var avatar = getComputedStyle(contentElems[0]).backgroundImage
+        if (avatar.slice(0,5) == 'url("') { 
+            avatar = avatar.slice(5, -2)
+        }
 
         const nick = contentElems[1].textContent
         if (!nick) { return }

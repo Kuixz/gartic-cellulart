@@ -50,13 +50,15 @@ abstract class CellulartModule extends ModuleLike { // [F2]
     // To be overridden by each module.
     abstract mutation(oldPhase: Phase, newPhase: Phase): void
 
-    // This function sets critical persistent variables when a game starts.
+    // These functions set critical persistent variables when a game starts.
     // To be overridden by each module.
+    enterLobby(): void {}
     abstract roundStart(): void
 
-    // This function "cleans the slate" when a game ends. 
+    // These functions "clean the slate" when a game ends. 
     // To be overridden by each module.
     abstract roundEnd(oldPhase: Phase): void
+    exitLobby(oldPhase: Phase): void {}
 
     // This function makes required changes when switching between settings. 
     // To be overridden by each (controllable) module.

@@ -22,6 +22,7 @@ class InwindowElement {
             close?: HTMLElement | boolean,
             visible?: boolean,
             ratio?: number | "default"
+            maxGrowFactor?: number
         }) {
         const e = element == "default" ? defaultInwindowNode.cloneNode(true) as HTMLElement : element
         this.element = e
@@ -39,7 +40,18 @@ class InwindowElement {
         const v = options?.visible ? "visible" : "hidden"
         const resizeRatio = options?.ratio == "default" ? 100/178 : options?.ratio
         const initialRatio = resizeRatio ?? 100/178
-        this.element.setAttribute("style", "visibility:" + v + "; min-height:" + (178 * initialRatio + 40) + "px; height:" + (178 * initialRatio + 40) + "px; max-height:" + (536 * initialRatio + 40) + "px") 
+        const maxGrowFactor = options?.maxGrowFactor ? options.maxGrowFactor : 3
+        const minHeight = (178 * initialRatio) + 40
+        // const defaultHeight = options?.defaultHeight ? options.defaultHeight : minHeight
+        const defaultHeight = minHeight ? minHeight : (178 * initialRatio + 40)
+        // const maxHeight = options?.maxHeight ? options.maxHeight : (178 * initialRatio + 40)
+        const maxHeight = (maxGrowFactor * 178 * initialRatio + 40)
+        this.element.setAttribute("style", `
+            visibility:${v}; 
+            min-height:${minHeight}px; 
+            height:${defaultHeight}px; 
+            max-height:${maxHeight}px
+        `) 
 
         initDragElement(this)
         initResizeElement(this, resizeRatio)
