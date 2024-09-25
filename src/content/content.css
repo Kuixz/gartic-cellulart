@@ -43,7 +43,6 @@ div.canvas-square-lower-tray {
 
 div.window-in-window {
     position: absolute;
-    /*resize: both; */
     background-color: #dddddd;
     min-height: 140px;
     height: 140px;
@@ -54,13 +53,13 @@ div.window-in-window {
     top: 0px;
     border-radius: 9px 9px 4px 4px;
     overflow: hidden;
-    /* pointer-events: none; */
     font-family: black;
     container-type: size;
 
     & div.wiw-header {
         height: 40px;
         cursor: move;
+        border-radius: 9px 9px 0px 0px;
         background-color: rgb(72, 29, 146);
         color: rgb(24, 2, 61);
         text-align: center;
@@ -139,17 +138,6 @@ img#ref-img {
     max-height: 100%;
     pointer-events: none;
 }
-/*div#ref-img {
-    position:absolute;
-    width: 100%;
-    height: 100%;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: contain;
-    pointer-events: none;
-
-    opacity: 0.25;
-}*/
 div.ref-square {
     position: absolute;
     width: 122px;
@@ -350,7 +338,7 @@ input.geom-3-input:focus {
 
 /* Menu */
 
-div#debug-body {
+div.debug-body {
     display: flex;
     flex-direction: column; /* -reverse; */
     background-color: rgb(30,30,30);
@@ -359,12 +347,14 @@ div#debug-body {
         display: none;
     }
 }
-div#debug-header {
+div.debug-scroll-window {
     height: 100%; 
+    display: flex;
+    align-items: end;
     overflow: auto; 
-    gap: 2%; 
     white-space: nowrap; 
     background-color: rgb(70,70,70);
+    border: 0px 0px 4px 4px;
 
     &::-webkit-scrollbar {
         display: none;
@@ -387,10 +377,6 @@ div.cellulart-menu-item {
 }
 div.cellulart-menu-item:hover {
     opacity: 1;
-}
-div.cellulart-menu-item {
-    max-width: 100%;
-    aspect-ratio: 1;
 }
 img.cellulart-circular-icon {
     height: 100%;
