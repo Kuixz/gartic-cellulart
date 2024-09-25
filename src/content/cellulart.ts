@@ -45,6 +45,9 @@ class Controller {
     mutation (oldPhase: Phase, newPhase: Phase) {
         this.liveModules.forEach(mod => mod.mutation(oldPhase, newPhase))
     }
+    enterLobby() {
+        this.liveModules.forEach(mod => mod.enterLobby())
+    }
     roundStart() {
         // game.roundStart()
         this.liveModules.forEach(mod => mod.roundStart())
@@ -54,6 +57,9 @@ class Controller {
         // Socket.roundEnd()
         // Shelf.set({ strokeCount:data }) // Possibly redundant? Will have to test.
         this.liveModules.forEach(mod => mod.roundEnd(oldPhase))
+    }
+    exitLobby(oldPhase: Phase) {
+        this.liveModules.forEach(mod => mod.exitLobby(oldPhase))
     }
 
     initPopupAuth() {
@@ -176,13 +182,15 @@ class Observer {
         if (oldPhase == "start" && newPhase == "lobby")   { this.enterLobby(); return; }
         if (oldPhase != "start" && newPhase == "lobby")   { this.roundEnd(oldPhase); return; }  // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
         if (                       newPhase == "waiting") { this.waiting(); return; } 
-        if (                       newPhase == "start")   { globalGame.players = [] } 
+        if (                       newPhase == "start")   { this.exitLobby(oldPhase); return; } 
         // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
 
         this.controller.mutation(oldPhase, newPhase)
     }
     enterLobby() {
         this.attachNextObserver()
+
+        this.controller.enterLobby() 
     }
     roundStart() {
         globalGame.roundStart()
@@ -192,6 +200,11 @@ class Observer {
         this.attachNextObserver()
 
         this.controller.roundEnd(oldPhase) 
+    }
+    exitLobby(oldPhase: Phase) {
+        globalGame.players = []
+
+        this.controller.exitLobby(oldPhase) 
     }
 
     attachNextObserver() {
