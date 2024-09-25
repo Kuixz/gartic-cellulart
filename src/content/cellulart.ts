@@ -177,8 +177,9 @@ class Observer {
         })()
 
         // Handle special transitions
-        if (oldPhase == "lobby" && newPhase != "start")   { this.roundStart(); }
         if (oldPhase == "start" && newPhase == "lobby")   { this.enterLobby(); return; }
+        if (oldPhase == "lobby" && newPhase != "start")   { this.roundStart(); }
+        if (oldPhase == "start" && newPhase != "lobby")   { this.roundStart(); }  // Bypassing lobby phase means a reconnection.
         if (oldPhase != "start" && newPhase == "lobby")   { this.roundEnd(oldPhase); return; }  // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
         if (                       newPhase == "waiting") { this.waiting(); return; } 
         if (                       newPhase == "start")   { this.exitLobby(oldPhase); return; } 
