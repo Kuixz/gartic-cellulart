@@ -276,6 +276,9 @@ class Observer {
         globalGame.user = data.user
         globalGame.user.avatar = userAvatar
         globalGame.players = data.users
+        for (const player of globalGame.players) {
+            player.avatar = "https://garticphone.com/images/avatar/" + player.avatar + ".svg"
+        }
         globalGame.turnsString = Converter.turnsIndexToString(data.configs.turns)
         globalGame.flowString = Converter.flowIndexToString(data.configs.first)
         globalGame.speedString = Converter.speedIndexToString(data.configs.speed)
@@ -294,7 +297,9 @@ class Observer {
 
         switch (messageType) {
             case 2: 
-                globalGame.players.push(messageData as GarticUser)
+                const newUser = messageData as GarticUser
+                newUser.avatar = "https://garticphone.com/images/avatar/" + newUser.avatar + ".svg"
+                globalGame.players.push(newUser)
                 // dict["usersIn"] = [data[2]]; 
                 break;
             case 3: 
