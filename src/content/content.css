@@ -234,16 +234,8 @@ input#refo::-webkit-slider-thumb {
     box-shadow: -150px 0 0 150px rgba(255, 142, 175, 0.6);
 }
 
-/* Underdraw */
-
-.ud-center {
-    position: absolute;
-    top: 0;
-    left: 0;
-    cursor: none;
-}
-
 /* Geometrize */
+
 .geom-carpet {
     height: 100%;
     width: 100%;
