@@ -87,8 +87,7 @@ class Controller {
             hiddenButtons = []
         }
 
-        // const green = !(await Controller.auth.tryLogin())
-        const green = false
+        const green = !(await this.auth.tryLogin())
         const menu = createMenuElement()
         modules.forEach((modTemplate: typeof CellulartModule) => { 
             const mod = new (modTemplate as new() => CellulartModule)()
