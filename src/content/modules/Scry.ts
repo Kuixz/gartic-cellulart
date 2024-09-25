@@ -1,6 +1,5 @@
 import { 
-    Console, Phase, 
-    DefaultSettings, WhiteSettingsBelt, 
+    Console, Phase, WhiteSettingsBelt, 
     globalGame, 
     Socket, 
     GarticUser,
@@ -23,12 +22,6 @@ class Scry extends CellulartModule { // [F2]
     indicatorLabel: HTMLDivElement
     indicatorTray: HTMLDivElement  
     indicators: { [key: number]: HTMLElement } = {}
-    stepCounter: HTMLDivElement | undefined
-    angle: Generator<number> = (function* () {
-        while (true) {
-            yield 180 * Math.random() - 90
-        }
-    })()
 
     constructor() { 
         super() 
@@ -53,11 +46,10 @@ class Scry extends CellulartModule { // [F2]
 
             if (messageType != 15) { return }
             const player = globalGame.players.find((user) => user.id === messageData.user)
-            console.log(player)
             if (player) {
                 this.updateCompletion(player, messageData.ready)
             } else {
-                console.log(messageData)
+                Console.log(`No player matched ${JSON.stringify(messageData)}`)
             }
         })
     }
@@ -69,7 +61,7 @@ class Scry extends CellulartModule { // [F2]
         }
     }
     roundStart(): void {
-        console.log(globalGame.players)
+        Console.log(`Constructing Scry with ${globalGame.players.length} players`)
         this.indicators = {}
         for (const user of globalGame.players) {
             if (!user.id) { return }
@@ -86,12 +78,9 @@ class Scry extends CellulartModule { // [F2]
                 setParent(this.indicatorLabel, userDiv)
                 this.indicatorLabel.style.visibility = "visible"
                 this.indicatorLabel.textContent = user.nick.toUpperCase()
-                // console.log("entr " + user.nick)
             })
             userDiv.addEventListener("mouseleave", () => {
-                // setParent(this.indicatorLabel, document.body)
                 this.indicatorLabel.style.visibility = "hidden"
-                // console.log("exit " + user.nick)
             })
 
             setParent(userDiv, this.indicatorTray)
@@ -109,7 +98,6 @@ class Scry extends CellulartModule { // [F2]
         this.clearIndicators()
     }
     adjustSettings(previous: string, current: string): void {
-        console.log(current)
         if (this.isOff()) {
             this.scryWIW.setVisibility(false)
         } else if (this.isOn()) {
@@ -124,28 +112,12 @@ class Scry extends CellulartModule { // [F2]
         this.indicators = {}
     }
     updateCompletion(user: GarticUser, done: boolean) {
-        // console.log(`${user.nick} is ${done ? "done" : "not done"}`)
+        Console.log(`${user.nick} is ${done ? "done" : "not done"}`)
 
         if (!user.id) { return }
-        // console.log(this.angle.next())
-
-        // if (!this.stepCounter) {
-        //     const stepCandidates = document.getElementsByClassName("step")
-        //     if (stepCandidates.length == 0) { return }
-        //     this.stepCounter = stepCandidates[0] as HTMLDivElement
-        // }
+       
         const userDiv = this.indicators[user.id]
-
-        // document.body.appendChild(userDiv)
         userDiv.style.backgroundColor = done ? "lime" : "red"
-        // userDiv.animate([
-        //     { transform: "scale(0)" },
-        //     { transform: "scale(0.7)" },
-        //     { transform: "scale(0.95)" },
-        //     { transform: "scale(1)" }
-        // ], {
-        //     duration: 2000
-        // })
     }
 }
 
