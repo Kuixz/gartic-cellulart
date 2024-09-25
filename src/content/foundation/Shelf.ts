@@ -54,7 +54,7 @@ class SandShelf implements IShelf { // FAKE SHELF - REMOVE THIS WHEN PUSHING BET
         return Promise.resolve(defaultValue)
     }
 }
-const LiveShelf = {
+class LiveShelf {
     // init() {
     //     ;["session", "local"].forEach((zone) => {
     //         Box[zone] = { }
@@ -66,16 +66,16 @@ const LiveShelf = {
 
     async set(items: {[key: string]: any}): Promise<void> { // Dictionary<String, any>
         return await chrome.storage.local.set(items)
-    },
+    }
     async get(items: string|string[]): Promise<{[key: string]: any}> { // [String]
         return await chrome.storage.local.get(items)
-    },
+    }
     async remove(items: string|string[]): Promise<void> { // [String]
         return await chrome.storage.local.remove(items)
-    },
+    }
     async clear(): Promise<void> {
         return chrome.storage.local.clear()
-    },
+    }
     async retrieveOrElse(key: string, defaultValue: any, write: boolean = false): Promise<any> {
         const data = await chrome.storage.local.get(key)
         if (data[key] !== undefined) { return data[key] }
@@ -84,5 +84,5 @@ const LiveShelf = {
     }
 }
 
-export { SandShelf as Shelf }
+export { LiveShelf as Shelf }
 export type { IShelf }
