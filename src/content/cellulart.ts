@@ -4,7 +4,7 @@ import {
     Keybinder, Setting, SHAuth,
     Socket, Xhr,
     // IAuth, SHAuth as SHAuth, 
-    IShelf, SandShelf as Shelf,
+    IShelf, Shelf,
     setAttributes, setParent, configChildTrunk, globalGame,
     GarticUser, 
 } from "./foundation"

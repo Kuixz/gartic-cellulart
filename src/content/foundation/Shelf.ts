@@ -84,5 +84,5 @@ const LiveShelf = {
     }
 }
 
-export { SandShelf, LiveShelf }
+export { SandShelf as Shelf }
 export type { IShelf }
