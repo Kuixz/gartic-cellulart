@@ -145,10 +145,10 @@ class SocketInterceptor extends Interceptor {
         this.strokes = []
         this.strokeCount = 0
     }
-    setStrokeStack(data: [any[]]) {
+    setStrokeStack(data: [GarticStroke]) {
         const strokes = data.map((strokeArray) => strokeArray[1])
         this.strokes = strokes
-        this.strokeCount = strokes.length > 0 ? strokes.at(-1) : 0
+        this.strokeCount = strokes.length > 0 ? strokes.at(-1)! : 0
     }
     registerWS(ws: WebSocket) {
         // console.log(this)
@@ -184,6 +184,9 @@ const Socket = new SocketInterceptor()
 /** GSH enhances the functions of Observer by eavesdropping on XHR requests 
   * that transmit information about the game state.                        */
  /* ---------------------------------------------------------------------- */
+
+type GarticStroke = [number, number, [string, number, number], ...[number, number]]
+
 declare global {
     interface XMLHttpRequest {
         chamberedCallback: () => void
@@ -243,11 +246,11 @@ declare global {
             Xhr.post('lobbySettings', gameDict/*['configs']*/)
             // console.log('succ')
         }
-        //         // TODO TODO TODO: Blatant overreach!
-        //         if ('draw' in gameDict) {
-        //             Socket.setStrokeStack(gameDict.draw)
-        //             // console.log('succ')
-        //         }
+        // TODO TODO TODO: Blatant overreach!
+        if ('draw' in gameDict) {
+            Socket.setStrokeStack(gameDict.draw as [GarticStroke])
+            // console.log('succ')
+        }
         
         return data
         //         // return text.replace('"visible":1', '"visible":2')

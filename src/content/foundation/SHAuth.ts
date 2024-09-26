@@ -6,7 +6,7 @@ import { IShelf } from "./Shelf"
 
 class SHAuth {
     hash: string = "ad1b033f4885a8bc3ae4f055f591a79c59ce73a6a7380b00c4fcb75ac3eefffb"
-    validated: boolean = true //false,
+    validated: boolean = false
     storage: IShelf
 
     constructor(storage: IShelf) {

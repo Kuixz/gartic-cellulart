@@ -4,7 +4,7 @@ import {
     Keybinder, Setting, SHAuth,
     Socket, Xhr,
     // IAuth, SHAuth as SHAuth, 
-    IShelf, SandShelf as Shelf,
+    IShelf, Shelf,
     setAttributes, setParent, configChildTrunk, globalGame,
     GarticUser, 
 } from "./foundation"
@@ -87,8 +87,7 @@ class Controller {
             hiddenButtons = []
         }
 
-        // const green = !(await Controller.auth.tryLogin())
-        const green = false
+        const green = !(await this.auth.tryLogin())
         const menu = createMenuElement()
         modules.forEach((modTemplate: typeof CellulartModule) => { 
             const mod = new (modTemplate as new() => CellulartModule)()
@@ -178,8 +177,9 @@ class Observer {
         })()
 
         // Handle special transitions
-        if (oldPhase == "lobby" && newPhase != "start")   { this.roundStart(); }
         if (oldPhase == "start" && newPhase == "lobby")   { this.enterLobby(); return; }
+        if (oldPhase == "lobby" && newPhase != "start")   { this.roundStart(); }
+        if (oldPhase == "start" && newPhase != "lobby")   { this.roundStart(); }  // Bypassing lobby phase means a reconnection.
         if (oldPhase != "start" && newPhase == "lobby")   { this.roundEnd(oldPhase); return; }  // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
         if (                       newPhase == "waiting") { this.waiting(); return; } 
         if (                       newPhase == "start")   { this.exitLobby(oldPhase); return; } 

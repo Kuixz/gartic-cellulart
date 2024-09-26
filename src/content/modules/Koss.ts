@@ -49,6 +49,9 @@ class Koss extends CellulartModule { // [K1]
         // this.kossImage.src = "";
         this.discardCanvas()
     }
+    exitLobby(oldPhase: Phase): void {
+        this.discardCanvas()
+    }
     adjustSettings(previous: string, current: string) {
         // alert(current)
         if (this.isOff()) {
