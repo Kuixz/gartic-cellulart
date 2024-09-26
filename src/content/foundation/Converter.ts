@@ -17,6 +17,8 @@ type GarticUser = {
     points?: number
     uid?:    string
     viewer?: boolean
+
+    ready?: boolean
 }
 type GarticXHRData = {
     animationConfigs: {speed: number, loop: number} 
