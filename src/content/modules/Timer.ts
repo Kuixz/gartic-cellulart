@@ -33,7 +33,7 @@ class Timer extends CellulartModule {
     // But is it even possible, given that we pluck the clock and stick it in the holder?
     
     mutation(oldPhase: Phase, newPhase: Phase): void {
-        if (["book", "start"].includes(newPhase)) { return }
+        if (newPhase == "book") { return }
         setTimeout(this.placeTimer.bind(this), DOMUNLOADINGALLOWANCE)
 
         // If we changed from a phase that warrants a reset in the timer, reset the timer.
@@ -57,7 +57,7 @@ class Timer extends CellulartModule {
     placeTimer() {  // [T3]
         // const p = document.querySelector("p.jsx-3561292207"); if (p) { p.remove() }
         const clock = document.querySelector(".time") 
-        if (!clock) { Console.alert("Could not find clock", "Timer"); return }
+        if (!clock) { Console.warn("Could not find clock", "Timer"); return }
 
         const clockFrame = document.createElement("div")
         setAttributes(clockFrame, { id: "clocksticles" })
@@ -79,7 +79,7 @@ class Timer extends CellulartModule {
     }
     restartTimer(newPhase: Phase) {
         const clock = document.querySelector(".time")
-        if (!clock) { Console.alert("Could not find clock", "Timer"); return }
+        if (!clock) { Console.warn("Could not find clock", "Timer"); return }
 
         if (clock.classList.contains("lock")) {
             const p = clock.querySelector("p"); if(p) { p.style.visibility = "hidden" } // Prevents clashing with SillyV's extension
@@ -101,8 +101,8 @@ class Timer extends CellulartModule {
         Console.log("I think this phase is " + newPhase, 'Timer');
 
         const step = document.querySelector(".step")
-        if (!step) { Console.alert("Could not find turn counter", "Timer"); return -1 }
-        if (!(step.textContent)) { Console.alert("Could not read turn counter", "Timer"); return -1 }
+        if (!step) { Console.warn("Could not find turn counter", "Timer"); return -1 }
+        if (!(step.textContent)) { Console.warn("Could not read turn counter", "Timer"); return -1 }
 
         var toReturn = 0;
         switch (newPhase) {
@@ -119,14 +119,14 @@ class Timer extends CellulartModule {
             case "first": toReturn = this.parameters.write * this.parameters.firstMultiplier; break;
             case "mod":   return 25 // 10 // [T2]
             default:
-                Console.alert("Could not determine duration of phase " + newPhase, 'Timer')
+                Console.warn("Could not determine duration of phase " + newPhase, 'Timer')
                 return 0
         }
         return Math.floor(toReturn)
     }
     tick(seconds: number, increaseStep: Count) {
         const display = this.display ?? document.querySelector("#timer")
-        if (!display) { Console.alert("Houston we've lost our clock", "Timer"); return }
+        if (!display) { Console.warn("Houston we've lost our clock", "Timer"); return }
 
         const h = String(Math.floor(seconds / 3600)) + ":"
         const m = String(Math.floor(seconds / 60)) + ":"

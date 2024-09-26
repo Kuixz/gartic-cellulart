@@ -16,7 +16,7 @@ class Console { // Only print certain messages
         this.onprint(msg)
         console.log(msg)
     }
-    alert(message: string, modName?: string) {
+    warn(message: string, modName?: string) {
         const msg = `[${modName}] ${message}`
         this.onprint(msg)
         console.warn(msg)
