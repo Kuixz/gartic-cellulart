@@ -157,8 +157,8 @@ class Observer {
         this.controller = controller;
         // Socket.addMessageListener('gameEvent', Observer.deduceSettingsFromSocket)
         // Socket.addMessageListener('gameEventScreenTransition', Observer.deduceSettingsFromSocket)
-        Socket.addMessageListener('lobbySettings', this.deduceSettingsFromSocket)
-        Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR)
+        Socket.addMessageListener('lobbySettings', this.deduceSettingsFromSocket.bind(this))
+        Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR.bind(this))
         // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     }
     executePhaseTransition(newPhase: Phase): void {
@@ -187,6 +187,7 @@ class Observer {
             this.roundStart(); 
             this.mutation(oldPhase, newPhase);
             this.patchReconnect();
+            return;
         }  // Bypassing lobby phase means a reconnection.
         if (oldPhase != "start" && newPhase == "lobby")   { this.roundEnd(oldPhase); return; }  // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
         if (                       newPhase == "waiting") { this.waiting(); return; } 
@@ -205,7 +206,7 @@ class Observer {
         this.controller.roundStart()
     }
     patchReconnect() {
-        if (!this.onEntryXHR) { 
+        if (this.onEntryXHR === undefined) { 
             Console.warn("Trying to patch data for reconnection but no XHR data found")
             return 
         }
@@ -281,8 +282,8 @@ class Observer {
     deduceSettingsFromXHR(data: GarticXHRData) {
         Console.log(`Deducing from XHR ${JSON.stringify(data)}`, "Observer")
 
-        const avatarElement = document.querySelector('.avatar > i')?.previousSibling
-        const userAvatar = avatarElement ? getComputedStyle(avatarElement as Element).backgroundImage : ""
+        // const avatarElement = document.querySelector('.avatar > i')?.previousSibling
+        // const userAvatar = avatarElement ? getComputedStyle(avatarElement as Element).backgroundImage : ""
         // console.log(userAvatar)
 
         // if (data.turnMax > 0) {
@@ -294,7 +295,7 @@ class Observer {
 
         globalGame.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
         globalGame.user = data.user
-        globalGame.user.avatar = userAvatar
+        // globalGame.user.avatar = userAvatar
         globalGame.players = data.users
         for (const player of globalGame.players) {
             player.avatar = "https://garticphone.com/images/avatar/" + player.avatar + ".svg"

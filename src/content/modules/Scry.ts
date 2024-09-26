@@ -62,7 +62,7 @@ class Scry extends CellulartModule { // [F2]
         }
     }
     roundStart(): void {
-        Console.log(`Constructing Scry with ${globalGame.players.length} players`)
+        Console.log(`Constructing Scry with ${globalGame.players.length} players`, "Scry")
         this.indicators = {}
         for (const user of globalGame.players) {
             if (!user.id) { continue }
