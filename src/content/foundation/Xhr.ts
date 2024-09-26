@@ -39,4 +39,3 @@ const Xhr = {
 }
 
 export { Xhr }
-
