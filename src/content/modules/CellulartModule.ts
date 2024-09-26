@@ -1,4 +1,4 @@
-import { Console, Phase, SettingsBelt, Keybind, DefaultSettings } from "../foundation"
+import { Console, Phase, SettingsBelt, Keybind, DefaultSettings, GarticXHRData } from "../foundation"
 
 interface MutationInformation {
   oldPhase: Phase
@@ -54,6 +54,7 @@ abstract class CellulartModule extends ModuleLike { // [F2]
     // To be overridden by each module.
     enterLobby(): void {}
     abstract roundStart(): void
+    patchReconnect(data: GarticXHRData): void {}
 
     // These functions "clean the slate" when a game ends. 
     // To be overridden by each module.

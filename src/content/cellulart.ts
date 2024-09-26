@@ -42,15 +42,18 @@ class Controller {
         //     Shelf.set({ strokeCount:data })
         // })
     }
-    mutation (oldPhase: Phase, newPhase: Phase) {
-        this.liveModules.forEach(mod => mod.mutation(oldPhase, newPhase))
-    }
     enterLobby() {
         this.liveModules.forEach(mod => mod.enterLobby())
     }
     roundStart() {
         // game.roundStart()
         this.liveModules.forEach(mod => mod.roundStart())
+    }
+    mutation(oldPhase: Phase, newPhase: Phase) {
+        this.liveModules.forEach(mod => mod.mutation(oldPhase, newPhase))
+    }
+    patchReconnect(data: GarticXHRData) {
+        this.liveModules.forEach(mod => mod.patchReconnect(data))
     }
     roundEnd(oldPhase: Phase) {
         // Socket.post("backToLobby")
@@ -148,6 +151,7 @@ class Observer {
     // static name: string = "Observer"
     content: Element | undefined
     controller: Controller
+    onEntryXHR: GarticXHRData | undefined
     
     constructor(controller: Controller) {
         this.controller = controller;
@@ -157,7 +161,7 @@ class Observer {
         Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR)
         // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     }
-    mutation(newPhase: Phase): void {
+    executePhaseTransition(newPhase: Phase): void {
         // Set variables
         const oldPhase = globalGame.currentPhase
         globalGame.currentPhase = newPhase
@@ -166,12 +170,12 @@ class Observer {
         globalGame.currentTurn = (function():number {
             if (["first", "draw", "write", "memory", "mod"].includes(newPhase)) {
                 const step = document.querySelector(".step")
-                if (!step) { Console.alert("Could not find turn counter", "Observer"); return -1 }
-                if (!(step.textContent)) { Console.alert("Could not read turn counter", "Observer"); return -1 }
+                if (!step) { Console.warn("Could not find turn counter", "Observer"); return -1 }
+                if (!(step.textContent)) { Console.warn("Could not read turn counter", "Observer"); return -1 }
 
                 const slashIndex = step.textContent.indexOf("/")
                 const turnCount = Number(step.textContent.slice(0, slashIndex))
-                if (isNaN(turnCount)) { Console.alert("Could not parse turn counter", "Observer"); return -1 }
+                if (isNaN(turnCount)) { Console.warn("Could not parse turn counter", "Observer"); return -1 }
             }
             return 0
         })()
@@ -179,13 +183,17 @@ class Observer {
         // Handle special transitions
         if (oldPhase == "start" && newPhase == "lobby")   { this.enterLobby(); return; }
         if (oldPhase == "lobby" && newPhase != "start")   { this.roundStart(); }
-        if (oldPhase == "start" && newPhase != "lobby")   { this.roundStart(); }  // Bypassing lobby phase means a reconnection.
+        if (oldPhase == "start" && newPhase != "lobby")   { 
+            this.roundStart(); 
+            this.mutation(oldPhase, newPhase);
+            this.patchReconnect();
+        }  // Bypassing lobby phase means a reconnection.
         if (oldPhase != "start" && newPhase == "lobby")   { this.roundEnd(oldPhase); return; }  // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
         if (                       newPhase == "waiting") { this.waiting(); return; } 
         if (                       newPhase == "start")   { this.exitLobby(oldPhase); return; } 
         // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
 
-        this.controller.mutation(oldPhase, newPhase)
+        this.mutation(oldPhase, newPhase)
     }
     enterLobby() {
         this.attachNextObserver()
@@ -195,6 +203,18 @@ class Observer {
     roundStart() {
         globalGame.roundStart()
         this.controller.roundStart()
+    }
+    patchReconnect() {
+        if (!this.onEntryXHR) { 
+            Console.warn("Trying to patch data for reconnection but no XHR data found")
+            return 
+        }
+        // Expected to patch Socket stroke data here as well
+        this.controller.patchReconnect(this.onEntryXHR)
+        delete this.onEntryXHR
+    }
+    mutation(oldPhase: Phase, newPhase: Phase) {
+        this.controller.mutation(oldPhase, newPhase)
     }
     roundEnd(oldPhase: Phase) {
         this.attachNextObserver()
@@ -209,7 +229,7 @@ class Observer {
 
     attachNextObserver() {
         const observeTarget = document.querySelector("#__next")
-        if (!observeTarget) { Console.alert("Could not find id:__next to observe", "Observer"); }
+        if (!observeTarget) { Console.warn("Could not find id:__next to observe", "Observer"); }
         else { this.nextObserver.observe(observeTarget, configChildTrunk); }
     }
     waiting() { Console.log("Waiting", "Observer") } // [C4]
@@ -231,12 +251,12 @@ class Observer {
         if(records[0].addedNodes.length <= 0) { return; }
         // Observer.nextObserver.disconnect()
         const newPhaseElement = this.content?.firstChild?.firstChild
-        if (!newPhaseElement) { Console.alert("Cannot find element to read game phase from", "Observer"); return }
+        if (!newPhaseElement) { Console.warn("Cannot find element to read game phase from", "Observer"); return }
 
         const newPhaseString = (newPhaseElement as Element).classList.item(1)
-        if (!newPhaseString) { Console.alert("Cannot read game phase from selected element"); return }
+        if (!newPhaseString) { Console.warn("Cannot read game phase from selected element"); return }
 
-        this.mutation(newPhaseString as Phase)
+        this.executePhaseTransition(newPhaseString as Phase)
 
         // console.log('content fired')
     })
@@ -282,8 +302,12 @@ class Observer {
         globalGame.turnsString = Converter.turnsIndexToString(data.configs.turns)
         globalGame.flowString = Converter.flowIndexToString(data.configs.first)
         globalGame.speedString = Converter.speedIndexToString(data.configs.speed)
+
+        if (data.screen != 1) {  // Bad solution to this two-systems thing we have going on. 
+            this.onEntryXHR = data
+        }
     }
-    deduceSettingsFromSocket(data: [number, number, any]) {  // Currently unused.
+    deduceSettingsFromSocket(data: [number, number, any]) {  
         // console.log(data)
         // Controller.updateLobbySettings(data[1], data[2])
         // if (data[1] == 5) {
@@ -305,7 +329,7 @@ class Observer {
             case 3: 
                 const index = globalGame.players.findIndex((user) => user.id === messageData.userLeft)
                 if (index == -1) {
-                    Console.alert(`Could not remove user: no user with id ${messageData.userLeft} found`, "Observer")
+                    Console.warn(`Could not remove user: no user with id ${messageData.userLeft} found`, "Observer")
                     break
                 }
                 globalGame.players.splice(index, 1)

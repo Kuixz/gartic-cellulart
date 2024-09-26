@@ -2,6 +2,7 @@ import { Console } from "./Console"
 
 type Phase = "start" | "lobby" | "draw" | "write" | "memory" | "book" | "first" | "mod" | "waiting"
 
+type GarticStroke = [number, number, [string, number, number], ...[number, number]]
 type GarticUser = {
     nick:   string
     avatar: string
@@ -26,8 +27,6 @@ type GarticXHRData = {
     code:             string
     configs:          {animate:number, first:number, keep:number, maxUsers:number, mod:number, mode:number, score:number, speed:number, tab:number, turns:number, visible:number} 
     countDown:        boolean 
-    invite:           string
-    modCode:          string
     resultConfigs:    {speed: number, type: number} 
     roundNum:         number
     screen:           number
@@ -37,6 +36,15 @@ type GarticXHRData = {
     turnNum:          number
     user:             GarticUser
     users:            GarticUser[]
+
+    invite?:  string
+    modCode?: string
+
+    active?:      boolean
+    draw?:        GarticStroke[]
+    elapsedBase?: number
+    elapsedTime?: number
+    previous?:    any
 }
 
 type ModeParameters = {
