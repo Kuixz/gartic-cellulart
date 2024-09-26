@@ -180,21 +180,20 @@ class Observer {
             return 0
         })()
 
-        // Handle special transitions
-        if (oldPhase == "start" && newPhase == "lobby")   { this.enterLobby(); return; }
-        if (oldPhase == "lobby" && newPhase != "start")   { this.roundStart(); }
-        if (oldPhase == "start" && newPhase != "lobby")   { 
-            this.roundStart(); 
-            this.mutation(oldPhase, newPhase);
-            this.patchReconnect();
-            return;
-        }  // Bypassing lobby phase means a reconnection.
-        if (oldPhase != "start" && newPhase == "lobby")   { this.roundEnd(oldPhase); return; }  // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
-        if (                       newPhase == "waiting") { this.waiting(); return; } 
-        if (                       newPhase == "start")   { this.exitLobby(oldPhase); return; } 
-        // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
+        const outOfGame = (phase: Phase) => phase == "start" || phase == "lobby"
 
-        this.mutation(oldPhase, newPhase)
+        // Handle transitions
+        if (oldPhase == "start")                         { this.enterLobby() }
+        if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.roundStart(); }
+
+        if (!outOfGame(newPhase))                        { this.mutation(oldPhase, newPhase) }
+        if (oldPhase == "start" && !outOfGame(newPhase))  { this.patchReconnect(); } // Bypassing lobby phase means a reconnection.
+        
+        // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
+        if (!outOfGame(oldPhase) && outOfGame(newPhase))  { this.roundEnd(oldPhase); }  
+        if (newPhase == "start")                         { this.exitLobby(oldPhase); } 
+
+        if (newPhase == "waiting")                       { this.waiting(); } 
     }
     enterLobby() {
         this.attachNextObserver()
