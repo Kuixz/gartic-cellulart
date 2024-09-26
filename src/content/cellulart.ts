@@ -338,30 +338,34 @@ class Observer {
         }
     }
     deduceSettingsFromDocument() {
-        // const playerList = document.querySelector(".players .scrollElements")
-        // if (playerList) { 
-        //     for (const playerElem of playerList.children) {
-        //         if (!(playerElem instanceof HTMLElement)) { continue }
-        //         // console.log(playerElem)
-        //         const player = Converter.tryToUser(playerElem)
-        //         if (!player) { continue }
-        //         // console.log(player)
+        const playerList = document.querySelector(".players .scrollElements")
+        if (playerList) { 
+            for (const playerElem of playerList.children) {
+                if (!(playerElem instanceof HTMLElement)) { continue }
+                // console.log(playerElem)
+                const player = Converter.tryToUser(playerElem)
+                if (!player) { continue }
+                // console.log(player)
 
-        //         // Do not overwrite XHR players wherever possible
-        //         if (globalGame.players.findIndex((user) => user.nick === player.nick)) { continue }
+                // Do not overwrite XHR players wherever possible
+                const existingPlayer = globalGame.players.find((user) => user.nick === player.nick)
+                if (existingPlayer) { 
+                    existingPlayer.avatar = player.avatar
+                    continue
+                }
 
-        //         globalGame.players.push(player)
-        //         if (player.owner) {
-        //             globalGame.host = player.nick
-        //         }
-        //         if (playerElem.getElementsByTagName("i").length > 0) {
-        //             globalGame.user = player
-        //         }
-        //     }
+                globalGame.players.push(player)
+                if (player.owner) {
+                    globalGame.host = player.nick
+                }
+                if (playerElem.getElementsByTagName("i").length > 0) {
+                    globalGame.user = player
+                }
+            }
         //     // globalGame.players
         // } else {
         //     Console.alert("Could not find player list", "Observer")
-        // }
+        }
 
         // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
         const defaultMode = document.querySelector(".checked")?.querySelector("h4")?.textContent;
