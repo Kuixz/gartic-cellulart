@@ -107,9 +107,6 @@ class Refdrop extends CellulartModule { // [R1]
     roundEnd() {
         this.refImage.src = "";
     }
-    exitLobby(oldPhase: Phase): void {
-        this.refImage.src = ""
-    }
     adjustSettings(previous: string, current: string) {
         if (this.isOff()) {
             for (const floating of this.refFloating) {
