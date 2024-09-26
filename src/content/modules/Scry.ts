@@ -4,7 +4,8 @@ import {
     Socket, 
     GarticUser,
     setParent,
-    Inwindow
+    Inwindow,
+    GarticXHRData
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
@@ -61,10 +62,10 @@ class Scry extends CellulartModule { // [F2]
         }
     }
     roundStart(): void {
-        Console.log(`Constructing Scry with ${globalGame.players.length} players`)
+        Console.log(`Constructing Scry with ${globalGame.players.length} players`, "Scry")
         this.indicators = {}
         for (const user of globalGame.players) {
-            if (!user.id) { return }
+            if (!user.id) { continue }
 
             const userDiv = document.createElement('div')
             userDiv.classList.add("scry-icon")
@@ -91,10 +92,16 @@ class Scry extends CellulartModule { // [F2]
         //     user
         // })
     }
-    roundEnd(oldPhase: Phase): void {
-        this.clearIndicators()
+    patchReconnect(data: GarticXHRData): void {
+        for (const user of data.users) {
+            if (!user.id) { continue }
+            if (!user.ready) { continue }
+
+            const indicator = this.indicators[user.id]
+            indicator.style.backgroundColor = "lime"
+        }
     }
-    exitLobby(oldPhase: Phase): void {
+    roundEnd(oldPhase: Phase): void {
         this.clearIndicators()
     }
     adjustSettings(previous: string, current: string): void {

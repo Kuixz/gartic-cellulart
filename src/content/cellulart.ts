@@ -42,15 +42,18 @@ class Controller {
         //     Shelf.set({ strokeCount:data })
         // })
     }
-    mutation (oldPhase: Phase, newPhase: Phase) {
-        this.liveModules.forEach(mod => mod.mutation(oldPhase, newPhase))
-    }
     enterLobby() {
         this.liveModules.forEach(mod => mod.enterLobby())
     }
     roundStart() {
         // game.roundStart()
         this.liveModules.forEach(mod => mod.roundStart())
+    }
+    mutation(oldPhase: Phase, newPhase: Phase) {
+        this.liveModules.forEach(mod => mod.mutation(oldPhase, newPhase))
+    }
+    patchReconnect(data: GarticXHRData) {
+        this.liveModules.forEach(mod => mod.patchReconnect(data))
     }
     roundEnd(oldPhase: Phase) {
         // Socket.post("backToLobby")
@@ -148,16 +151,17 @@ class Observer {
     // static name: string = "Observer"
     content: Element | undefined
     controller: Controller
+    onEntryXHR: GarticXHRData | undefined
     
     constructor(controller: Controller) {
         this.controller = controller;
         // Socket.addMessageListener('gameEvent', Observer.deduceSettingsFromSocket)
         // Socket.addMessageListener('gameEventScreenTransition', Observer.deduceSettingsFromSocket)
-        Socket.addMessageListener('lobbySettings', this.deduceSettingsFromSocket)
-        Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR)
+        Socket.addMessageListener('lobbySettings', this.deduceSettingsFromSocket.bind(this))
+        Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR.bind(this))
         // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     }
-    mutation(newPhase: Phase): void {
+    executePhaseTransition(newPhase: Phase): void {
         // Set variables
         const oldPhase = globalGame.currentPhase
         globalGame.currentPhase = newPhase
@@ -166,26 +170,30 @@ class Observer {
         globalGame.currentTurn = (function():number {
             if (["first", "draw", "write", "memory", "mod"].includes(newPhase)) {
                 const step = document.querySelector(".step")
-                if (!step) { Console.alert("Could not find turn counter", "Observer"); return -1 }
-                if (!(step.textContent)) { Console.alert("Could not read turn counter", "Observer"); return -1 }
+                if (!step) { Console.warn("Could not find turn counter", "Observer"); return -1 }
+                if (!(step.textContent)) { Console.warn("Could not read turn counter", "Observer"); return -1 }
 
                 const slashIndex = step.textContent.indexOf("/")
                 const turnCount = Number(step.textContent.slice(0, slashIndex))
-                if (isNaN(turnCount)) { Console.alert("Could not parse turn counter", "Observer"); return -1 }
+                if (isNaN(turnCount)) { Console.warn("Could not parse turn counter", "Observer"); return -1 }
             }
             return 0
         })()
 
-        // Handle special transitions
-        if (oldPhase == "start" && newPhase == "lobby")   { this.enterLobby(); return; }
-        if (oldPhase == "lobby" && newPhase != "start")   { this.roundStart(); }
-        if (oldPhase == "start" && newPhase != "lobby")   { this.roundStart(); }  // Bypassing lobby phase means a reconnection.
-        if (oldPhase != "start" && newPhase == "lobby")   { this.roundEnd(oldPhase); return; }  // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
-        if (                       newPhase == "waiting") { this.waiting(); return; } 
-        if (                       newPhase == "start")   { this.exitLobby(oldPhase); return; } 
-        // if (oldPhase == "start" && newPhase != "lobby") { Observer.reconnect(); return; }
+        const outOfGame = (phase: Phase) => phase == "start" || phase == "lobby"
 
-        this.controller.mutation(oldPhase, newPhase)
+        // Handle transitions
+        if (oldPhase == "start")                         { this.enterLobby() }
+        if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.roundStart(); }
+
+        if (!outOfGame(newPhase))                        { this.mutation(oldPhase, newPhase) }
+        if (oldPhase == "start" && !outOfGame(newPhase))  { this.patchReconnect(); } // Bypassing lobby phase means a reconnection.
+        
+        // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
+        if (!outOfGame(oldPhase) && outOfGame(newPhase))  { this.roundEnd(oldPhase); }  
+        if (newPhase == "start")                         { this.exitLobby(oldPhase); } 
+
+        if (newPhase == "waiting")                       { this.waiting(); } 
     }
     enterLobby() {
         this.attachNextObserver()
@@ -195,6 +203,18 @@ class Observer {
     roundStart() {
         globalGame.roundStart()
         this.controller.roundStart()
+    }
+    patchReconnect() {
+        if (this.onEntryXHR === undefined) { 
+            Console.warn("Trying to patch data for reconnection but no XHR data found")
+            return 
+        }
+        // Expected to patch Socket stroke data here as well
+        this.controller.patchReconnect(this.onEntryXHR)
+        delete this.onEntryXHR
+    }
+    mutation(oldPhase: Phase, newPhase: Phase) {
+        this.controller.mutation(oldPhase, newPhase)
     }
     roundEnd(oldPhase: Phase) {
         this.attachNextObserver()
@@ -209,7 +229,7 @@ class Observer {
 
     attachNextObserver() {
         const observeTarget = document.querySelector("#__next")
-        if (!observeTarget) { Console.alert("Could not find id:__next to observe", "Observer"); }
+        if (!observeTarget) { Console.warn("Could not find id:__next to observe", "Observer"); }
         else { this.nextObserver.observe(observeTarget, configChildTrunk); }
     }
     waiting() { Console.log("Waiting", "Observer") } // [C4]
@@ -231,12 +251,12 @@ class Observer {
         if(records[0].addedNodes.length <= 0) { return; }
         // Observer.nextObserver.disconnect()
         const newPhaseElement = this.content?.firstChild?.firstChild
-        if (!newPhaseElement) { Console.alert("Cannot find element to read game phase from", "Observer"); return }
+        if (!newPhaseElement) { Console.warn("Cannot find element to read game phase from", "Observer"); return }
 
         const newPhaseString = (newPhaseElement as Element).classList.item(1)
-        if (!newPhaseString) { Console.alert("Cannot read game phase from selected element"); return }
+        if (!newPhaseString) { Console.warn("Cannot read game phase from selected element"); return }
 
-        this.mutation(newPhaseString as Phase)
+        this.executePhaseTransition(newPhaseString as Phase)
 
         // console.log('content fired')
     })
@@ -261,8 +281,8 @@ class Observer {
     deduceSettingsFromXHR(data: GarticXHRData) {
         Console.log(`Deducing from XHR ${JSON.stringify(data)}`, "Observer")
 
-        const avatarElement = document.querySelector('.avatar > i')?.previousSibling
-        const userAvatar = avatarElement ? getComputedStyle(avatarElement as Element).backgroundImage : ""
+        // const avatarElement = document.querySelector('.avatar > i')?.previousSibling
+        // const userAvatar = avatarElement ? getComputedStyle(avatarElement as Element).backgroundImage : ""
         // console.log(userAvatar)
 
         // if (data.turnMax > 0) {
@@ -274,7 +294,7 @@ class Observer {
 
         globalGame.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
         globalGame.user = data.user
-        globalGame.user.avatar = userAvatar
+        // globalGame.user.avatar = userAvatar
         globalGame.players = data.users
         for (const player of globalGame.players) {
             player.avatar = "https://garticphone.com/images/avatar/" + player.avatar + ".svg"
@@ -282,8 +302,12 @@ class Observer {
         globalGame.turnsString = Converter.turnsIndexToString(data.configs.turns)
         globalGame.flowString = Converter.flowIndexToString(data.configs.first)
         globalGame.speedString = Converter.speedIndexToString(data.configs.speed)
+
+        if (data.screen != 1) {  // Bad solution to this two-systems thing we have going on. 
+            this.onEntryXHR = data
+        }
     }
-    deduceSettingsFromSocket(data: [number, number, any]) {  // Currently unused.
+    deduceSettingsFromSocket(data: [number, number, any]) {  
         // console.log(data)
         // Controller.updateLobbySettings(data[1], data[2])
         // if (data[1] == 5) {
@@ -305,7 +329,7 @@ class Observer {
             case 3: 
                 const index = globalGame.players.findIndex((user) => user.id === messageData.userLeft)
                 if (index == -1) {
-                    Console.alert(`Could not remove user: no user with id ${messageData.userLeft} found`, "Observer")
+                    Console.warn(`Could not remove user: no user with id ${messageData.userLeft} found`, "Observer")
                     break
                 }
                 globalGame.players.splice(index, 1)
@@ -314,30 +338,34 @@ class Observer {
         }
     }
     deduceSettingsFromDocument() {
-        // const playerList = document.querySelector(".players .scrollElements")
-        // if (playerList) { 
-        //     for (const playerElem of playerList.children) {
-        //         if (!(playerElem instanceof HTMLElement)) { continue }
-        //         // console.log(playerElem)
-        //         const player = Converter.tryToUser(playerElem)
-        //         if (!player) { continue }
-        //         // console.log(player)
+        const playerList = document.querySelector(".players .scrollElements")
+        if (playerList) { 
+            for (const playerElem of playerList.children) {
+                if (!(playerElem instanceof HTMLElement)) { continue }
+                // console.log(playerElem)
+                const player = Converter.tryToUser(playerElem)
+                if (!player) { continue }
+                // console.log(player)
 
-        //         // Do not overwrite XHR players wherever possible
-        //         if (globalGame.players.findIndex((user) => user.nick === player.nick)) { continue }
+                // Do not overwrite XHR players wherever possible
+                const existingPlayer = globalGame.players.find((user) => user.nick === player.nick)
+                if (existingPlayer) { 
+                    existingPlayer.avatar = player.avatar
+                    continue
+                }
 
-        //         globalGame.players.push(player)
-        //         if (player.owner) {
-        //             globalGame.host = player.nick
-        //         }
-        //         if (playerElem.getElementsByTagName("i").length > 0) {
-        //             globalGame.user = player
-        //         }
-        //     }
+                globalGame.players.push(player)
+                if (player.owner) {
+                    globalGame.host = player.nick
+                }
+                if (playerElem.getElementsByTagName("i").length > 0) {
+                    globalGame.user = player
+                }
+            }
         //     // globalGame.players
         // } else {
         //     Console.alert("Could not find player list", "Observer")
-        // }
+        }
 
         // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
         const defaultMode = document.querySelector(".checked")?.querySelector("h4")?.textContent;

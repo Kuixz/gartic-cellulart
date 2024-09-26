@@ -18,7 +18,7 @@ describe("No module given", () => {
     })
 
     test("Alert calls alert", () => {
-        Console.alert("a")
+        Console.warn("a")
         expect(consoleLogs.mock.calls.length).toBe(1)
         expect(consoleWarns.mock.calls.length).toBe(1)
     })
@@ -49,13 +49,13 @@ describe("Module given", () => {
     })
 
     test("Alert allowed name alerts", () => {
-        Console.alert("a", testAllowName)
+        Console.warn("a", testAllowName)
         expect(consoleLogs.mock.calls.length).toBe(1)
         expect(consoleWarns.mock.calls.length).toBe(1)
     })
 
     test("Alert blocked name alerts anyway", () => {
-        Console.alert("a", testBlockName)
+        Console.warn("a", testBlockName)
         expect(consoleLogs.mock.calls.length).toBe(1)
         expect(consoleWarns.mock.calls.length).toBe(2)
     })

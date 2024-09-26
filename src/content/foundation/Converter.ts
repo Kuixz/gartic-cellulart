@@ -2,6 +2,7 @@ import { Console } from "./Console"
 
 type Phase = "start" | "lobby" | "draw" | "write" | "memory" | "book" | "first" | "mod" | "waiting"
 
+type GarticStroke = [number, number, [string, number, number], ...[number, number]]
 type GarticUser = {
     nick:   string
     avatar: string
@@ -16,6 +17,8 @@ type GarticUser = {
     points?: number
     uid?:    string
     viewer?: boolean
+
+    ready?: boolean
 }
 type GarticXHRData = {
     animationConfigs: {speed: number, loop: number} 
@@ -26,8 +29,6 @@ type GarticXHRData = {
     code:             string
     configs:          {animate:number, first:number, keep:number, maxUsers:number, mod:number, mode:number, score:number, speed:number, tab:number, turns:number, visible:number} 
     countDown:        boolean 
-    invite:           string
-    modCode:          string
     resultConfigs:    {speed: number, type: number} 
     roundNum:         number
     screen:           number
@@ -37,6 +38,15 @@ type GarticXHRData = {
     turnNum:          number
     user:             GarticUser
     users:            GarticUser[]
+
+    invite?:  string
+    modCode?: string
+
+    active?:      boolean
+    draw?:        GarticStroke[]
+    elapsedBase?: number
+    elapsedTime?: number
+    previous?:    any
 }
 
 type ModeParameters = {
@@ -91,33 +101,33 @@ const Converter = {
     modeStringToParameters(str: string): ModeParameters {
         const gotten = modeParameters.get(str)
         if (gotten) { return gotten }
-        Console.alert(`Couldn't get parameters for mode ${str}`, "Converter")
+        Console.warn(`Couldn't get parameters for mode ${str}`, "Converter")
         return modeParameterDefaults
     },
     modeIndexToString(index: number): string {
         const value = [0,'NORMAL',2,'SECRET',4,'SANDWICH',6,'CROWD','KNOCK-OFF','ICEBREAKER','SCORE','ANIMATION',12,'SOLO','BACKGROUND','COMPLEMENT',16,'STORY','CO-OP',19,'MASTERPIECE', 'MISSING PIECE',22,23,'EXQUISITE CORPSE'][index]
         if (typeof value == "string") { return value }
-        Console.alert(`Unknown mode index ${index}`, "Converter")
+        Console.warn(`Unknown mode index ${index}`, "Converter")
         return ""
     },
 
     speedIndexToString(index: number): string {
         const value = [0,"SLOW","NORMAL","FAST","DYNAMIC","REGRESSIVE","INFINITE","HOST'S DECISION","PROGRESSIVE","FASTER FIRST TURN","SLOWER FIRST TURN"][index]
         if (typeof value == "string") { return value }
-        Console.alert(`Unknown speed index ${index}`, "Converter")
+        Console.warn(`Unknown speed index ${index}`, "Converter")
         return ""
     },
     speedStringToParameters(str: string): SpeedParameters {
         const gotten = speedParameters.get(str)
         if (gotten) { return gotten }
-        Console.alert(`Couldn't get parameters for speed ${str}`, "Converter")
+        Console.warn(`Couldn't get parameters for speed ${str}`, "Converter")
         return speedParameterDefaults
     },
 
     flowIndexToString(index: number): string {
         const value = [0,"WRITING, DRAWING","DRAWING, WRITING","ONLY DRAWING","WRITING ONLY AT THE BEGINNING AND END","WRITING ONLY AT THE BEGINNING","WRITING ONLY AT THE END","SINGLE SENTENCE",'SINGLE DRAWING','SOLO DRAWING','DRAWINGS WITH A BACKGROUND','DRAWINGS WITH A BACKGROUND, NO PREVIEW',"ONLY WRITING"][index]
         if (typeof value == "string") { return value }
-        Console.alert(`Unknown flow index ${index}`, "Converter")
+        Console.warn(`Unknown flow index ${index}`, "Converter")
         return ""
     },
     flowStringToFallback(str: string): number {
@@ -135,7 +145,7 @@ const Converter = {
     turnsIndexToString(index: number) {
         const value = [0,"FEW","MOST","ALL","200%","300%","SINGLE TURN","5 TURNS","10 TURNS","20 TURNS","2 TURNS","3 TURNS","ALL +1","6 TURNS","7 TURNS","8 TURNS","9 TURNS","4 TURNS",][index]
         if (typeof value == "string") { return value }
-        Console.alert(`Unknown turns index ${index}`, "Converter")
+        Console.warn(`Unknown turns index ${index}`, "Converter")
         return ""
     },
     turnsStringToFunction(str: string): ((num: number) => number) {
@@ -158,7 +168,7 @@ const Converter = {
             case "10 TURNS":    return () => 10;
             case "20 TURNS":    return () => 20;
             default: 
-                Console.alert("Could not identify the turn setting being used", 'Converter');
+                Console.warn("Could not identify the turn setting being used", 'Converter');
                 return () => 0
         }
     },

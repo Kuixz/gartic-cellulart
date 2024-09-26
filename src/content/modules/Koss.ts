@@ -30,26 +30,21 @@ class Koss extends CellulartModule { // [K1]
     }
     mutation(oldPhase: Phase, newPhase: Phase) { 
         // ssView.childNodes[1].appendChild(kossImage);
-        const wiwBody = this.kossInwindow?.body
-        if (!wiwBody) { Console.alert("Inwindow has no body", "Koss"); return }
+        const wiwBody = this.kossInwindow.body
         
         if (wiwBody.firstChild) { wiwBody.removeChild(wiwBody.firstChild) }
-        if (newPhase == 'memory') {
+        if (newPhase == "memory") {
             this.discardCanvas()
             setTimeout(() => { 
                 this.kossCanvas = document.querySelector(".core canvas")! as HTMLCanvasElement
             }, DOMLOADINGALLOWANCE)
+            return
         }
-        else if (newPhase == 'draw') {
-            this.place()
-        }
+        this.tryPlace()
     }
     roundStart() {}
     roundEnd() {
         // this.kossImage.src = "";
-        this.discardCanvas()
-    }
-    exitLobby(oldPhase: Phase): void {
         this.discardCanvas()
     }
     adjustSettings(previous: string, current: string) {
@@ -62,13 +57,13 @@ class Koss extends CellulartModule { // [K1]
             this.kossInwindow.setVisibility(false);
         }
 
-        this.place()
+        this.tryPlace()
     }
 
     canPlace(): boolean {
         return globalGame.currentPhase == "draw"
     }
-    place() {
+    tryPlace() {
         if (!this.canPlace()) { return }
         if (!this.kossCanvas) { return }
 
@@ -85,7 +80,7 @@ class Koss extends CellulartModule { // [K1]
             this.kossCanvas.style.opacity = "0.25";
             const drawingContainer = document.querySelector(".drawingContainer")
             if (!drawingContainer) {
-                Console.alert("Cannot underlay canvas: cannot find active drawing canvas", "Koss")
+                Console.warn("Cannot underlay canvas: cannot find active drawing canvas", "Koss")
                 return 
             }
             drawingContainer.insertAdjacentElement("beforebegin", this.kossCanvas);

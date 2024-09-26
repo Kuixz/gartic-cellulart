@@ -68,9 +68,7 @@ class Geom extends CellulartModule {
 
         setParent(this.geomPreview, document.querySelector(".core")!)
     }
-    roundStart(): void {
-        
-    }
+    roundStart() {}
     roundEnd(): void {
         this.flags.mode = false; 
         this.geomPreview.innerHTML = ""
@@ -372,7 +370,7 @@ class Geom extends CellulartModule {
                 return 
             }
             const shape = await this.queryGW("step")
-            if (shape === undefined) { Console.alert("Mysterious error, no shape was produced; terminating", 'Geom'); return }     
+            if (shape === undefined) { Console.warn("Mysterious error, no shape was produced; terminating", 'Geom'); return }     
             Console.log(shape, 'Worker')       
             this.queueShape(shape)
             step() 
@@ -394,7 +392,7 @@ class Geom extends CellulartModule {
                 if (x == ShapeTypes.ELLIPSE) { return 7 }
             })(shape.type)
             if (!type) { 
-                Console.alert(`Unknown shape type ${type}`, "Geom"); return
+                Console.warn(`Unknown shape type ${type}`, "Geom"); return
             }
             const color = (function(){
                 const signed = shape.color
@@ -412,7 +410,7 @@ class Geom extends CellulartModule {
                 }
             })(shape.type)
             if (!coords) {
-                Console.alert(`Unknown shape type: ${type}`, "Geom")
+                Console.warn(`Unknown shape type: ${type}`, "Geom")
                 return // else if LINE
             }
     
@@ -430,7 +428,7 @@ class Geom extends CellulartModule {
                 if (x == ShapeTypes.ELLIPSE) { return 'ellipse' }
             })(shape.type)
             if (!type) { 
-                Console.alert(`Unknown shape type ${type}`, "Geom"); return
+                Console.warn(`Unknown shape type ${type}`, "Geom"); return
             }
             const color = "#" + (function(){
                 const signed = shape.color
@@ -448,7 +446,7 @@ class Geom extends CellulartModule {
                 }
             })(shape.type)
             if (!coords) {
-                Console.alert(`Unknown shape type: ${type}`, "Geom")
+                Console.warn(`Unknown shape type: ${type}`, "Geom")
                 return// else if LINE
             }
     

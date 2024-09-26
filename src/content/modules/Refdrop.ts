@@ -101,14 +101,11 @@ class Refdrop extends CellulartModule { // [R1]
     mutation(oldPhase: Phase, newPhase: Phase) {
         this.refImage.style.visibility = "hidden";
 
-        this.place()
+        this.tryPlace()
     }
-    roundStart() {} // Empty.
+    roundStart() {}
     roundEnd() {
         this.refImage.src = "";
-    }
-    exitLobby(oldPhase: Phase): void {
-        this.refImage.src = ""
     }
     adjustSettings(previous: string, current: string) {
         if (this.isOff()) {
@@ -122,7 +119,7 @@ class Refdrop extends CellulartModule { // [R1]
         } else if (this.isRed()) {
             this.refSocket.style.backgroundImage = "url(" + getModuleAsset("ref-ss.png") + ")";
         } 
-        this.place()
+        this.tryPlace()
     }
     togglePlus(plus: boolean) { 
         super.togglePlus(plus)
@@ -134,7 +131,7 @@ class Refdrop extends CellulartModule { // [R1]
     canPlace(): boolean { 
         return globalGame.currentPhase == "draw"
     }
-    place() {
+    tryPlace() {
         if (!this.canPlace()) { return }
         
         if (this.isOff()) {
@@ -149,7 +146,7 @@ class Refdrop extends CellulartModule { // [R1]
     }
     placeRefUpload() {
         const tools = document.querySelector(".tools")
-        if (!tools) { Console.alert("Couldn't find where to insert Refdrop controls", "Refdrop"); return }
+        if (!tools) { Console.warn("Couldn't find where to insert Refdrop controls", "Refdrop"); return }
 
         tools.insertAdjacentElement("beforebegin", this.refUpload);
         this.refUpload.style.visibility = "visible"
@@ -158,16 +155,16 @@ class Refdrop extends CellulartModule { // [R1]
         if (!this.refCtrl) { return }
 
         const tools = document.querySelector(".tools")
-        if (!tools) { Console.alert("Couldn't find where to insert Refdrop controls", "Refdrop"); return }
+        if (!tools) { Console.warn("Couldn't find where to insert Refdrop controls", "Refdrop"); return }
 
         tools.insertAdjacentElement("afterend", this.refCtrl);
         this.refCtrl!.style.visibility = "visible" 
     }
     screenshot() {
         const core = document.querySelector(".core")
-        if (!core) { Console.alert("Could not find core", "Refdrop"); return }
+        if (!core) { Console.warn("Could not find core", "Refdrop"); return }
         const coreCanvas = core.querySelector("canvas")
-        if (!coreCanvas) { Console.alert("Could not find active canvas", "Refdrop"); return }
+        if (!coreCanvas) { Console.warn("Could not find active canvas", "Refdrop"); return }
 
         this.refImage.src = coreCanvas.toDataURL();
         this.refImage.style.visibility = "visible";
@@ -283,7 +280,7 @@ class Refdrop extends CellulartModule { // [R1]
         } else if (this.isRed()) {
             this.screenshot()
         } else {
-            Console.alert(`No behaviour is defined for onSocketClick in setting ${this.setting.current.internalName}`)
+            Console.warn(`No behaviour is defined for onSocketClick in setting ${this.setting.current.internalName}`)
         }
     }
     newRefimgInwindow(object: File): Inwindow {
@@ -297,12 +294,12 @@ class Refdrop extends CellulartModule { // [R1]
     } // [R4]
     handleFiles (files: FileList | null) {
         if (files === null || files.length < 1) { 
-            Console.alert("handleFiles was triggered but no files were passed", "Refdrop")
+            Console.warn("handleFiles was triggered but no files were passed", "Refdrop")
             return 
         }
 
         const core = document.querySelector(".core")
-        if (!core) { Console.alert("Could not find core", "Refdrop"); return }
+        if (!core) { Console.warn("Could not find core", "Refdrop"); return }
         core.classList.remove("watermark")
 
         if (this.isOn()) {
@@ -316,7 +313,7 @@ class Refdrop extends CellulartModule { // [R1]
 
             core.insertAdjacentElement("afterbegin", this.refImage);
         } else {
-            Console.alert(`No behaviour is defined for handleFiles in setting ${this.setting.current.internalName}`, 'Refdrop')
+            Console.warn(`No behaviour is defined for handleFiles in setting ${this.setting.current.internalName}`, 'Refdrop')
         }
     }    
 }

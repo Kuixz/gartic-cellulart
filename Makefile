@@ -20,3 +20,4 @@ package-both:
 	$(call package-for,Chrome)
 	$(call package-for,Firefox)
 	echo Complete
+	

@@ -158,7 +158,7 @@ class GarticCompositor {
     drawPFP(pfpURL: string, side: Side): "complete"|HTMLImageElement { // todo: An attempt was made to repair tainted canvasses, verify
         const pfp = new Image(); 
         if (pfpURL.includes('custom-avatars-for-gartic-phone')) {
-            Console.alert("SillyV's custom avatars extension doesn't work with Spotlight due to CORS reasons. Please ask SillyV to enable CORS on his S3 buckets.", "Spotlight")
+            Console.warn("SillyV's custom avatars extension doesn't work with Spotlight due to CORS reasons. Please ask SillyV to enable CORS on his S3 buckets.", "Spotlight")
             return "complete"
         }
         pfp.setAttribute('crossorigin', 'anonymous'); 
@@ -218,7 +218,7 @@ class Spotlight extends CellulartModule { // [S1]
         // }
         this.beginCompilation()
     }
-    roundStart() {
+    roundStart(): void {
         this.fallback = Converter.flowStringToFallback(globalGame.flowString)
         this.username = globalGame.user.nick
     }
@@ -241,7 +241,7 @@ class Spotlight extends CellulartModule { // [S1]
     adjustSettings(previous: string, current: string) {}  // Changing Spotlight settings isn't immediately visible.
     menuStep(): Setting {
         if (globalGame.currentPhase == "book") {  // || isNonempty(this.compositedFrameDatas)) { 
-            Console.alert("Changing Spotlight settings mid-album visualization has disastrous consequences - action blocked", 'Spotlight') 
+            Console.warn("Changing Spotlight settings mid-album visualization has disastrous consequences - action blocked", 'Spotlight') 
             return this.setting.current
         }
 
@@ -305,20 +305,20 @@ class Spotlight extends CellulartModule { // [S1]
             canvas.drawPFP(globalGame.user.avatar, "R")
             // TODO TODO TODO 
         } else {
-            Console.alert("Spotlight setting not recognized", 'Spotlight')
+            Console.warn("Spotlight setting not recognized", 'Spotlight')
         }
         this.canbase = canvas.canvas;
     }
     writeResponseFrames() {
         const timeline = document.querySelector(".timeline")
-        if (!timeline) { Console.alert("Could not find timeline", "Spotlight"); return }
+        if (!timeline) { Console.warn("Could not find timeline", "Spotlight"); return }
 
         const slides = timeline.querySelectorAll(".item");
         const pairs = this.determineResponseIndices(Array.from(slides))
 
         for (const indices of pairs) {
             if (indices.key < 0) { Console.log('Did not participate in this round; no frame will be saved', 'Spotlight'); continue }
-            if (indices.prev < 0) { Console.alert("Could not find fallback; no frame will be saved", 'Spotlight'); continue } //prevIndex += modeParameters[game.mode]["fallback"] }
+            if (indices.prev < 0) { Console.warn("Could not find fallback; no frame will be saved", 'Spotlight'); continue } //prevIndex += modeParameters[game.mode]["fallback"] }
             Console.log(`Compositing frame with indices ${indices.key},${indices.prev}`, 'Spotlight')
             this.compositeResponseFrame(Array.from(slides), indices.key, indices.prev)
         }
@@ -352,7 +352,7 @@ class Spotlight extends CellulartModule { // [S1]
             return 
         }
         if (!this.canbase) {
-            Console.alert("Canbase was not initialized", "Spotlight")
+            Console.warn("Canbase was not initialized", "Spotlight")
             return
         }
         const canvas = new GarticCompositor(this.canbase)
@@ -393,7 +393,7 @@ class Spotlight extends CellulartModule { // [S1]
     findAvatar(element: Element): string {
         const avatarElement = element.querySelector('.avatar > *')
         if (!avatarElement) {
-            Console.alert("Could not find avatar in this element", "Spotlight")
+            Console.warn("Could not find avatar in this element", "Spotlight")
             return ""
         }
         return getComputedStyle(avatarElement).backgroundImage
