@@ -7,10 +7,13 @@ const path = require('path');
 
 module.exports = (env) => {
     if (!(["chrome","firefox"].includes(env.manifest))) { 
-        throw new Error(`Invalid manifest reference: "${env.manifest})"`)
+        throw new Error(`Invalid manifest reference: "${env.manifest}"`)
+    }
+    if (!(["development","production"].includes(env.mode))) { 
+        throw new Error(`Invalid build mode: "${env.mode}"`)
     }
     return {
-        mode: 'development',
+        mode: env.mode,
         target: 'web',
         entry: {
             content: './src/content/cellulart.ts',
