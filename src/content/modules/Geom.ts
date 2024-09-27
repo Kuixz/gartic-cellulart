@@ -1,9 +1,20 @@
-import { ShapeTypes } from "geometrizejs"
+// import { ShapeTypes } from "geometrizejs"
 import { WorkerResultShape } from "../../shared/WorkerResultShape"
 import { Phase, WhiteSettingsBelt, Console, Inwindow, Socket,
     svgNS, setAttributes, setParent, preventDefaults, getResource
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
+
+const ShapeTypes = {
+    RECTANGLE: 0, 
+    ROTATED_RECTANGLE: 1, 
+    TRIANGLE: 2, 
+    ELLIPSE: 3, 
+    ROTATED_ELLIPSE: 4, 
+    CIRCLE: 5, 
+    LINE: 6, 
+    QUADRATIC_BEZIER: 7
+}
 
 // extract to SemaphoreArray class
 // extract to BuffChan class
