@@ -16,8 +16,7 @@ endef
 
 .PHONY: package-both
 package-both:
-	echo Packaging...
+	# Packaging...
 	$(call package-for,Chrome)
 	$(call package-for,Firefox)
-	echo Complete
-	
+	# Complete
