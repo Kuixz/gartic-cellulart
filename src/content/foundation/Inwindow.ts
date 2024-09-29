@@ -1,10 +1,17 @@
+import { Console } from "./Console"
+import { DEFAULTINWINDOWRATIO } from "./Const"
 import { setAttributes, setParent } from "./Util"
+
+const headerHeight = 40
+const defaultWidth = document.body.clientWidth / 8
+const defaultHeight = defaultWidth * DEFAULTINWINDOWRATIO
 
 const defaultInwindowNode = document.createElement("div")
 setAttributes(defaultInwindowNode, { style: "visibility: hidden", class: "window-in-window" })
 defaultInwindowNode.innerHTML = `
 <div class = "wiw-header">≡<div class = "wiw-close"></div></div>
 <div class = "wiw-body"></div>`
+
 
 var currentZIndex: number = 20 
 
@@ -21,7 +28,10 @@ class InwindowElement {
             body?: HTMLElement, 
             close?: HTMLElement | boolean,
             visible?: boolean,
-            ratio?: number | "default"
+
+            width?: number,
+            height?: number,
+            ratio?: number,
             maxGrowFactor?: number
         }) {
         const e = element == "default" ? defaultInwindowNode.cloneNode(true) as HTMLElement : element
@@ -35,25 +45,14 @@ class InwindowElement {
         })() : e.querySelector('.wiw-close')
         // this.close = options?.close !== undefined ? (options.close == true ? element.querySelector('.wiw-close') : options.close == false ? null : options.close) : null
         // this.close = typeof options?.close != "boolean" ? options?.close ?? element.querySelector('.wiw-close') : options.close ? element.querySelector('.wiw-close') : null
+        const resizeRatio = options?.ratio
         const closeable = options?.close !== false
 
         const v = options?.visible ? "visible" : "hidden"
-        const resizeRatio = options?.ratio == "default" ? 100/178 : options?.ratio
-        const initialRatio = resizeRatio ?? 100/178
-        const maxGrowFactor = options?.maxGrowFactor ? options.maxGrowFactor : 3
-        const minHeight = (178 * initialRatio) + 40
-        // const defaultHeight = options?.defaultHeight ? options.defaultHeight : minHeight
-        const defaultHeight = minHeight ? minHeight : (178 * initialRatio + 40)
-        // const maxHeight = options?.maxHeight ? options.maxHeight : (178 * initialRatio + 40)
-        const maxHeight = (maxGrowFactor * 178 * initialRatio + 40)
-        this.element.setAttribute("style", `
-            visibility:${v}; 
-            min-height:${minHeight}px; 
-            height:${defaultHeight}px; 
-            max-height:${maxHeight}px
-        `) 
+        this.element.style.visibility = v
 
         initDragElement(this)
+        initSizeElement(this, options)
         initResizeElement(this, resizeRatio)
         initRemoveElement(this, closeable)
     
@@ -156,6 +155,50 @@ function initResizeElement(inwindow: InwindowElement, ratio?: number) {
         document.documentElement.removeEventListener("mousemove", doDrag, false);
         document.documentElement.removeEventListener("mouseup", stopDrag, false);
     }
+}
+
+function initSizeElement(inwindow: InwindowElement, options: undefined | {
+    width?: number,
+    height?: number,
+    ratio?: number,
+    maxGrowFactor?: number
+}) {
+    var computedWidth = defaultWidth
+    var computedHeight = defaultHeight
+    if (options) {
+        if (options.width && options.height && options.ratio) {
+            if (options.width * options.ratio != options.height) {
+                Console.warn("Inconsistent dimensions supplied to Inwindow constructor")
+            }
+            computedWidth = options.width
+            computedHeight = options.height
+        }
+        else if (!options.width && !options.height && options.ratio) {
+            computedHeight = defaultWidth * options.ratio
+        } else {
+            if (options.width) {
+                computedWidth = options.width
+                if (options.ratio) {
+                    computedHeight = options.width * options.ratio
+                }
+            }
+            if (options.height) {
+                computedHeight = options.height
+                if (options.ratio) {
+                    computedWidth = options.height / options.ratio
+                }
+            }
+        }
+    }
+    const growFactor = options?.maxGrowFactor ?? 3
+
+    inwindow.element.style.minWidth = `${computedWidth}px`
+    inwindow.element.style.width    = `${computedWidth}px`
+    inwindow.element.style.maxWidth = `${computedWidth * growFactor}px`
+
+    inwindow.element.style.minHeight = `${computedHeight + headerHeight}px`
+    inwindow.element.style.height    = `${computedHeight + headerHeight}px`
+    inwindow.element.style.maxHeight = `${computedHeight * growFactor + headerHeight}px`
 }
 function initRemoveElement(inwindow: InwindowElement, closeable: boolean = true) {
     if (!inwindow.close){ return }

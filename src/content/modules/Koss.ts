@@ -1,5 +1,5 @@
 import { CellulartModule } from "./CellulartModule";
-import { Console, DefaultSettings, DOMLOADINGALLOWANCE, globalGame, Inwindow, Phase, RedSettingsBelt, setAttributes } from "../foundation";
+import { Console, DEFAULTINWINDOWRATIO, DefaultSettings, DOMLOADINGALLOWANCE, globalGame, Inwindow, Phase, RedSettingsBelt, setAttributes } from "../foundation";
 
  /* ----------------------------------------------------------------------
   *                                  Koss 
@@ -20,7 +20,7 @@ class Koss extends CellulartModule { // [K1]
     constructor() {
         super()
 
-        const inwindow = new Inwindow("default", { close: false, ratio:"default" })
+        const inwindow = new Inwindow("default", { close: false, ratio: DEFAULTINWINDOWRATIO })
         inwindow.body.style.position = 'relative';  // TODO: Too many dots
         this.kossInwindow = inwindow;
 
