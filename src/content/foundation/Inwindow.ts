@@ -1,9 +1,10 @@
 import { Console } from "./Console"
+import { DEFAULTINWINDOWRATIO } from "./Const"
 import { setAttributes, setParent } from "./Util"
 
 const headerHeight = 40
 const defaultWidth = document.body.clientWidth / 8
-const defaultHeight = defaultWidth * (100/178)
+const defaultHeight = defaultWidth * DEFAULTINWINDOWRATIO
 
 const defaultInwindowNode = document.createElement("div")
 setAttributes(defaultInwindowNode, { style: "visibility: hidden", class: "window-in-window" })
