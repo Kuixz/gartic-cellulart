@@ -176,9 +176,9 @@ class Refdrop extends CellulartModule { // [R1]
         const refpos = document.createElement("div"); setAttributes(refpos, { class: "ref-border canvas-in-square"}); setParent(refpos, refCtrl)
         const refdot = document.createElement("div"); setAttributes(refdot, { id: "ref-dot", class: "ref-border bounded"}); setParent(refdot, refpos)
         const reflower = document.createElement("div"); setAttributes(reflower, { class: "canvas-square-lower-tray"}); setParent(reflower, refCtrl)
-        const refz = document.createElement("div"); setAttributes(refz, { class : "ref-border ref-tray-button hover-button"}); setParent(refz, reflower)
-        const refc = document.createElement("div"); setAttributes(refc, { class : "ref-border ref-tray-button hover-button"}); setParent(refc, reflower)
-        const refoholder = document.createElement("div"); setAttributes(refoholder, { class : "ref-border ref-tray-button hover-button"}); setParent(refoholder, reflower )
+        const refz = document.createElement("div"); setAttributes(refz, { class : "cellulart-skewer ref-border ref-tray-button hover-button"}); setParent(refz, reflower)
+        const refc = document.createElement("div"); setAttributes(refc, { class : "cellulart-skewer ref-border ref-tray-button hover-button"}); setParent(refc, reflower)
+        const refoholder = document.createElement("div"); setAttributes(refoholder, { class : "cellulart-skewer ref-border ref-tray-button hover-button"}); setParent(refoholder, reflower )
         const refo = document.createElement("input"); setAttributes(refo, { id: "refo", type: "range", value: "25"}); setParent(refo, refoholder )
 
         initPantograph(refdot, this.refImage); 
