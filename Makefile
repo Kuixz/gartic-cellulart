@@ -11,7 +11,7 @@ MANIFEST ?= Chrome
 
 define package-for
 	manifest=$(call LC,${1}) mode=production pnpm run build 
-	zip -r $(call UC,${1})_$(PACKAGE_VERSION).zip dist/* -x '**/.*' -x '**/__MACOSX'; 
+	cd dist; zip -r ../$(call UC,${1})_$(PACKAGE_VERSION).zip . -x '**/.*' -x '**/__MACOSX' ; 
 endef
 
 .PHONY: package-both

@@ -165,28 +165,29 @@ class Geom extends CellulartModule {
 
             const body = document.createElement("div")
             setAttributes(body, { class: "geom-carpet", style: "display: none;" }); setParent(body, geomInwindow.body)
+            const carpet = document.createElement("div")
+            setAttributes(carpet, { class: "geom-screen2" }); setParent(carpet, body)
             toReturn.elements.body = body
             const echo = document.createElement("div")
-            setAttributes(echo, { id: "geom-echo", class: "hover-button canvas-in-square" }); setParent(echo, body)
+            setAttributes(echo, { id: "geom-echo", class: "hover-button canvas-in-square", style:"grid-column: span 2; margin: 0;" }); setParent(echo, carpet)
             toReturn.elements.echo = echo
             const back = document.createElement("div")
-            setAttributes(back, { id: "geom-reselect", class: "geom-border hover-button" }); setParent(back, echo)
-            const tray = document.createElement("div")
-            setAttributes(tray, { id: "geom-lower-tray", class: "canvas-square-lower-tray" }); setParent(tray, body)
+            setAttributes(back, { id: "geom-reselect", class: "geom-border hover-button", style:`background-image: url(${getResource("assets/module-assets/geom-cancel.png")})` }); setParent(back, echo)
 
-            const sendStack = document.createElement("div")
-            setAttributes(sendStack, { class: "geom-stack" }); setParent(sendStack, tray)
-            const sendLabel = document.createElement("label")
-            setAttributes(sendLabel, { class: "geom-status" }); setParent(sendLabel, sendStack)
+            const sendLabel = document.createElement("span")
+            setAttributes(sendLabel, { class: "cellulart-skewer geom-status" }); setParent(sendLabel, carpet)
+
+            const genSkewer = document.createElement("span")
+            setAttributes(genSkewer, { class: "cellulart-skewer geom-status" }); setParent(genSkewer, carpet)
+            const genLabel = document.createElement("span")
+            setAttributes(genLabel, { class: "cellulart-skewer", id: "geom-total" }); setParent(genLabel, genSkewer)
+            const genShowConfig = document.createElement("img")
+            setAttributes(genShowConfig, { src: getResource("assets/module-assets/geom-config.png"), id: "geom-show-config" }); setParent(genShowConfig, genSkewer)
+
             const sendPauser = document.createElement("button") 
-            setAttributes(sendPauser, { class: "geom-border geom-tray-button hover-button" }); setParent(sendPauser, sendStack)
-
-            const genStack = document.createElement("div")
-            setAttributes(genStack, { class: "geom-stack" }); setParent(genStack, tray)
-            const genLabel = document.createElement("label")
-            setAttributes(genLabel, { id: "geom-total", class: "geom-status" }); setParent(genLabel, genStack)
+            setAttributes(sendPauser, { class: "geom-border geom-tray-button hover-button" }); setParent(sendPauser, carpet)
             const genPauser = document.createElement("button")
-            setAttributes(genPauser, { class: "geom-border geom-tray-button hover-button" }); setParent(genPauser, genStack)
+            setAttributes(genPauser, { class: "geom-border geom-tray-button hover-button" }); setParent(genPauser, carpet)
 
             const updateLabel = (which: 'total'|'sent'|'both', newValue: string) => {
                 if (which == 'total') { genLabel.textContent = newValue }
@@ -225,7 +226,7 @@ class Geom extends CellulartModule {
             )})
             back.addEventListener("click", () => { stopGeometrize() }) // TODO put a semi-transparent negative space cancel icon instead of hover-button
             genPauser.addEventListener("click", () => { setGenPause(!this.flags.generate) })
-            genLabel.addEventListener("click", () => { setGeomConfigWindow(!configActive) })
+            genShowConfig.addEventListener("click", () => { setGeomConfigWindow(!configActive) })
 
             return toReturn
         }
@@ -242,14 +243,14 @@ class Geom extends CellulartModule {
             toReturn.elements.body = body
 
             const distEntry = document.createElement("div")
-            setAttributes(distEntry, { class: "geom-3-hstack" }); setParent(distEntry, body)
+            setAttributes(distEntry, { class: "cellulart-skewer geom-3-hstack" }); setParent(distEntry, body)
             const distIcon = document.createElement("img")
             setAttributes(distIcon, { class: "geom-3-icon" }); setParent(distIcon, distEntry)
             const distInput = (document.createElement("input"))
             setAttributes(distInput, { class: "geom-3-input" }); setParent(distInput, distEntry)
 
             const maxEntry = document.createElement("div")
-            setAttributes(maxEntry, { class: "geom-3-hstack" }); setParent(maxEntry, body)
+            setAttributes(maxEntry, { class: "cellulart-skewer geom-3-hstack" }); setParent(maxEntry, body)
             const maxIcon = document.createElement("img")
             setAttributes(maxIcon, { class: "geom-3-icon" }); setParent(maxIcon, maxEntry)
             const maxInput = (document.createElement("input"))
