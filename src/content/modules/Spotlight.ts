@@ -219,7 +219,7 @@ class Spotlight extends CellulartModule { // [S1]
         this.beginCompilation()
     }
     roundStart(): void {
-        this.fallback = Converter.flowStringToFallback(globalGame.flowString)
+        this.fallback = Converter.flowIndexToFallback(globalGame.flowIndex)
         this.username = globalGame.user.nick
     }
     roundEnd(oldPhase: Phase) {
