@@ -148,7 +148,7 @@ class Timer extends CellulartModule {
         if (s.length < 2) { s = 0 + s }
         display.textContent = h == "0:" ? m + s : h + m + s
 
-        if (seconds <= 0 || !this.display) { Console.log("Countdown ended", 'Timer'); return }
+        if ((this.required > 0 && seconds <= 0) || !this.display) { Console.log("Countdown ended", 'Timer'); return }
         this.elapsed += 1
         this.countdown = window.setTimeout(this.tick.bind(this), 1000, increaseStep)
     }
