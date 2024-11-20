@@ -46,7 +46,7 @@ class Timer extends CellulartModule {
     }
     roundStart(): void {
         // const data = dict.custom
-        const parameters = Converter.speedStringToParameters(globalGame.speedString)
+        const parameters = Converter.speedIndexToParameters(globalGame.speedIndex)
         this.decay = parameters.decayFunction(globalGame.turns)
         // delete parameters.turns
         Object.assign(this.parameters, parameters)  // TODO: unsafe and unscalable

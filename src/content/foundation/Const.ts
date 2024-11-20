@@ -18,11 +18,11 @@ const globalGame = {
     currentTurn: 0,
     currentPhase: "start" as Phase,
 
-    flowString: 'WRITING, DRAWING',
-    speedString: 'NORMAL',
-    turnsString: 'ALL',
+    flowIndex: 1,
+    speedIndex: 2,
+    turnsIndex: 3,
     roundStart() {
-        this.turns = Converter.turnsStringToFunction(this.turnsString)(this.players.length)
+        this.turns = Converter.turnsIndexToFunction(this.turnsIndex)(this.players.length)
     }
 }
 

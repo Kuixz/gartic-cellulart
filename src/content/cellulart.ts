@@ -6,7 +6,8 @@ import {
     // IAuth, SHAuth as SHAuth, 
     IShelf, Shelf,
     setAttributes, setParent, configChildTrunk, globalGame,
-    GarticUser, 
+    GarticUser,
+    modeParameterDefaults, 
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
@@ -299,9 +300,9 @@ class Observer {
         for (const player of globalGame.players) {
             player.avatar = "https://garticphone.com/images/avatar/" + player.avatar + ".svg"
         }
-        globalGame.turnsString = Converter.turnsIndexToString(data.configs.turns)
-        globalGame.flowString = Converter.flowIndexToString(data.configs.first)
-        globalGame.speedString = Converter.speedIndexToString(data.configs.speed)
+        globalGame.turnsIndex = data.configs.turns
+        globalGame.flowIndex = data.configs.first
+        globalGame.speedIndex = data.configs.speed
 
         if (data.screen != 1) {  // Bad solution to this two-systems thing we have going on. 
             this.onEntryXHR = data
@@ -320,21 +321,51 @@ class Observer {
         const messageData = data[2]
 
         switch (messageType) {
-            case 2: 
+            case 2: {  // New user joins
                 const newUser = messageData as GarticUser
                 newUser.avatar = "https://garticphone.com/images/avatar/" + newUser.avatar + ".svg"
                 globalGame.players.push(newUser)
-                // dict["usersIn"] = [data[2]]; 
                 break;
-            case 3: 
+            }
+            case 3: {  // Existing user leaves
                 const index = globalGame.players.findIndex((user) => user.id === messageData.userLeft)
                 if (index == -1) {
                     Console.warn(`Could not remove user: no user with id ${messageData.userLeft} found`, "Observer")
                     break
                 }
                 globalGame.players.splice(index, 1)
-                // dict["userOut"] = data[2]; 
                 break;
+            }
+            case 18: {  // Custom settings changed
+                for (const key in messageData) {
+                    switch (key) {
+                        case 'turns': 
+                            globalGame.turnsIndex = messageData[key]
+                            break
+                        case 'speed': 
+                            globalGame.speedIndex = messageData[key]
+                            break
+                        case 'flow': 
+                            globalGame.flowIndex = messageData[key]
+                            break
+                    }
+                }
+                break;
+            }
+            case 26: {  // Default settings changed
+                const modeParameters = Converter.modeIndexToParameters(messageData)
+                globalGame.turnsIndex = modeParameters.turns
+                globalGame.speedIndex = modeParameters.speed
+                globalGame.flowIndex = modeParameters.flow
+                break;
+            }
+            case 27: {  // Return to normal settings when changing tabs
+                const modeParameters = modeParameterDefaults
+                globalGame.turnsIndex = modeParameters.turns
+                globalGame.speedIndex = modeParameters.speed
+                globalGame.flowIndex = modeParameters.flow
+                break;
+            }
         }
     }
     deduceSettingsFromDocument() {
@@ -368,38 +399,36 @@ class Observer {
         }
 
         // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
-        const defaultMode = document.querySelector(".checked")?.querySelector("h4")?.textContent;
-        if (defaultMode) { 
-            const gameConfig = Converter.modeStringToParameters(defaultMode)
-            globalGame.turnsString = gameConfig.turns
-            globalGame.speedString = gameConfig.speed
-            globalGame.flowString = gameConfig.flow
-            return
-        } 
+        // const defaultMode = document.querySelector(".checked")?.querySelector("h4")?.textContent;
+        // if (defaultMode) { 
+        //     const gameConfig = Converter.modeStringToParameters(defaultMode)
+        //     // console.log(`Settings were {turns:${globalGame.turnsIndex}, speed:${globalGame.speedIndex}, flow:${globalGame.flowIndex}}; updated to ${JSON.stringify(gameConfig)}`)
+        //     globalGame.turnsIndex = Converter.turnsStringToIndex(gameConfig.turns)
+        //     globalGame.speedIndex = Converter.speedStringToIndex(gameConfig.speed)
+        //     globalGame.flowIndex = Converter.flowStringToIndex(gameConfig.flow)
+        //     return
+        // } 
 
-        const gameEncodedConfig = document.querySelector(".config")?.querySelectorAll(".select");
-        if (gameEncodedConfig) { 
-        // if the current gamemode variable is not found by searching for .checked, then each piece must be assigned separately.
-            const gameConfig = new Array(3);
-            if (!gameEncodedConfig) {}
-            // console.log(gameEncodedConfig);
-            [0,1,2].forEach((num) => { 
-                const dropdown = gameEncodedConfig[num].querySelector("select"); 
-                if (dropdown) {
-                    gameConfig[num] = dropdown.childNodes[dropdown.selectedIndex].textContent;    
-                } else { 
-                    gameConfig[num] = gameEncodedConfig[num].childNodes[0].textContent;    
-                }
-            })
-            // Controller.updateLobbySettings({"custom": gameConfig/*, "players": players*/})
+        // const gameEncodedConfig = document.querySelector(".config")?.querySelectorAll(".select");
+        // if (gameEncodedConfig) { 
+        // // if the current gamemode variable is not found by searching for .checked, then each piece must be assigned separately.
+        //     const gameConfig = new Array(3);
+        //     if (!gameEncodedConfig) {}
+        //     // console.log(gameEncodedConfig);
+        //     [0,1,2].forEach((num) => { 
+        //         const dropdown = gameEncodedConfig[num].querySelector("select"); 
+        //         if (dropdown) {
+        //             gameConfig[num] = dropdown.childNodes[dropdown.selectedIndex].textContent;    
+        //         } else { 
+        //             gameConfig[num] = gameEncodedConfig[num].childNodes[0].textContent;    
+        //         }
+        //     })
+        //     // Controller.updateLobbySettings({"custom": gameConfig/*, "players": players*/})
 
-            globalGame.turnsString = gameConfig[2]
-            globalGame.speedString = gameConfig[0]
-            globalGame.flowString = gameConfig[1]
-        }
-        // game.turns = Converter.turnsStringToFunction(gameConfig[2])(players) 
-        // Object.assign(game, Converter.speedStringToParameters(gameConfig[0]))
-        // game.fallback = Converter.flowStringToFallback(gameConfig[1])
+        //     globalGame.turnsIndex = Converter.turnsStringToIndex(gameConfig[2])
+        //     globalGame.speedIndex = Converter.speedStringToIndex(gameConfig[0])
+        //     globalGame.flowIndex = Converter.flowStringToIndex(gameConfig[1])
+        // }
     }
 }
 
