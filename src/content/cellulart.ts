@@ -399,15 +399,21 @@ class Observer {
         }
 
         // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
-        // const defaultMode = document.querySelector(".checked")?.querySelector("h4")?.textContent;
-        // if (defaultMode) { 
-        //     const gameConfig = Converter.modeStringToParameters(defaultMode)
-        //     // console.log(`Settings were {turns:${globalGame.turnsIndex}, speed:${globalGame.speedIndex}, flow:${globalGame.flowIndex}}; updated to ${JSON.stringify(gameConfig)}`)
-        //     globalGame.turnsIndex = Converter.turnsStringToIndex(gameConfig.turns)
-        //     globalGame.speedIndex = Converter.speedStringToIndex(gameConfig.speed)
-        //     globalGame.flowIndex = Converter.flowStringToIndex(gameConfig.flow)
-        //     return
-        // } 
+        // This is now relegated to a backup system.
+        const defaultMode = document.querySelector(".checked")?.querySelector("h4")?.textContent;
+        if (defaultMode) { 
+            const gameIndex = Converter.modeStringToIndex(defaultMode)
+            if (gameIndex == 0) { return }  
+            // If the code returns here then the default mode is either a new EN mode or the game isn't in English.
+            // New EN mode uses modeParameterDefaults due to XHR. 
+            // Non-EN user uses mode-appropriate parameters due to XHR.
+
+            const gameConfig = Converter.modeIndexToParameters(gameIndex)
+            Console.log(`Settings were {turns:${globalGame.turnsIndex}, speed:${globalGame.speedIndex}, flow:${globalGame.flowIndex}}; updated to ${JSON.stringify(gameConfig)}`, "Observer")
+            globalGame.turnsIndex = gameConfig.turns
+            globalGame.speedIndex = gameConfig.speed
+            globalGame.flowIndex = gameConfig.flow
+        } 
 
         // const gameEncodedConfig = document.querySelector(".config")?.querySelectorAll(".select");
         // if (gameEncodedConfig) { 
