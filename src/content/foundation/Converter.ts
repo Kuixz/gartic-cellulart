@@ -60,7 +60,7 @@ type SpeedParameters = {
     draw: number
     decayFunction: (n: number) => number
     firstMultiplier: number,
-    fallback?: number
+    // fallback?: number
 }
 const speedParameterDefaults = { write: 40, draw: 150, decayFunction: () => 0, firstMultiplier: 1.25 }
 
@@ -87,12 +87,12 @@ const speedParameters = new Map<number, SpeedParameters>([
     [2,  { write: 40, draw: 150, decayFunction: () => 0,                                    firstMultiplier: 1.25 }],               // NORMAL
     [3,  { write: 20, draw: 75,  decayFunction: () => 0,                                    firstMultiplier: 1.25 }],               // FAST
     [8,  { write: 8,  draw: 30,  decayFunction: (turns: number) => Math.exp(8 / turns),     firstMultiplier: 1, }],                 // PROGRESSIVE
-    [5,  { write: 90, draw: 300, decayFunction: (turns: number) => 1 / Math.exp(8 / turns), firstMultiplier: 1   , fallback: 1  }], // REGRESSIVE
-    [4,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1   , fallback: 1  }], // DYNAMIC
-    [6,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1   , fallback: 1  }], // INFINITE
-    [7,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1   , fallback: 1  }], // HOST'S DECISION
-    [9,  { write: 40, draw: 150, decayFunction: () => 0,                                    firstMultiplier: 0.2 , fallback: -1 }], // FASTER FIRST TURN
-    [10, { write: 40, draw: 150, decayFunction: () => 0,                                    firstMultiplier: 2   , fallback: 1  }], // SLOWER FIRST TURN
+    [5,  { write: 90, draw: 300, decayFunction: (turns: number) => 1 / Math.exp(8 / turns), firstMultiplier: 1  }], // REGRESSIVE
+    [4,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1  }], // DYNAMIC
+    [6,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1  }], // INFINITE
+    [7,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1  }], // HOST'S DECISION
+    [9,  { write: 40, draw: 150, decayFunction: () => 0,                                    firstMultiplier: 0.2 }], // FASTER FIRST TURN
+    [10, { write: 40, draw: 150, decayFunction: () => 0,                                    firstMultiplier: 2  }], // SLOWER FIRST TURN
 ])
 
 const flowParameters = new Map<number, number>([

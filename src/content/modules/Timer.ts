@@ -91,6 +91,7 @@ class Timer extends CellulartModule {
         clearTimeout(this.countdown)
     }
     startTimer(newPhase: Phase) {
+        // console.log(this);
         const clock = document.querySelector(".time")
         if (!clock) { Console.warn("Could not find clock", "Timer"); return }
 
@@ -148,7 +149,7 @@ class Timer extends CellulartModule {
         if (s.length < 2) { s = 0 + s }
         display.textContent = h == "0:" ? m + s : h + m + s
 
-        if (seconds <= 0 || !this.display) { Console.log("Countdown ended", 'Timer'); return }
+        if ((increaseStep == Count.Down && seconds <= 0) || !this.display) { Console.log("Countdown ended", 'Timer'); return }
         this.elapsed += 1
         this.countdown = window.setTimeout(this.tick.bind(this), 1000, increaseStep)
     }
