@@ -262,7 +262,7 @@ div#geom-echo {
     background-repeat: no-repeat;
     background-size: cover;
     background-position: center;
-    border: 5px solid black;
+    /* border: 5px solid black; */
     position: relative;
 }
 div#geom-lower-tray {

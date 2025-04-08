@@ -28,6 +28,7 @@ class GeomFlags {
     generate: boolean = true
 
     notClearToSend(): boolean { 
+        console.log(this)
         return !(this.interval && this.queue && this.unpause && this.mode && this.ws) 
     } 
 }
@@ -169,7 +170,7 @@ class Geom extends CellulartModule {
             setAttributes(carpet, { class: "geom-screen2" }); setParent(carpet, body)
             toReturn.elements.body = body
             const echo = document.createElement("div")
-            setAttributes(echo, { id: "geom-echo", class: "hover-button canvas-in-square", style:"grid-column: span 2; margin: 0;" }); setParent(echo, carpet)
+            setAttributes(echo, { id: "geom-echo", class: "geom-border hover-button canvas-in-square", style:"grid-column: span 2; margin: 0;" }); setParent(echo, carpet)
             toReturn.elements.echo = echo
             const back = document.createElement("div")
             setAttributes(back, { id: "geom-reselect", class: "geom-border hover-button", style:`background-image: url(${getResource("assets/module-assets/geom-cancel.png")})` }); setParent(back, echo)
