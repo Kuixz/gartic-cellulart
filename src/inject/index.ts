@@ -145,7 +145,7 @@ class SocketInterceptor extends Interceptor {
         this.strokes = []
         this.strokeCount = 0
     }
-    setStrokeStack(data: [GarticStroke]) {
+    setStrokeStack(data: GarticStroke[]) {
         const strokes = data.map((strokeArray) => strokeArray[1])
         this.strokes = strokes
         this.strokeCount = strokes.length > 0 ? strokes.at(-1)! : 0
@@ -248,7 +248,7 @@ declare global {
         }
         // TODO TODO TODO: Blatant overreach!
         if ('draw' in gameDict) {
-            Socket.setStrokeStack(gameDict.draw as [GarticStroke])
+            Socket.setStrokeStack(gameDict.draw as GarticStroke[])
             // console.log('succ')
         }
         
@@ -262,4 +262,4 @@ declare global {
 
 const Xhr = new XHRInterceptor()
 
-// TODO TODO TODO Intercept the Fetch response to set... everything.
+
