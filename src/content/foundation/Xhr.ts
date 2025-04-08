@@ -2,7 +2,7 @@ import { Console } from "./Console";
 
 const Xhr = {
     name: 'XHR',
-    handlers: [{ filter:'log', handle:(data: string) => { Console.log(data, 'Socket') }}] as {filter:string, handle:(data?:any) => void}[],
+    handlers: [{ filter:'log', handle:(data: string) => { Console.log(data, 'XHR') }}] as {filter:string, handle:(data?:any) => void}[],
 
     init() {
         window.addEventListener('message', (event) => {
