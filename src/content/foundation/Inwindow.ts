@@ -1,14 +1,23 @@
 import { Console } from "./Console"
-import { DEFAULTINWINDOWRATIO } from "./Const"
+import { INWINDOWHEADERHEIGHT, DEFAULTINWINDOWRATIO, DEFAULTINWINDOWSCALABILITY } from "./Const"
 import { setAttributes, setParent } from "./Util"
 
-const headerHeight = 40
-const defaultWidth = document.body.clientWidth / 8
-const defaultHeight = defaultWidth * DEFAULTINWINDOWRATIO
+const headerHeight = INWINDOWHEADERHEIGHT
+const Default = {
+    Width: document.body.clientWidth / 8,
+    get Height() {
+        return this.Width * DEFAULTINWINDOWRATIO
+    },
 
-const defaultInwindowNode = document.createElement("div")
-setAttributes(defaultInwindowNode, { style: "visibility: hidden", class: "window-in-window" })
-defaultInwindowNode.innerHTML = `
+    InwindowNode: document.createElement("div")
+}
+
+window.addEventListener("resize", () => {
+    Default.Width = document.body.clientWidth;
+});
+
+setAttributes(Default.InwindowNode, { style: "visibility: hidden", class: "window-in-window" })
+Default.InwindowNode.innerHTML = `
 <div class = "wiw-header">≡<div class = "wiw-close"></div></div>
 <div class = "wiw-body"></div>`
 
@@ -34,7 +43,7 @@ class InwindowElement {
             ratio?: number,
             maxGrowFactor?: number
         }) {
-        const e = element == "default" ? defaultInwindowNode.cloneNode(true) as HTMLElement : element
+        const e = element == "default" ? Default.InwindowNode.cloneNode(true) as HTMLElement : element
         this.element = e
         this.header = options?.header ?? e.querySelector('.wiw-header') ?? e
         this.body = options?.body ?? e.querySelector('.wiw-body') ?? e
@@ -163,8 +172,8 @@ function initSizeElement(inwindow: InwindowElement, options: undefined | {
     ratio?: number,
     maxGrowFactor?: number
 }) {
-    var computedWidth = defaultWidth
-    var computedHeight = defaultHeight
+    var computedWidth = Default.Width
+    var computedHeight = Default.Height
     if (options) {
         if (options.width && options.height && options.ratio) {
             if (options.width * options.ratio != options.height) {
@@ -174,7 +183,7 @@ function initSizeElement(inwindow: InwindowElement, options: undefined | {
             computedHeight = options.height
         }
         else if (!options.width && !options.height && options.ratio) {
-            computedHeight = defaultWidth * options.ratio
+            computedHeight = Default.Width * options.ratio
         } else {
             if (options.width) {
                 computedWidth = options.width
@@ -190,7 +199,7 @@ function initSizeElement(inwindow: InwindowElement, options: undefined | {
             }
         }
     }
-    const growFactor = options?.maxGrowFactor ?? 3
+    const growFactor = options?.maxGrowFactor ?? DEFAULTINWINDOWSCALABILITY
 
     inwindow.element.style.minWidth = `${computedWidth}px`
     inwindow.element.style.width    = `${computedWidth}px`

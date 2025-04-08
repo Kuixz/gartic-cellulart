@@ -4,7 +4,9 @@ const svgNS = "http://www.w3.org/2000/svg"
 const configChildTrunk = { childList: true };
 const DOMLOADINGALLOWANCE = 10
 const DOMUNLOADINGALLOWANCE = 200
+const INWINDOWHEADERHEIGHT = 40;
 const DEFAULTINWINDOWRATIO = 100/178
+const DEFAULTINWINDOWSCALABILITY = 5
 
 const globalGame = {
     host: "Kirsten Wright",
@@ -26,4 +28,10 @@ const globalGame = {
     }
 }
 
-export { svgNS, configChildTrunk, globalGame, DOMLOADINGALLOWANCE, DOMUNLOADINGALLOWANCE, DEFAULTINWINDOWRATIO };
+export { svgNS, configChildTrunk, globalGame, 
+    DOMLOADINGALLOWANCE, 
+    DOMUNLOADINGALLOWANCE, 
+    INWINDOWHEADERHEIGHT, 
+    DEFAULTINWINDOWRATIO,
+    DEFAULTINWINDOWSCALABILITY
+};
