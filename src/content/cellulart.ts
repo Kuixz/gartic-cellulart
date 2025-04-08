@@ -57,7 +57,7 @@ class Controller {
         this.liveModules.forEach(mod => mod.patchReconnect(data))
     }
     roundEnd(oldPhase: Phase) {
-        // Socket.post("backToLobby")
+        // Socket.post("roundEnd")
         // Socket.roundEnd()
         // Shelf.set({ strokeCount:data }) // Possibly redundant? Will have to test.
         this.liveModules.forEach(mod => mod.roundEnd(oldPhase))
@@ -460,12 +460,12 @@ document.readyState === 'complete' ? main() : window.addEventListener('load', ()
 
     // on load:
     // retrieve states
-    // pass transience i.e. if backToLobby-ness along with aggregated state data to modules
+    // pass transience i.e. if roundEnd-ness along with aggregated state data to modules
     // so they can pick out their data
 
 
     // OR load:
     // tell all modules to retrieve states
     // on first transition:
-    // if transient i.e. if not backToLobby, tell all modules to retrieve transient states
+    // if transient i.e. if not roundEnd, tell all modules to retrieve transient states
 // })

@@ -17,7 +17,7 @@ const Socket = {
         })
     },
     roundEnd() {
-        Socket.post("backToLobby")
+        Socket.post("roundEnd")
     },
     handle(purp: string, data?: any){
         Socket.handlers.forEach(handler => { 
