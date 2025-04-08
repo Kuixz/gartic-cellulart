@@ -36,10 +36,6 @@ abstract class ModuleLike {
   * easy as pie.
   * ---------------------------------------------------------------------- */
 abstract class CellulartModule extends ModuleLike { // [F2]
-    abstract name: string           // All modules have a name property
-    abstract setting: SettingsBelt  // All modules have a SettingsBelt
-    hasMenuButton: boolean = true   // Some modules aren't directly controllable
-    isCheat: boolean = false        // Most modules declare if they are unfair or not
     keybinds: Keybind[] = []        // Some modules have keybinds
 
     // Initialization. 
