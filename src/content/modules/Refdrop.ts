@@ -107,7 +107,7 @@ class Refdrop extends CellulartModule { // [R1]
     roundEnd() {
         this.refImage.src = "";
     }
-    adjustSettings(previous: string, current: string) {
+    adjustSettings() {
         if (this.isOff()) {
             for (const floating of this.refFloating) {
                 floating.element.remove()

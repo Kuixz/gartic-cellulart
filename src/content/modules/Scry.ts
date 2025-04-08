@@ -104,7 +104,7 @@ class Scry extends CellulartModule { // [F2]
     roundEnd(oldPhase: Phase): void {
         this.clearIndicators()
     }
-    adjustSettings(previous: string, current: string): void {
+    adjustSettings(): void {
         if (this.isOff()) {
             this.scryWIW.setVisibility(false)
         } else if (this.isOn()) {

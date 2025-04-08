@@ -238,7 +238,7 @@ class Spotlight extends CellulartModule { // [S1]
         
         this.compositedFrameDatas = []
     }
-    adjustSettings(previous: string, current: string) {}  // Changing Spotlight settings isn't immediately visible.
+    adjustSettings() {}  // Changing Spotlight settings isn't immediately visible.
     menuStep(): Setting {
         if (globalGame.currentPhase == "book") {  // || isNonempty(this.compositedFrameDatas)) { 
             Console.warn("Changing Spotlight settings mid-album visualization has disastrous consequences - action blocked", 'Spotlight') 

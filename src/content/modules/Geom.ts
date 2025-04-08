@@ -85,9 +85,9 @@ class Geom extends CellulartModule {
         this.geomPreview.innerHTML = ""
         // if (oldPhase != 'start') { this.stopGeometrize() }  // Technically redundant.
     }
-    adjustSettings(previous: string, current: string) { 
+    adjustSettings() { 
         // hide or show Geom window without stopping web worker (just like Koss)
-        if (current == 'off') {
+        if (this.isOff()) {
             this.setSendPause(true)
             this.geomInwindow?.setVisibility(false);
         } else {

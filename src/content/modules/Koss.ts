@@ -47,7 +47,7 @@ class Koss extends CellulartModule { // [K1]
         // this.kossImage.src = "";
         this.discardCanvas()
     }
-    adjustSettings(previous: string, current: string) {
+    adjustSettings() {
         // alert(current)
         if (this.isOff()) {
             this.kossInwindow.setVisibility(false);

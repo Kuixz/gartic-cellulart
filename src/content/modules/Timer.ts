@@ -58,9 +58,13 @@ class Timer extends CellulartModule {
         this.elapsed = Math.ceil(elapsed / 1000)
     }
     roundEnd(): void {} // Empty.
-    adjustSettings(previous: string, current: string): void {
+    adjustSettings(): void {
         if (this.display == undefined) { return }
-        if (current == "on") { this.display.style.visibility = "visible" } else { this.display.style.visibility = "hidden" }
+        if (this.isOn()) { 
+            this.display.style.visibility = "visible" 
+        } else { 
+            this.display.style.visibility = "hidden" 
+        }
     }
 
     placeTimer() {  // [T3]
