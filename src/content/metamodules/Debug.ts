@@ -28,7 +28,7 @@ class Debug extends Metamodule {
             setAttributes(modIcon, { class: "cellulart-circular-icon", src: getMenuIcon(mod.toLowerCase() + "-on" + ".png") })
             setParent(modIcon, iconSelect)
             modIcon.addEventListener("click", toggle)
-            if (Console.enabled.has(mod)) { 
+            if (Console.enabledLoggingFor.has(mod)) { 
                 modIcon.classList.add("debug-selected")
             }
             

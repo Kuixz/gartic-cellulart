@@ -1,17 +1,18 @@
 class Console { // Only print certain messages
     name: string = "Console"
     // enabled: new Set(),
-    enabled: Set<string> = new Set(['Console', 'Spotlight', 'Socket', 'Xhr'])
+    shouldLog: boolean = true
+    enabledLoggingFor: Set<string|undefined> = new Set(['Console', undefined, 'Spotlight', 'Socket', 'Xhr'])
 
     toggle(modName: string) {
-        this.set(modName, !this.enabled.has(modName))
+        this.set(modName, !this.enabledLoggingFor.has(modName))
     }
     set(modName: string, enabled: boolean) {
-        enabled ? this.enabled.add(modName) : this.enabled.delete(modName)
+        enabled ? this.enabledLoggingFor.add(modName) : this.enabledLoggingFor.delete(modName)
         this.log((enabled ? "Enabled " : "Disabled ") + "logging for " + modName, 'Console')
     }
     log(message: string, modName?: string) {
-        if (modName !== undefined && !this.enabled.has(modName)) { return }
+        if (!this.shouldLog || !this.enabledLoggingFor.has(modName)) { return }
         const msg = `[${modName}] ${message}`
         this.onprint(msg)
         console.log(msg)
