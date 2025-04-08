@@ -39,6 +39,12 @@ declare global {
 
 class SocketInterceptor extends Interceptor {
     name = "Socket"
+    commandMap: { [key:string]:Function } = {
+        "roundEnd": this.roundEnd,
+        "clearStrokes": this.clearStrokes,
+        "setStrokeStack": this.setStrokeStack,
+        "sendGeomShape": this.sendGeomShape
+    }
 
     currentWS: WebSocket | null = null
     strokes: number[] = []
@@ -68,25 +74,6 @@ class SocketInterceptor extends Interceptor {
         }; 
     
         console.log("[Cellulart] WebSocket proxified")
-    }
-    constructor() {
-        super()
-        
-        const commandMap: { [key:string]:Function } = {
-            "roundEnd": this.roundEnd,
-            "clearStrokes": this.clearStrokes,
-            "setStrokeStack": this.setStrokeStack,
-            "sendGeomShape": this.sendGeomShape
-        }
-
-        window.addEventListener('message', (event: CrossCommand) => {
-            if (event.source !== window || event.data.direction !== 'toSocket') { return; }
-            const purp = event.data.purpose
-            const data = event.data.data
-            if (!(purp in commandMap)) { this.post('log', "No such GSH command: " + purp)}
-            try { (commandMap[purp].bind(this))(data) } 
-            catch (e) { this.post('log', "Socket error executing " + purp + "(" + JSON.stringify(data) + ")" + ":" + e) }
-        })
     }
     roundEnd() {
         this.currentWS = null
@@ -178,13 +165,6 @@ const Socket = new SocketInterceptor()
 // [G3]
 
 
- /* ----------------------------------------------------------------------
-  *                         Observer XHR Hijack 
-  * ---------------------------------------------------------------------- */
-/** GSH enhances the functions of Observer by eavesdropping on XHR requests 
-  * that transmit information about the game state.                        */
- /* ---------------------------------------------------------------------- */
-
 type GarticStroke = [number, number, [string, number, number], ...[number, number]]
 
 declare global {
@@ -193,6 +173,12 @@ declare global {
     }
 } 
 
+ /* ----------------------------------------------------------------------
+  *                         Observer XHR Hijack 
+  * ---------------------------------------------------------------------- */
+/** OXH enhances the functions of Observer by eavesdropping on XHR requests 
+  * that transmit information about the game state.                        */
+ /* ---------------------------------------------------------------------- */
  class XHRInterceptor extends Interceptor {
     name = "XHR"
 
@@ -214,22 +200,8 @@ declare global {
                 return modifiedText ?? originalText
             }}
         );
-    }
-    constructor() {
-        super()
-        
-        const commandMap: { [key:string]:Function } = {
-            // No commands
-        }
-
-        window.addEventListener('message', (event) => {
-            if (event.source !== window || event.data.direction !== 'toXHR') { return; }
-            const purp = event.data.purpose
-            const data = event.data.data
-            if (!(purp in commandMap)) { Xhr.post('log', "No such OXH command: " + purp)}
-            try   { (commandMap[purp].bind(this))(data) } 
-            catch (e) { Xhr.post('log', "XHR error executing " + purp + "(" + JSON.stringify(data) + ")" + ":" + e) }
-        })
+    
+        console.log("[Cellulart] XHR proxified")
     }
     interceptIncoming(data: string): Maybe<string> {
         // console.log(data)
