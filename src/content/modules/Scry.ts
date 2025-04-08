@@ -50,7 +50,7 @@ class Scry extends CellulartModule { // [F2]
             if (player) {
                 this.updateCompletion(player, messageData.ready)
             } else {
-                Console.log(`No player matched ${JSON.stringify(messageData)}`)
+                Console.log(`No player matched ${JSON.stringify(messageData)}`, "Scry")
             }
         })
     }
@@ -119,7 +119,7 @@ class Scry extends CellulartModule { // [F2]
         this.indicators = {}
     }
     updateCompletion(user: GarticUser, done: boolean) {
-        Console.log(`${user.nick} is ${done ? "done" : "not done"}`)
+        Console.log(`${user.nick} is ${done ? "done" : "not done"}`, "Scry")
 
         if (!user.id) { return }
        
