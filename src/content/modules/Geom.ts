@@ -22,14 +22,15 @@ const ShapeTypes = {
 class GeomFlags {  
     interval: boolean = true
     queue: boolean = false
-    unpause: boolean = false
+    sendingPaused: boolean = true
     mode: boolean = false
     ws: boolean = false
-    generate: boolean = true
+    
+    generationPaused: boolean = false
 
     notClearToSend(): boolean { 
-        console.log(this)
-        return !(this.interval && this.queue && this.unpause && this.mode && this.ws) 
+        // console.log(this)
+        return !(this.interval && this.queue && !this.sendingPaused && this.mode && this.ws) 
     } 
 }
 
@@ -71,7 +72,7 @@ class Geom extends CellulartModule {
         this.geomPreview = preview
     }
     mutation(oldPhase: Phase, newPhase: Phase): void {
-        this.setSendPause(true)
+        this.setSendingPaused(true)
         if (newPhase != 'draw') { 
             this.flags.mode = false; 
             return 
@@ -89,14 +90,14 @@ class Geom extends CellulartModule {
     adjustSettings() { 
         // hide or show Geom window without stopping web worker (just like Koss)
         if (this.isOff()) {
-            this.setSendPause(true)
+            this.setSendingPaused(true)
             this.geomInwindow?.setVisibility(false);
         } else {
             this.geomInwindow?.setVisibility(true);
         }
     }
 
-    setSendPause(newState: boolean): void {} // Dynamically initialized
+    setSendingPaused(newIsPaused: boolean): void {} // Dynamically initialized
     stopGeometrize(): void {}                // Dynamically initialized
     updateLabel(which: 'total'|'sent'|'both', newValue: string) {}    // Dynamically initialized
 
@@ -197,20 +198,20 @@ class Geom extends CellulartModule {
             }
             toReturn.functions.updateLabel = updateLabel
 
-            const setSendPause = (newIsUnpaused: boolean) => {
-                Console.log("Send " + (newIsUnpaused ? "play" : "pause"), 'Geom')
-                sendPauser.style.backgroundImage = newIsUnpaused ? iconPause : iconPlay
-                this.flags.unpause = newIsUnpaused
-                if (newIsUnpaused) { this.trySend() }
+            const setSendingPaused = (newIsPaused: boolean) => {
+                Console.log("Send " + (newIsPaused ? "pause" : "play"), 'Geom')
+                sendPauser.style.backgroundImage = newIsPaused ? iconPlay : iconPause 
+                this.flags.sendingPaused = newIsPaused
+                if (!newIsPaused) { this.trySend() }
             }
-            toReturn.functions.setSendPause = setSendPause
+            toReturn.functions.setSendingPaused = setSendingPaused
 
-            const setGenPause = (newIsUnpaused: boolean) => {
-                Console.log("Gen " + (newIsUnpaused ? "play" : "pause"), 'Geom')
-                genPauser.style.backgroundImage = newIsUnpaused ? iconPause : iconPlay
-                this.flags.generate = newIsUnpaused
+            const setGenerationPaused = (newIsPaused: boolean) => {
+                Console.log("Gen " + (newIsPaused ? "pause" : "play"), 'Geom')
+                genPauser.style.backgroundImage = newIsPaused ? iconPlay : iconPause
+                this.flags.generationPaused = newIsPaused
             }
-            toReturn.functions.setGenPause = setGenPause
+            toReturn.functions.setGenerationPaused = setGenerationPaused
 
             const setGeomConfigWindow = (active: boolean) => {
                 configActive = active
@@ -219,14 +220,14 @@ class Geom extends CellulartModule {
             }
             toReturn.functions.setGeomConfigWindow = setGeomConfigWindow
 
-            setSendPause(this.flags.mode);
-            setGenPause(true);
+            setSendingPaused(!this.flags.mode);
+            setGenerationPaused(false);
 
-            sendPauser.addEventListener("click", () => { setSendPause(
-                (this.flags.mode && !this.flags.unpause) 
+            sendPauser.addEventListener("click", () => { setSendingPaused(
+                (this.flags.mode && !this.flags.sendingPaused) 
             )})
             back.addEventListener("click", () => { stopGeometrize() }) // TODO put a semi-transparent negative space cancel icon instead of hover-button
-            genPauser.addEventListener("click", () => { setGenPause(!this.flags.generate) })
+            genPauser.addEventListener("click", () => { setGenerationPaused(!this.flags.generationPaused) })
             genShowConfig.addEventListener("click", () => { setGeomConfigWindow(!configActive) })
 
             return toReturn
@@ -289,7 +290,7 @@ class Geom extends CellulartModule {
             geomScreen2.elements.body.style.display = 'none'; // TODO lazy init
             geomScreen3.elements.body.style.display = 'none';
             // other stopping stuff
-            geomScreen2.functions.setSendPause(false) 
+            geomScreen2.functions.setSendingPaused(true) 
             clearTimeout(this.stepCallback)
         }
         const startGeometrize = (files: FileList | null) => { // [G1]
@@ -302,7 +303,7 @@ class Geom extends CellulartModule {
             geomScreen2.elements.body.style.display = 'flex';
             geomScreen2.elements.echo.style.backgroundImage = "url(" + dataURL + ")"
 
-            geomScreen2.functions.setGenPause(true)
+            geomScreen2.functions.setGenerationPaused(false)
             geomScreen2.functions.updateLabel('both', 0)
             this.counters = { created:0, sent:0 }
             this.shapeQueue = [];
@@ -315,7 +316,7 @@ class Geom extends CellulartModule {
             };
         }
 
-        this.setSendPause = (newState: boolean) => { geomScreen2.functions.setSendPause(newState) }
+        this.setSendingPaused = (newState: boolean) => { geomScreen2.functions.setSendingPaused(newState) }
         this.stopGeometrize = stopGeometrize
         this.updateLabel = (which: 'total'|'sent'|'both', newValue: string) => { geomScreen2.functions.updateLabel(which, newValue) }
 
@@ -377,7 +378,7 @@ class Geom extends CellulartModule {
         // }
         const step = async() => {
             // TODO: Step consistently overshoots the config max by 1 and config distance
-            if (!this.flags.generate || this.counters.created >= this.config.max || this.counters.created - this.counters.sent >= this.config.distance) { 
+            if (this.flags.generationPaused || this.counters.created >= this.config.max || this.counters.created - this.counters.sent >= this.config.distance) { 
                 await this.queryGW(2)
                 this.stepCallback = window.setTimeout(step, 250); 
                 return 
