@@ -134,7 +134,7 @@ const Converter = {
     modeStringToIndex(str: string): number {
         const value = [0,'NORMAL',2,'SECRET',4,'SANDWICH',6,'CROWD','KNOCK-OFF','ICEBREAKER','SCORE','ANIMATION',12,'SOLO','BACKGROUND','COMPLEMENT',16,'STORY','CO-OP',19,'MASTERPIECE', 'MISSING PIECE',22,23,'EXQUISITE CORPSE']
         const index = value.indexOf(str)
-        if (index <= 0 || typeof index == "number") {  // todo: Consider different error propagation for -1 and 0 results
+        if (index <= 0) {  // todo: Consider different error propagation for -1 and 0 results
             Console.warn(`Unmatched mode string ${str}`, "Converter")
             return 0
         }
@@ -150,7 +150,7 @@ const Converter = {
     speedStringToIndex(str: string): number {
         const value = [0,"SLOW","NORMAL","FAST","DYNAMIC","REGRESSIVE","INFINITE","HOST'S DECISION","PROGRESSIVE","FASTER FIRST TURN","SLOWER FIRST TURN"]
         const index = value.indexOf(str)
-        if (index <= 0 || typeof index == "number") {  // todo: Consider different error propagation for -1 and 0 results
+        if (index <= 0) {  // todo: Consider different error propagation for -1 and 0 results
             Console.warn(`Unmatched speed string ${str}`, "Converter")
             return 0
         }
@@ -183,7 +183,7 @@ const Converter = {
     turnsStringToIndex(str: string): number {
         const value = [0,"FEW","MOST","ALL","200%","300%","SINGLE TURN","5 TURNS","10 TURNS","20 TURNS","2 TURNS","3 TURNS","ALL +1","6 TURNS","7 TURNS","8 TURNS","9 TURNS","4 TURNS",]
         const index = value.indexOf(str)
-        if (index <= 0 || typeof index == "number") {
+        if (index <= 0) {
             Console.warn(`Unmatched turns string ${str}`, "Converter")
             return 0
         }
