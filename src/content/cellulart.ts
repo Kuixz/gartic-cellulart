@@ -7,7 +7,8 @@ import {
     IShelf, Shelf,
     setAttributes, setParent, configChildTrunk, globalGame,
     GarticUser,
-    modeParameterDefaults, 
+    modeParameterDefaults,
+    SettingFrom, 
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
@@ -93,27 +94,50 @@ class Controller {
 
         const green = !(await this.auth.tryLogin())
         const menu = createMenuElement()
+        const menuItems = menu.firstElementChild!.firstElementChild as HTMLDivElement
+
+        // var menuShown = false
+        // var menuStatuses: { [key: string]: Setting } = {
+        //     on: SettingFrom("controller", "burger"),
+        //     off: SettingFrom("controller", "burger")
+        // }
+        var menuPatchSetting = SettingFrom("controller", "burger")
+
+        menu.insertAdjacentElement("afterbegin", createButton(
+            menuPatchSetting.assetPath,
+            () => {
+                // menuShown = !menuShown
+                menuItems.classList.toggle("collapsed")
+                return menuPatchSetting
+            },
+            false
+        ))
         modules.forEach((modTemplate: typeof CellulartModule) => { 
             const mod = new (modTemplate as new() => CellulartModule)()
             this.liveModules.push(mod)
-            menu.appendChild(createModuleButton(mod, green))
+            menuItems.appendChild(createModuleButton(mod, green))
             // if (mod.setting) { createModuleButton(mod, green) } 
             // if (mod.keybinds) { Keybinder.add(mod.keybinds) }
         })
         metamodules.forEach((modTemplate: typeof Metamodule) => { 
             const mod = new (modTemplate as new(modules: CellulartModule[]) => Metamodule)(this.liveModules)
             this.liveMetamodules.push(mod)
-            menu.appendChild(createModuleButton(mod, green))
+            menuItems.appendChild(createModuleButton(mod, green))
             // if (mod.setting) { createModuleButton(mod, green) } 
             // if (mod.keybinds) { Keybinder.add(mod.keybinds) }
         })
 
-        this.menu = menu
+        this.menu = menuItems
         if (green) { this.unhide = unhide }
 
         function createMenuElement () {
             const menu = document.createElement("div")
             setAttributes(menu, { id: "cellulart-menu" })
+            menu.innerHTML = `
+            <div id="cellulart-menu-items-cutoff">
+                <div id="cellulart-menu-items"></div>
+            </div>
+            `
             setParent(menu, document.body)
             return menu
         }

@@ -429,7 +429,22 @@ div#cellulart-menu{
     display: flex;
     flex-direction: column;
     gap: 10px;
+}
+div#cellulart-menu-items-cutoff {
+    overflow: hidden;
+}
+div#cellulart-menu-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 100%;
     overflow: scroll;
+    transition: 1s;
+
+    &.collapsed {
+        transform: translateY(-100%);
+        transition: .2s;
+    }
 }
 div.cellulart-menu-item {
     max-width: 100%;
