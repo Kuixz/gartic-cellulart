@@ -1,15 +1,13 @@
 // const dogSrc: string = 'https://media.tenor.com/fej4_qoxdHYAAAAM/cute-puppy.gif'
 import { 
     Phase, Console, Converter, GarticXHRData, 
-    Keybinder, Setting, SHAuth,
+    Keybinder, SHAuth,
     Socket, Xhr,
     // IAuth, SHAuth as SHAuth, 
     IShelf, Shelf,
     setAttributes, setParent, configChildTrunk, globalGame,
     GarticUser,
     modeParameterDefaults,
-    DefaultSettings,
-    SettingFrom, 
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
