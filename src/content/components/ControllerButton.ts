@@ -71,7 +71,7 @@ function createButton (svgID: string, onclick: () => Setting | undefined): HTMLE
 console.log(getResource("assets/module-svgs.html"))
 fetch(getResource("assets/module-svgs.html")).then(r => r.text()).then(html => {
     document.body.insertAdjacentHTML('beforeend', html);
-    console.log("SVGs added")
+    Console.log("SVGs added", "Controller")
 });
 
 export { createButton, createModuleButton }
