@@ -2,11 +2,11 @@ import { getMenuIcon } from "./Util"
 
 class Setting {
     internalName: string
-    assetPath: string
+    overrideAssetPath: string | undefined
 
-    constructor(name: string, asset: string) {
+    constructor(name: string, overrideAsset?: string) {
         this.internalName = name
-        this.assetPath = asset
+        this.overrideAssetPath = overrideAsset
     }
 }
 
@@ -63,16 +63,17 @@ const DefaultSettings = {
     off: "off",
     red: "red"
 }
+const DefaultSettingsValues = Object.values(DefaultSettings)
 
-function SettingFrom(moduleName: string, settingName: string): Setting {
-    return new Setting(settingName, getMenuIcon(`${moduleName}-${settingName}.png`))
+function SettingFrom(settingName: string, overrideAsset?: string): Setting {
+    return new Setting(settingName, overrideAsset ? getMenuIcon(`${overrideAsset}.png`) : undefined)
 }
 
 function SettingsBeltFrom(moduleName: string, settingNames: string[], defaultIndex: number, extension?: string): SettingsBelt {
     return new SettingsBelt(
-        settingNames.map((s) => SettingFrom(moduleName, s)),
+        settingNames.map((s) => SettingFrom(s, s in DefaultSettingsValues ? undefined : `${moduleName}-${s}`)),
         defaultIndex,
-        extension ? SettingFrom(moduleName, extension) : undefined
+        extension ? SettingFrom(extension) : undefined
     )
 }
 
