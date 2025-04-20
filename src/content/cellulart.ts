@@ -302,7 +302,8 @@ class Observer {
 
         globalGame.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
         globalGame.user = data.user
-        // globalGame.user.avatar = userAvatar
+        globalGame.user.avatar = "https://garticphone.com/images/avatar/" + data.user.avatar + ".svg"
+
         globalGame.players = data.users
         for (const player of globalGame.players) {
             player.avatar = "https://garticphone.com/images/avatar/" + player.avatar + ".svg"
