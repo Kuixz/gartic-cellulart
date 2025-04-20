@@ -1,5 +1,5 @@
 import { createButton } from "../components";
-import { WhiteSettingsBelt, Inwindow, Console, setAttributes, getMenuIcon, setParent, DefaultSettings } from "../foundation";
+import { WhiteSettingsBelt, Inwindow, Console, setParent } from "../foundation";
 import { CellulartModule, Metamodule } from "../modules";
 
 /* ----------------------------------------------------------------------
@@ -45,8 +45,8 @@ class Debug extends Metamodule {
 
         this.debugWIW = debugWIW;
     }
-    adjustSettings(previous: string, current: string) {
-        this.debugWIW.setVisibility(current == DefaultSettings.on)
+    adjustSettings() {
+        this.debugWIW.setVisibility(this.isOn())
     }
 
     // TODO: Hide Red modules while not authenticated.

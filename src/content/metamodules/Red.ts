@@ -21,11 +21,9 @@ class Red extends Metamodule {
         this.modules = modules.filter((x) => 'setting' in x ) 
         // console.log(this.modules)
     }
-    adjustSettings(previous: string, current: string) {
-        this.modules.forEach((mod) => { mod.togglePlus(current == 'red') })
+    adjustSettings() {
+        this.modules.forEach((mod) => { mod.togglePlus(this.isRed()) })
     }
-    // saveRecurrentState() { return { setting: this.setting.current } }
-    // saveTransientState() { return {} },
 }
 
 export { Red }
