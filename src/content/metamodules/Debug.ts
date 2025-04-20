@@ -1,3 +1,4 @@
+import { createButton } from "../components";
 import { WhiteSettingsBelt, Inwindow, Console, setAttributes, getMenuIcon, setParent, DefaultSettings } from "../foundation";
 import { CellulartModule, Metamodule } from "../modules";
 
@@ -24,18 +25,22 @@ class Debug extends Metamodule {
 
         // const preactivated = [ Observer ]
         modules.map(mod => mod.name).concat(["Socket", "Xhr", "Worker", "Observer"]).forEach((mod) => {
-            const modIcon = document.createElement("img")
-            setAttributes(modIcon, { class: "cellulart-circular-icon", src: getMenuIcon(mod.toLowerCase() + "-on" + ".png") })
-            setParent(modIcon, iconSelect)
-            modIcon.addEventListener("click", toggle)
+            const modButton = createButton(
+                mod.toLowerCase(),
+                function() { 
+                    modButton.classList.toggle("debug-selected")
+                    Console.toggle(mod) 
+                    return undefined
+                },
+            )
+
+            modButton.classList.add("fill-height")
+
             if (Console.enabledLoggingFor.has(mod)) { 
-                modIcon.classList.add("debug-selected")
+                modButton.classList.add("debug-selected")
             }
-            
-            function toggle() {
-                modIcon.classList.toggle("debug-selected")
-                Console.toggle(mod)
-            }
+
+            setParent(modButton, iconSelect)
         }) 
 
         this.debugWIW = debugWIW;

@@ -8,6 +8,7 @@ import {
     setAttributes, setParent, configChildTrunk, globalGame,
     GarticUser,
     modeParameterDefaults,
+    DefaultSettings,
     SettingFrom, 
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
@@ -16,6 +17,7 @@ import {
     ModuleLike, CellulartModule, Metamodule,
     ModuleChamber, MetaChamber
 } from "./modules/CellulartModule"
+import { createButton, createModuleButton } from "./components"
 
 class Controller { 
     // static name: Controller
@@ -96,33 +98,37 @@ class Controller {
         const menu = createMenuElement()
         const menuItems = menu.firstElementChild!.firstElementChild as HTMLDivElement
 
-        // var menuShown = false
-        // var menuStatuses: { [key: string]: Setting } = {
-        //     on: SettingFrom("controller", "burger"),
-        //     off: SettingFrom("controller", "burger")
-        // }
-        var menuPatchSetting = SettingFrom("controller", "burger")
-
         menu.insertAdjacentElement("afterbegin", createButton(
-            menuPatchSetting.assetPath,
+            "controller",
             () => {
                 // menuShown = !menuShown
                 menuItems.classList.toggle("collapsed")
-                return menuPatchSetting
+                return undefined
             },
-            false
         ))
         modules.forEach((modTemplate: typeof CellulartModule) => { 
             const mod = new (modTemplate as new() => CellulartModule)()
             this.liveModules.push(mod)
-            menuItems.appendChild(createModuleButton(mod, green))
+
+            const newButton = createModuleButton(mod)
+            if (mod.isCheat && green) {
+                hiddenButtons.push(newButton); 
+                newButton.style.display = "none"
+            }
+            menuItems.appendChild(newButton)
             // if (mod.setting) { createModuleButton(mod, green) } 
             // if (mod.keybinds) { Keybinder.add(mod.keybinds) }
         })
         metamodules.forEach((modTemplate: typeof Metamodule) => { 
             const mod = new (modTemplate as new(modules: CellulartModule[]) => Metamodule)(this.liveModules)
             this.liveMetamodules.push(mod)
-            menuItems.appendChild(createModuleButton(mod, green))
+
+            const newButton = createModuleButton(mod)
+            if (mod.isCheat && green) {
+                hiddenButtons.push(newButton); 
+                newButton.style.display = "none"
+            }
+            menuItems.appendChild(newButton)
             // if (mod.setting) { createModuleButton(mod, green) } 
             // if (mod.keybinds) { Keybinder.add(mod.keybinds) }
         })
@@ -132,37 +138,14 @@ class Controller {
 
         function createMenuElement () {
             const menu = document.createElement("div")
-            setAttributes(menu, { id: "cellulart-menu" })
+            setAttributes(menu, { id: "controller-menu" })
             menu.innerHTML = `
-            <div id="cellulart-menu-items-cutoff">
-                <div id="cellulart-menu-items"></div>
+            <div id="controller-cutoff">
+                <div id="controller-scroll-box"></div>
             </div>
             `
             setParent(menu, document.body)
             return menu
-        }
-        function createModuleButton (mod: ModuleLike, green: boolean): HTMLElement {
-            return createButton(
-                mod.setting.current.assetPath,
-                // mod.name.toLowerCase() + "_" + mod.setting.current,
-                function() { return mod.menuStep() },
-                mod.isCheat && green
-            )
-        }
-        function createButton (defaultPicture: string, onclick: () => Setting, hidden: boolean): HTMLElement {
-            const item = document.createElement("div")
-            setAttributes(item, { class: "cellulart-menu-item" })
-
-            const itemIcon = document.createElement("img")
-            setAttributes(itemIcon, { class: "cellulart-circular-icon", src: defaultPicture })  // getResource("assets/menu-icons/" + defaultPicture + ".png")]])
-            setParent(itemIcon, item)
-
-            item.addEventListener("click", function() { 
-                const newSetting = onclick(); 
-                itemIcon.src = newSetting.assetPath
-            })
-            if (hidden) { hiddenButtons.push(item); item.style.display = "none" } 
-            return item
         }
     }
     async authenticate(message: string, sendResponse: (response?: any) => void ) {

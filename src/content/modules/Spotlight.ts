@@ -1,10 +1,11 @@
 import * as gifenc from "gifenc"
 
 import { Phase, WhiteSettingsBelt, Console, Converter, Inwindow, Setting,
-    globalGame, getModuleAsset, getResource, setAttributes, configChildTrunk,
+    globalGame, getModuleAsset, setAttributes, configChildTrunk,
     setParent
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
+import { createButton } from "../components"
 
 type Side = "L" | "M" | "R"
 type Indexable<T> = T[]|{[key:number]:T}
@@ -224,17 +225,16 @@ class Spotlight extends CellulartModule { // [S1]
     }
     roundEnd(oldPhase: Phase) {
         if (oldPhase != 'book') { return }
-        if( this.isSetTo('off') || length(this.compositedFrameDatas) == 0) { return }
+        if( this.isSetTo('off') || length(this.compositedFrameDatas) == 0 ) { return }
 
         const snapshotFrameData = this.compositedFrameDatas
 
-        const dlInwindow = new Inwindow("default", { close: true, visible: true })
-        const dlIcon = new Image()
-        setAttributes(dlIcon, { class: "cellulart-circular-icon", src: getResource("assets/menu-icons/spotlight-on.png") })
+        const dlInwindow = new Inwindow("default", { close: true, visible: true, ratio: 1 })
+        const dlIcon = createButton("spotlight", () => {
+            this.compileToGif(snapshotFrameData);
+            return undefined
+        })
         setParent(dlIcon, dlInwindow.body)
-        dlIcon.onclick = () => {  // todo: Snapshot of compositedFrameDatas so it doesn't hurt if it gets wiped.
-            this.compileToGif(snapshotFrameData);  // todo: Memory leak?
-        }
         
         this.compositedFrameDatas = []
     }
