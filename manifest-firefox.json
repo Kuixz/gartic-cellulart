@@ -36,7 +36,7 @@
     "web_accessible_resources": [
         {
             "matches": [ "https://garticphone.com/*" ],
-            "resources": [ "*.png", "injected.js" ]
+            "resources": [ "assets/*", "injected.js" ]
         }
     ],
     "browser_specific_settings" : {
