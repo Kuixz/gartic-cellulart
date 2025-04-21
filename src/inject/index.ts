@@ -2,9 +2,22 @@ import { CrossCommand } from "../shared/Endpoint";
 
 abstract class Interceptor {
     abstract name: string
+    commandMap: { [key: string]: Function } = {}
 
     abstract proxy(): void
-    constructor() { this.proxy() }
+
+    constructor() { 
+        this.proxy()
+        
+        window.addEventListener('message', (event: CrossCommand) => {
+            if (event.source !== window || event.data.direction !== `to${this.name}`) { return; }
+            const purp = event.data.purpose
+            const data = event.data.data
+            if (!(purp in this.commandMap)) { this.post('log', `No such ${this.name} command: ${purp}`)}
+            try { (this.commandMap[purp].bind(this))(data) } 
+            catch (e) { this.post('log', `Socket error executing ${purp}(${JSON.stringify(data)}): ${e}`) }
+        }) 
+    }
     interceptIncoming(str: string): Maybe<string> { return undefined }
     interceptOutgoing(str: string): Maybe<string> { return undefined }
     readIncoming(str: string): void {}
