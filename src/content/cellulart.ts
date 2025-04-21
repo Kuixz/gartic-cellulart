@@ -1,7 +1,7 @@
 // const dogSrc: string = 'https://media.tenor.com/fej4_qoxdHYAAAAM/cute-puppy.gif'
 import { 
     Phase, Console, Converter, GarticXHRData, 
-    Keybinder, SHAuth,
+    Keybinder, Keybind, SHAuth,
     Socket, Xhr,
     // IAuth, SHAuth as SHAuth, 
     IShelf, Shelf,
@@ -23,17 +23,17 @@ class Controller {
     liveModules: CellulartModule[] = []
     liveMetamodules: Metamodule[] = []
     // modules: [Timer, Koss, Refdrop, Spotlight, Geom, Red, Debug], //, Reveal]
-    auth: SHAuth /*IAuth*/ = new SHAuth(new Shelf())
+    auth: SHAuth /*IAuth*/ // = new SHAuth(new Shelf())
 
     constructor(
-        // auxmodules: AuxChamber,
         modules: ModuleChamber, 
         metamodules: MetaChamber,
     ) {
-        // Keybinder.init()
         Socket.init()
         Xhr.init()
+        Keybinder.init()
 
+        this.auth = new SHAuth(new Shelf())
         this.initPopupAuth()
 
         this.createMenu(modules, metamodules)
@@ -114,8 +114,7 @@ class Controller {
                 newButton.style.display = "none"
             }
             menuItems.appendChild(newButton)
-            // if (mod.setting) { createModuleButton(mod, green) } 
-            // if (mod.keybinds) { Keybinder.add(mod.keybinds) }
+            if (mod.keybinds) { Keybinder.add(mod.keybinds) }
         })
         metamodules.forEach((modTemplate: typeof Metamodule) => { 
             const mod = new (modTemplate as new(modules: CellulartModule[]) => Metamodule)(this.liveModules)
@@ -127,7 +126,6 @@ class Controller {
                 newButton.style.display = "none"
             }
             menuItems.appendChild(newButton)
-            // if (mod.setting) { createModuleButton(mod, green) } 
             // if (mod.keybinds) { Keybinder.add(mod.keybinds) }
         })
 
@@ -445,7 +443,6 @@ class Observer {
 }
 
 function main() {
-    // const auxmodules: AuxChamber = [Keybinder]
     const modules: ModuleChamber = [Timer, Koss, Refdrop, Spotlight, Geom, Scry]
     const metamodules: MetaChamber = [Red, Debug]
 

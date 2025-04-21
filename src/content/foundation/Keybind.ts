@@ -8,24 +8,23 @@ class Keybind {
     }
 }
 
-class Keybinder {
-    keybinds: Keybind[]
+const Keybinder = {
+    keybinds: [] as Keybind[],
 
-    constructor(keybinds: Keybind[]) {
-        this.keybinds = keybinds
+    init(keybinds?: Keybind[]) {
+        if (keybinds) { this.keybinds = keybinds }
 
         document.addEventListener("keydown", (e) => {  // console.log(e.code)
-            keybinds.forEach((bind) => bind.triggeredBy(e) && bind.response(e))
+            // console.log(this.keybinds)
+            this.keybinds.forEach((bind) => bind.triggeredBy(e) && bind.response(e))
         })
-
-        this.reset()
-    }
+    },
     reset() {
         this.keybinds = []
-    }
+    },
     set(keybinds: Keybind[]) {
         this.keybinds = keybinds
-    }
+    },
     add(keybinds: Keybind[]) {
         this.keybinds = this.keybinds.concat(keybinds)
     }
