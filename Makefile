@@ -5,7 +5,7 @@ IUC = $(shell echo '$(1)' | tr '[:lower:]' '[:upper:]')
 LC = $(call ILC,$(1))
 ILC = $(shell echo '$(1)' | tr '[:upper:]' '[:lower:]')
 
-PACKAGE_VERSION := 1.3.0
+PACKAGE_VERSION := 1.3.3
 
 MANIFEST ?= Chrome
 
@@ -17,6 +17,6 @@ endef
 .PHONY: package-both
 package-both:
 	# Packaging...
-	$(call package-for,Chrome)
 	$(call package-for,Firefox)
+	$(call package-for,Chrome)
 	# Complete

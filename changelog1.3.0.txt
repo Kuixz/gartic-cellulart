@@ -1,0 +1,16 @@
+
+Expanded changelog / fix list for Cellulart 1.3.0
+
+- Added additional phase changing hooks and rearranged existing ones for readability
+- Refactored Timer to allow for elapsed-time value patching on reconnect
+- Reduced implicit CSS juggling in Koss and Refdrop
+- Disabled changing Spotlight settings while it's mid-operation
+- Divided Spotlight into two halves for readability
+- Smoothed inconsistencies in Geom GUI
+- Added tracking of internal user IDs and global turn number in Observer
+- Trimmed spurious Debug logs for various modules
+- Enforced proper separation of duties for Belt and its dependents
+- Added reading of XML requests to tap internal data pre-WS creation
+- Added z-prioritization of the most recently opened Inwindow
+- Removed some unused CSS related to a scrapped module
+- Conformed to universal style guidelines (NL at EOF)
