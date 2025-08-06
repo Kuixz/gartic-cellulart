@@ -1,7 +1,7 @@
 {
   "name": "cellulart",
   "description": "Level up your Gart",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "author": "Quixz",
   "repository": {
     "type": "git",
@@ -11,8 +11,8 @@
   "scripts": {
     "preinstall": "npx only-allow pnpm",
     "test": "node_modules/vitest/vitest.mjs --passWithNoTests",
-    "dev": "",
-    "build": "node_modules/webpack/bin/webpack.js --config webpack.config.cjs --env manifest=${manifest:-chrome} --env mode=${mode:-development}"
+    "build": "node_modules/webpack/bin/webpack.js --config webpack.config.cjs --env manifest=${manifest:-chrome} --env mode=${mode:-development}",
+    "build:watch": "node_modules/webpack/bin/webpack.js --watch --config webpack.config.cjs --env manifest=${manifest:-chrome} --env mode=${mode:-development}"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.26.9",
