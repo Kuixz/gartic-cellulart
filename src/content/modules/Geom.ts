@@ -44,7 +44,7 @@ type GeomScreenData = {
   * ---------------------------------------------------------------------- */
 /** Geom (Geometrize) is the second generation of Gartic autodrawers 
   * after rate limiting culled the first generation.     
-  * The longest module at 360 lines. Previously some of my finer work.                  
+  * The longest module at 360 lines. cringe                  
   * ---------------------------------------------------------------------- */
 class Geom extends CellulartModule {
     name = "Geom"        
@@ -78,6 +78,8 @@ class Geom extends CellulartModule {
             return 
         }
         this.flags.mode = true
+
+        this.geomPreview.innerHTML = ''
 
         setParent(this.geomPreview, document.querySelector(".core")!)
     }
@@ -428,7 +430,7 @@ class Geom extends CellulartModule {
                 return // else if LINE
             }
     
-            return { fst: '42[2,7,{"t":0,"d":1,"v":[' + type + ',',
+            return { fst: '42[2,7,{"t":3,"d":1,"v":[' + type + ',',
                     snd: ',["#' + color + '",2,"0.5"],['
                     + coords[0] + ',' + coords[1]
                     + '],['
