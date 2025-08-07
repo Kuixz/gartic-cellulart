@@ -287,6 +287,7 @@ class Observer {
         globalGame.turnsIndex = data.configs.turns
         globalGame.flowIndex = data.configs.first
         globalGame.speedIndex = data.configs.speed
+        globalGame.keepIndex = data.configs.keep
 
         if (data.screen != 1) {  // Bad solution to this two-systems thing we have going on. 
             this.onEntryXHR = data
@@ -324,6 +325,9 @@ class Observer {
                         case 'flow': 
                             globalGame.flowIndex = messageData[key]
                             break
+                        case 'keep': 
+                            globalGame.keepIndex = messageData[key]
+                            break
                     }
                 }
                 break;
@@ -333,6 +337,7 @@ class Observer {
                 globalGame.turnsIndex = modeParameters.turns
                 globalGame.speedIndex = modeParameters.speed
                 globalGame.flowIndex = modeParameters.flow
+                globalGame.keepIndex = modeParameters.keep
                 break;
             }
             case 27: {  // Return to normal settings when changing tabs
@@ -340,6 +345,7 @@ class Observer {
                 globalGame.turnsIndex = modeParameters.turns
                 globalGame.speedIndex = modeParameters.speed
                 globalGame.flowIndex = modeParameters.flow
+                globalGame.keepIndex = modeParameters.keep
                 break;
             }
         }

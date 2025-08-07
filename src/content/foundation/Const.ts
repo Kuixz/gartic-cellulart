@@ -1,4 +1,4 @@
-import { Converter, GarticUser, Phase } from "./Converter";
+import { Converter, GarticUser, Phase, ETurns, EFlow, EMode, ESpeed, EKeep } from "./Converter";
 
 const svgNS = "http://www.w3.org/2000/svg"
 const configChildTrunk = { childList: true };
@@ -20,9 +20,10 @@ const globalGame = {
     currentTurn: 0,
     currentPhase: "start" as Phase,
 
-    flowIndex: 1,
-    speedIndex: 2,
-    turnsIndex: 3,
+    flowIndex: EFlow.WRITING_DRAWING,
+    speedIndex: ESpeed.NORMAL,
+    turnsIndex: ETurns.ALL,
+    keepIndex: EKeep.NONE,
     roundStart() {
         this.turns = Converter.turnsIndexToFunction(this.turnsIndex)(this.players.length)
     }
