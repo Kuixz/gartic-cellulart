@@ -37,18 +37,11 @@ class Controller {
         this.initPopupAuth()
 
         this.createMenu(modules, metamodules)
-        // this.liveModules = this.createMenu(modules, metamodules)
-
-        // Socket.addMessageListener('strokeCount', (data) => {
-        //     console.log('Stroke count set to ' + data)
-        //     Shelf.set({ strokeCount:data })
-        // })
     }
     enterLobby() {
         this.liveModules.forEach(mod => mod.enterLobby())
     }
     roundStart() {
-        // game.roundStart()
         this.liveModules.forEach(mod => mod.roundStart())
     }
     mutation(oldPhase: Phase, newPhase: Phase) {
@@ -58,9 +51,7 @@ class Controller {
         this.liveModules.forEach(mod => mod.patchReconnect(data))
     }
     roundEnd(oldPhase: Phase) {
-        // Socket.post("roundEnd")
-        // Socket.roundEnd()
-        // Shelf.set({ strokeCount:data }) // Possibly redundant? Will have to test.
+        Socket.roundEnd()
         this.liveModules.forEach(mod => mod.roundEnd(oldPhase))
     }
     exitLobby(oldPhase: Phase) {
@@ -171,7 +162,7 @@ class Observer {
         globalGame.currentPhase = newPhase
         Console.log(`Transitioned to ${newPhase}`, "Observer")
 
-        globalGame.currentTurn = (function():number {
+        globalGame.currentTurn = (() => {
             if (["first", "draw", "write", "memory", "mod"].includes(newPhase)) {
                 const step = document.querySelector(".step")
                 if (!step) { Console.warn("Could not find turn counter", "Observer"); return -1 }
@@ -180,8 +171,10 @@ class Observer {
                 const slashIndex = step.textContent.indexOf("/")
                 const turnCount = Number(step.textContent.slice(0, slashIndex))
                 if (isNaN(turnCount)) { Console.warn("Could not parse turn counter", "Observer"); return -1 }
+                return turnCount
+            } else {
+                return 0
             }
-            return 0
         })()
 
         const outOfGame = (phase: Phase) => phase == "start" || phase == "lobby"
@@ -247,8 +240,6 @@ class Observer {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
         this.deduceSettingsFromDocument()
-        
-        // console.log('next fired')
     })
     contentObserver: MutationObserver = new MutationObserver((records) => {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
@@ -280,21 +271,10 @@ class Observer {
 
     // TODO create DataExtractor interface?
 
-    // Due to possible instability, I have judged that "perfect" settings tracking is infeasible.
-    // Thus, the below two functions will primarily find use under Timer/Spotlight (precise reconnect), Scry (functionality), and Socket (stroke erasure).
+    // Due to possible instability, "perfect" settings tracking should be infeasible.
+    // Practically, though, supposing that Gartic doesn't often rearrange their enums, I won't have to either.
     deduceSettingsFromXHR(data: GarticXHRData) {
         Console.log(`Deducing from XHR ${JSON.stringify(data)}`, "Observer")
-
-        // const avatarElement = document.querySelector('.avatar > i')?.previousSibling
-        // const userAvatar = avatarElement ? getComputedStyle(avatarElement as Element).backgroundImage : ""
-        // console.log(userAvatar)
-
-        // if (data.turnMax > 0) {
-            // todo: in theory we should pass these through to all the modules, but ehh.
-            // game.turns = data.turnMax
-            // Timer.interpolate(data.turnNum)
-        //     Socket.post('setStrokeStack', data.draw)
-        // }
 
         globalGame.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
         globalGame.user = data.user
@@ -313,14 +293,6 @@ class Observer {
         }
     }
     deduceSettingsFromSocket(data: [number, number, any]) {  
-        // console.log(data)
-        // Controller.updateLobbySettings(data[1], data[2])
-        // if (data[1] == 5) {
-            // game.turns = data[2]  // it's not that easy...
-        //     game.turns = Converter.turnsStringToFunction(/* TODO TODO TODO */)(data[2])
-        // }
-        // if (data[1] == 1) {
-        // var dict = {}
         const messageType = data[1]
         const messageData = data[2]
 
@@ -397,48 +369,7 @@ class Observer {
                     globalGame.user = player
                 }
             }
-        //     // globalGame.players
-        // } else {
-        //     Console.alert("Could not find player list", "Observer")
         }
-
-        // if in lobby, check for the apperance of the start of round countdown and when it appears, update the current gamemode variable.
-        // This is now relegated to a backup system.
-        const defaultMode = document.querySelector(".checked")?.querySelector("h4")?.textContent;
-        if (defaultMode) { 
-            const gameIndex = Converter.modeStringToIndex(defaultMode)
-            if (gameIndex == 0) { return }  
-            // If the code returns here then the default mode is either a new EN mode or the game isn't in English.
-            // New EN mode uses modeParameterDefaults due to XHR. 
-            // Non-EN user uses mode-appropriate parameters due to XHR.
-
-            const gameConfig = Converter.modeIndexToParameters(gameIndex)
-            Console.log(`Settings were {turns:${globalGame.turnsIndex}, speed:${globalGame.speedIndex}, flow:${globalGame.flowIndex}}; updated to ${JSON.stringify(gameConfig)}`, "Observer")
-            globalGame.turnsIndex = gameConfig.turns
-            globalGame.speedIndex = gameConfig.speed
-            globalGame.flowIndex = gameConfig.flow
-        } 
-
-        // const gameEncodedConfig = document.querySelector(".config")?.querySelectorAll(".select");
-        // if (gameEncodedConfig) { 
-        // // if the current gamemode variable is not found by searching for .checked, then each piece must be assigned separately.
-        //     const gameConfig = new Array(3);
-        //     if (!gameEncodedConfig) {}
-        //     // console.log(gameEncodedConfig);
-        //     [0,1,2].forEach((num) => { 
-        //         const dropdown = gameEncodedConfig[num].querySelector("select"); 
-        //         if (dropdown) {
-        //             gameConfig[num] = dropdown.childNodes[dropdown.selectedIndex].textContent;    
-        //         } else { 
-        //             gameConfig[num] = gameEncodedConfig[num].childNodes[0].textContent;    
-        //         }
-        //     })
-        //     // Controller.updateLobbySettings({"custom": gameConfig/*, "players": players*/})
-
-        //     globalGame.turnsIndex = Converter.turnsStringToIndex(gameConfig[2])
-        //     globalGame.speedIndex = Converter.speedStringToIndex(gameConfig[0])
-        //     globalGame.flowIndex = Converter.flowStringToIndex(gameConfig[1])
-        // }
     }
 }
 
@@ -456,19 +387,3 @@ function main() {
 }
 
 document.readyState === 'complete' ? main() : window.addEventListener('load', () => main());
-
-// window.addEventListener('beforeunload', () => {
-    // get states (including transient states) of all modules + 
-    // shelve them
-
-    // on load:
-    // retrieve states
-    // pass transience i.e. if roundEnd-ness along with aggregated state data to modules
-    // so they can pick out their data
-
-
-    // OR load:
-    // tell all modules to retrieve states
-    // on first transition:
-    // if transient i.e. if not roundEnd, tell all modules to retrieve transient states
-// })
