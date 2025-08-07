@@ -165,7 +165,7 @@ class SocketInterceptor extends Interceptor {
         this.strokeCount += 1
         const toSend = data.fst + this.strokeCount + data.snd;
         this.currentWS!.expressSend(toSend);
-        this.post('log', "Sent: " + toSend);
+        // this.post('log', "Sent: " + toSend);
     }
     onDisconnect(data: any) {  // Type alert suppressed
         this.currentWS = null
