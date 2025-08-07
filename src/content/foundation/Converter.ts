@@ -1,9 +1,9 @@
 import { Console } from "./Console"
 
-type Phase = "start" | "lobby" | "draw" | "write" | "memory" | "book" | "first" | "mod" | "waiting"
+export type Phase = "start" | "lobby" | "draw" | "write" | "memory" | "book" | "first" | "mod" | "waiting"
 
 type GarticStroke = [number, number, [string, number, number], ...[number, number]]
-type GarticUser = {
+export type GarticUser = {
     nick:   string
     avatar: string
 
@@ -20,7 +20,7 @@ type GarticUser = {
 
     ready?: boolean
 }
-type GarticXHRData = {
+export type GarticXHRData = {
     animationConfigs: {speed: number, loop: number} 
     bookAutomatic:    boolean 
     bookNum:          number
@@ -49,151 +49,191 @@ type GarticXHRData = {
     previous?:    any
 }
 
-type ModeParameters = {
-    speed: number
-    turns: number
-    flow:  number
+export type ModeParameters = {
+    speed: ESpeed
+    turns: ETurns
+    flow:  EFlow
+    keep:  EKeep
 }
-const modeParameterDefaults: ModeParameters = { speed: 2, turns: 3, flow: 1 }
-type SpeedParameters = {
+export const modeParameterDefaults: ModeParameters = { speed: ESpeed.NORMAL, turns: ETurns.ALL, flow: 1 }
+export type SpeedParameters = {
     write: number
     draw: number
     decayFunction: (n: number) => number
     firstMultiplier: number,
     // fallback?: number
 }
-const speedParameterDefaults = { write: 40, draw: 150, decayFunction: () => 0, firstMultiplier: 1.25 }
+export const speedParameterDefaults = { write: 40, draw: 150, decayFunction: () => 0, firstMultiplier: 1.25 }
 
-const modeParameters = new Map<number, ModeParameters>([
-    [1,  { speed: 2, turns: 3,  flow: 1 }], // NORMAL
-    [8,  { speed: 5, turns: 3,  flow: 3 }], // KNOCK-OFF
-    [3,  { speed: 3, turns: 3,  flow: 1 }], // SECRET
-    [11, { speed: 2, turns: 3,  flow: 3 }], // ANIMATION
-    [24, { speed: 1, turns: 11, flow: 3 }], // EXQUISITE CORPSE
-    [9,  { speed: 2, turns: 12, flow: 7 }], // ICEBREAKER
-    [15, { speed: 9, turns: 12, flow: 11 }], // COMPLEMENT
+export enum EMode {
+    NORMAL = 1,
+    KNOCKOFF = 8,
+    SECRET = 3,
+    ANIMATION = 11,
+    EXQUISITE_CORPSE = 24,
+    ICEBREAKER = 9,
+    COMPLEMENT = 15,
+    MASTERPIECE = 20,
+    STORY = 17,
+    MISSING_PIECE = 21,
+    COOP = 18,
+    SCORE = 10,
+    SANDWICH = 5,
+    BACKGROUND = 14,
+    SOLO = 13
+}
+export enum ESpeed {
+    SLOW = 1,
+    NORMAL = 2,
+    FAST = 3,
+    PROGRESSIVE = 8,
+    REGRESSIVE = 5,
+    DYNAMIC = 4,
+    INFINITE = 6,
+    HOST_DECISION = 7,
+    FASTER_FIRST = 9,
+    SLOWER_FIRST = 10
+}
+export enum EFlow {
+    WRITING_DRAWING = 1,
+    DRAWING_WRITING = 2,
+    ONLY_DRAWING = 3,
+    ONLY_WRITING = 12,
+    WRITING_BEGIN_END = 4,
+    WRITING_BEGIN = 5,
+    WRITING_END = 6,
+    SINGLE_SENTENCE = 7,
+    SINGLE_DRAWING = 8,
+    SOLO_DRAWING = 9,
+    WITH_BACKGROUND = 10,
+    WITH_BACKGROUND_NO_PREVIEW = 11
+}
+export enum ETurns {
+    FEW = 1,
+    MOST = 2,
+    ALL = 3,
+    ALL_PLUS_1 = 12,
+    DOUBLE = 4,
+    TRIPLE = 5,
+    ONE = 6,
+    TWO = 10,
+    THREE = 11,
+    FOUR = 17,
+    FIVE = 7,
+    SIX = 13,
+    SEVEN = 14,
+    EIGHT = 15,
+    NINE = 16,
+    TEN = 8,
+    TWENTY = 9
+}
+export enum EKeep {
+    NONE = 2,
+    ALL = 1,
+    PREVIOUS = 3,
+    BY_TOP = 4
+}
+
+const modeParametersMap = new Map<EMode, ModeParameters>([
+    [EMode.NORMAL,  { speed: ESpeed.NORMAL, turns: ETurns.ALL,  flow: EFlow.WRITING_DRAWING, keep: EKeep.NONE }], // NORMAL
+    [EMode.KNOCKOFF,  { speed: ESpeed.REGRESSIVE, turns: ETurns.ALL,  flow: EFlow.ONLY_DRAWING, keep: EKeep.NONE }], // KNOCK-OFF
+    [EMode.SECRET,  { speed: ESpeed.FAST, turns: ETurns.ALL,  flow: EFlow.WRITING_DRAWING, keep: EKeep.NONE }], // SECRET
+    [EMode.ANIMATION, { speed: ESpeed.NORMAL, turns: ETurns.ALL,  flow: EFlow.ONLY_DRAWING, keep: EKeep.NONE }], // ANIMATION
+    [EMode.EXQUISITE_CORPSE, { speed: ESpeed.SLOW, turns: ETurns.THREE, flow: EFlow.ONLY_DRAWING, keep: EKeep.BY_TOP }], // EXQUISITE CORPSE
+    [EMode.ICEBREAKER,  { speed: ESpeed.NORMAL, turns: ETurns.ALL_PLUS_1, flow: EFlow.SINGLE_SENTENCE, keep: EKeep.NONE }], // ICEBREAKER
+    [EMode.COMPLEMENT, { speed: ESpeed.FASTER_FIRST, turns: ETurns.ALL_PLUS_1, flow: EFlow.WITH_BACKGROUND_NO_PREVIEW, keep: EKeep.NONE }], // COMPLEMENT
     // speedrun is 7 (what? no it isn't???)
-    [20, { speed: 7, turns: 6,  flow: 9 }],  // MASTERPIECE
-    [17, { speed: 2, turns: 3,  flow: 12 }], // STORY
-    [21, { speed: 2, turns: 3,  flow: 3 }],  // MISSING PIECE
-    [18, { speed: 3, turns: 13, flow: 7 }],  // CO-OP
-    [10, { speed: 2, turns: 3,  flow: 1 }],  // SCORE
-    [5,  { speed: 2, turns: 3,  flow: 4 }],  // SANDWICH
-    [14, { speed: 10, turns: 4, flow: 10 }], // BACKGROUND
-    [13, { speed: 4,  turns: 7, flow: 9 }]   // SOLO
+    [EMode.MASTERPIECE, { speed: ESpeed.HOST_DECISION, turns: ETurns.ONE,  flow: EFlow.SOLO_DRAWING, keep: EKeep.NONE }],  // MASTERPIECE
+    [EMode.STORY, { speed: ESpeed.NORMAL, turns: ETurns.ALL,  flow: EFlow.ONLY_WRITING, keep: EKeep.NONE }], // STORY
+    [EMode.MISSING_PIECE, { speed: ESpeed.NORMAL, turns: ETurns.ALL,  flow: EFlow.ONLY_DRAWING, keep: EKeep.PREVIOUS }],  // MISSING PIECE
+    [EMode.COOP, { speed: ESpeed.FAST, turns: ETurns.SIX, flow: EFlow.SINGLE_SENTENCE, keep: EKeep.ALL }],  // CO-OP
+    [EMode.SCORE, { speed: ESpeed.NORMAL, turns: ETurns.ALL,  flow: EFlow.WRITING_DRAWING, keep: EKeep.NONE }],  // SCORE
+    [EMode.SANDWICH,  { speed: ESpeed.NORMAL, turns: ETurns.ALL,  flow: EFlow.WRITING_BEGIN_END, keep: EKeep.NONE }],  // SANDWICH
+    [EMode.BACKGROUND, { speed: ESpeed.SLOWER_FIRST, turns: ETurns.DOUBLE, flow: EFlow.WITH_BACKGROUND, keep: EKeep.NONE }], // BACKGROUND
+    [EMode.SOLO, { speed: ESpeed.DYNAMIC,  turns: ETurns.FIVE, flow: EFlow.SOLO_DRAWING, keep: EKeep.NONE }]   // SOLO
 ])
-const speedParameters = new Map<number, SpeedParameters>([
-    [1,  { write: 80, draw: 300, decayFunction: () => 0,                                    firstMultiplier: 1.25 }],               // SLOW
-    [2,  { write: 40, draw: 150, decayFunction: () => 0,                                    firstMultiplier: 1.25 }],               // NORMAL
-    [3,  { write: 20, draw: 75,  decayFunction: () => 0,                                    firstMultiplier: 1.25 }],               // FAST
-    [8,  { write: 8,  draw: 30,  decayFunction: (turns: number) => Math.exp(8 / turns),     firstMultiplier: 1, }],                 // PROGRESSIVE
-    [5,  { write: 90, draw: 300, decayFunction: (turns: number) => 1 / Math.exp(8 / turns), firstMultiplier: 1  }], // REGRESSIVE
-    [4,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1  }], // DYNAMIC
-    [6,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1  }], // INFINITE
-    [7,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1  }], // HOST'S DECISION
-    [9,  { write: 40, draw: 150, decayFunction: () => 0,                                    firstMultiplier: 0.2 }], // FASTER FIRST TURN
-    [10, { write: 40, draw: 150, decayFunction: () => 0,                                    firstMultiplier: 2  }], // SLOWER FIRST TURN
+const speedParametersMap = new Map<ESpeed, SpeedParameters>([
+    [ESpeed.SLOW,  { write: 80, draw: 300, decayFunction: () => 0,                                    firstMultiplier: 1.25 }],               // SLOW
+    [ESpeed.NORMAL,  { write: 40, draw: 150, decayFunction: () => 0,                                    firstMultiplier: 1.25 }],               // NORMAL
+    [ESpeed.FAST,  { write: 20, draw: 75,  decayFunction: () => 0,                                    firstMultiplier: 1.25 }],               // FAST
+    [ESpeed.PROGRESSIVE,  { write: 8,  draw: 30,  decayFunction: (turns: number) => Math.exp(8 / turns),     firstMultiplier: 1, }],                 // PROGRESSIVE
+    [ESpeed.REGRESSIVE,  { write: 90, draw: 300, decayFunction: (turns: number) => 1 / Math.exp(8 / turns), firstMultiplier: 1  }], // REGRESSIVE
+    [ESpeed.DYNAMIC,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1  }], // DYNAMIC
+    [ESpeed.INFINITE,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1  }], // INFINITE
+    [ESpeed.HOST_DECISION,  { write: -1, draw: -1,  decayFunction: () => 0,                                    firstMultiplier: 1  }], // HOST'S DECISION
+    [ESpeed.FASTER_FIRST,  { write: 40, draw: 150, decayFunction: () => 0,                                    firstMultiplier: 0.2 }], // FASTER FIRST TURN
+    [ESpeed.SLOWER_FIRST, { write: 40, draw: 150, decayFunction: () => 0,                                    firstMultiplier: 2  }], // SLOWER FIRST TURN
+])
+const flowParametersMap = new Map<EFlow, number>([
+    [EFlow.WRITING_DRAWING, 2],   // WRITING, DRAWING
+    [EFlow.DRAWING_WRITING, 2],   // DRAWING, WRITING
+    [EFlow.ONLY_DRAWING, 1],    // ONLY DRAWING
+    [EFlow.ONLY_WRITING, 1],   // ONLY WRITING
+    [EFlow.WRITING_BEGIN_END, 1],    // WRITING ONLY AT THE BEGINNING AND END
+    [EFlow.WRITING_BEGIN, 1],    // WRITING ONLY AT THE BEGINNING
+    [EFlow.WRITING_END, 1],    // WRITING ONLY AT THE END
+    [EFlow.SINGLE_SENTENCE, -1],  // SINGLE SENTENCE
+    [EFlow.SINGLE_DRAWING, -1],  // SINGLE DRAWING
+    [EFlow.WITH_BACKGROUND, -1], // DRAWINGS WITH A BACKGROUND
+    [EFlow.WITH_BACKGROUND_NO_PREVIEW, -1], // DRAWINGS WITH A BACKGROUND, NO PREVIEW
+])
+const turnsParametersMap = new Map<ETurns, (players: number) => number>([
+    [ETurns.FEW, (players) => Math.floor(players / 2)],     // FEW [C3]
+    [ETurns.MOST, (players) => Math.floor(3 * players / 4)], // MOST [C3]
+    [ETurns.ALL, (players) => players],                     // ALL
+    [ETurns.ALL_PLUS_1, (players) => players + 1],                // ALL + 1
+    [ETurns.DOUBLE, (players) => 2 * players],                 // 200%
+    [ETurns.TRIPLE, (players) => 3 * players],                 // 300%
+    [ETurns.ONE, () => 1],                                  // SINGLE TURN
+    [ETurns.TWO, () => 2],                                 // 2 TURNS
+    [ETurns.THREE, () => 3],                                 // 3 TURNS
+    [ETurns.FOUR, () => 4],                                 // 4 TURNS
+    [ETurns.FIVE, () => 5],                                  // 5 TURNS
+    [ETurns.SIX, () => 6],                                 // 6 TURNS
+    [ETurns.SEVEN, () => 7],                                 // 7 TURNS
+    [ETurns.EIGHT, () => 8],                                 // 8 TURNS
+    [ETurns.NINE, () => 9],                                 // 9 TURNS
+    [ETurns.TEN, () => 10],                                 // 10 TURNS
+    [ETurns.TWENTY, () => 20]                                  // 20 TURNS
+])
+const continuesParametersMap = new Map<EKeep, boolean>([
+    [EKeep.NONE, true],
+    [EKeep.ALL, false],
+    [EKeep.PREVIOUS, true],
+    [EKeep.BY_TOP, true],
 ])
 
-const flowParameters = new Map<number, number>([
-    [1, 2],   // WRITING, DRAWING
-    [2, 2],   // DRAWING, WRITING
-    // [3, 1]    // ONLY DRAWING
-    // [12, 1]   // ONLY WRITING
-    // [4, 1]    // WRITING ONLY AT THE BEGINNING AND END
-    // [5, 1]    // WRITING ONLY AT THE BEGINNING
-    // [6, 1]    // WRITING ONLY AT THE END
-    [7, -1],  // SINGLE SENTENCE
-    [8, -1],  // SINGLE DRAWING
-    [10, -1], // DRAWINGS WITH A BACKGROUND
-    [11, -1], // DRAWINGS WITH A BACKGROUND, NO PREVIEW
-])
-
-const turnsParameters = new Map<number, (players: number) => number>([
-    [1, (players) => Math.floor(players / 2)],     // FEW [C3]
-    [2, (players) => Math.floor(3 * players / 4)], // MOST [C3]
-    [3, (players) => players],                     // ALL
-    [12, (players) => players + 1],                // ALL + 1
-    [4, (players) => 2 * players],                 // 200%
-    [5, (players) => 3 * players],                 // 300%
-    [6, () => 1],                                  // SINGLE TURN
-    [10, () => 2],                                 // 2 TURNS
-    [11, () => 3],                                 // 3 TURNS
-    [17, () => 4],                                 // 4 TURNS
-    [7, () => 5],                                  // 5 TURNS
-    [13, () => 6],                                 // 6 TURNS
-    [14, () => 7],                                 // 7 TURNS
-    [15, () => 8],                                 // 8 TURNS
-    [16, () => 9],                                 // 9 TURNS
-    [8, () => 10],                                 // 10 TURNS
-    [9, () => 20]                                  // 20 TURNS
-])
-
-const Converter = {
-
-    modeStringToIndex(str: string): number {
-        const value = [0,'NORMAL',2,'SECRET',4,'SANDWICH',6,'CROWD','KNOCK-OFF','ICEBREAKER','SCORE','ANIMATION',12,'SOLO','BACKGROUND','COMPLEMENT',16,'STORY','CO-OP',19,'MASTERPIECE', 'MISSING PIECE',22,23,'EXQUISITE CORPSE']
-        const index = value.indexOf(str)
-        if (index <= 0) {  // todo: Consider different error propagation for -1 and 0 results
-            Console.warn(`Unmatched mode string ${str}`, "Converter")
-            return 0
-        }
-        return index
-    },
+export const Converter = {
     modeIndexToParameters(index: number): ModeParameters {
-        const parameters = modeParameters.get(index)
+        const parameters = modeParametersMap.get(index)
         if (parameters) { return parameters}
         Console.warn(`Unknown mode index ${index}`, "Converter")
         return modeParameterDefaults
     },
-
-    speedStringToIndex(str: string): number {
-        const value = [0,"SLOW","NORMAL","FAST","DYNAMIC","REGRESSIVE","INFINITE","HOST'S DECISION","PROGRESSIVE","FASTER FIRST TURN","SLOWER FIRST TURN"]
-        const index = value.indexOf(str)
-        if (index <= 0) {  // todo: Consider different error propagation for -1 and 0 results
-            Console.warn(`Unmatched speed string ${str}`, "Converter")
-            return 0
-        }
-        return index
-    },
     speedIndexToParameters(index: number): SpeedParameters {
-        const gotten = speedParameters.get(index)
+        const gotten = speedParametersMap.get(index)
         if (gotten) { return gotten }
         Console.warn(`Couldn't get parameters for speed index ${index}`, "Converter")
         return speedParameterDefaults
     },
-
-    flowStringToIndex(str: string): number {
-        const value = [0,"WRITING, DRAWING","DRAWING, WRITING","ONLY DRAWING","WRITING ONLY AT THE BEGINNING AND END","WRITING ONLY AT THE BEGINNING","WRITING ONLY AT THE END","SINGLE SENTENCE",'SINGLE DRAWING','SOLO DRAWING','DRAWINGS WITH A BACKGROUND','DRAWINGS WITH A BACKGROUND, NO PREVIEW',"ONLY WRITING"]
-        const index = value.indexOf(str)
-        if (index <= 0) {  // todo: Consider different error propagation for -1 and 0 results
-            Console.warn(`Unmatched flow string ${str}`, "Converter")
-            return 0
-        }
-        return index
-    },
     flowIndexToFallback(index: number): number {
-        const gotten = flowParameters.get(index)
+        const gotten = flowParametersMap.get(index)
         if (gotten) { return gotten }
-        // Console.warn(`Couldn't get parameters for speed index ${index}`, "Converter")
+        Console.warn(`Couldn't get parameters for speed index ${index}`, "Converter")
         // return speedParameterDefaults
         return 1
     },
-
-    turnsStringToIndex(str: string): number {
-        const value = [0,"FEW","MOST","ALL","200%","300%","SINGLE TURN","5 TURNS","10 TURNS","20 TURNS","2 TURNS","3 TURNS","ALL +1","6 TURNS","7 TURNS","8 TURNS","9 TURNS","4 TURNS",]
-        const index = value.indexOf(str)
-        if (index <= 0) {
-            Console.warn(`Unmatched turns string ${str}`, "Converter")
-            return 0
-        }
-        return index
-    },
     turnsIndexToFunction(index: number): ((players: number) => number) {
-        const gotten = turnsParameters.get(index)
+        const gotten = turnsParametersMap.get(index)
         if (gotten) { return gotten }
         Console.warn(`Couldn't get parameters for turns index ${index}`, "Converter")
         return () => 0
+    },
+    continuesIndexToBoolean(index: number): boolean {
+        const gotten = continuesParametersMap.get(index)
+        if (gotten) { return gotten }
+        Console.warn(`Couldn't get parameters for continues index ${index}`, "Converter")
+        return true
     },
 
     tryToUser(elem: HTMLElement): GarticUser|undefined {
@@ -219,6 +259,3 @@ const Converter = {
         }
     }
 }
-
-export { Converter, modeParameterDefaults, speedParameterDefaults }
-export type { Phase, ModeParameters, SpeedParameters, GarticUser, GarticXHRData }
