@@ -1,7 +1,9 @@
 // import { ShapeTypes } from "geometrizejs"
 import { WorkerResultShape } from "../../shared/WorkerResultShape"
 import { Phase, WhiteSettingsBelt, Console, Inwindow, Socket,
-    svgNS, setAttributes, setParent, preventDefaults, getResource
+    svgNS, setAttributes, setParent, preventDefaults, getResource,
+    globalGame,
+    Converter
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
@@ -58,6 +60,7 @@ class Geom extends CellulartModule {
     flags: GeomFlags = new GeomFlags()
     counters: { created: number, sent: number } = { created: 0, sent: 0 }
     config: { distance: number, max: number } = { distance: 1200, max: 20000 }
+    shouldClearStrokesOnMutation: boolean = true
 
     constructor() {
         super()
@@ -73,17 +76,22 @@ class Geom extends CellulartModule {
     }
     mutation(oldPhase: Phase, newPhase: Phase): void {
         this.setSendingPaused(true)
-        if (newPhase != 'draw') { 
+        this.geomPreview.innerHTML = ''
+        if (this.shouldClearStrokesOnMutation) {
+            Socket.post('clearStrokes')
+        }
+
+        if (newPhase == 'draw') { 
+            this.flags.mode = true
+            setParent(this.geomPreview, document.querySelector(".core")!)
+        } else {
             this.flags.mode = false; 
             return 
-        }
-        this.flags.mode = true
-
-        this.geomPreview.innerHTML = ''
-
-        setParent(this.geomPreview, document.querySelector(".core")!)
+        } 
     }
-    roundStart() {}
+    roundStart() {
+        this.shouldClearStrokesOnMutation = Converter.continuesIndexToBoolean(globalGame.keepIndex)
+    }
     roundEnd(): void {
         this.flags.mode = false; 
         this.geomPreview.innerHTML = ""
@@ -430,12 +438,9 @@ class Geom extends CellulartModule {
                 return // else if LINE
             }
     
-            return { fst: '42[2,7,{"t":3,"d":1,"v":[' + type + ',',
-                    snd: ',["#' + color + '",2,"0.5"],['
-                    + coords[0] + ',' + coords[1]
-                    + '],['
-                    + coords[2] + ',' + coords[3]
-                    + ']]}]'}
+            return { fst: `42[2,7,{"t":${globalGame.currentTurn - 1},"d":1,"v":[${type},`,
+                    snd: `,["#${color}",2,"0.5"],[${coords[0]},${coords[1]}],[${coords[2]},${coords[3]}]]}]`
+                }
         }
         function svg_format(shape: WorkerResultShape) {
             const raw = shape.raw
