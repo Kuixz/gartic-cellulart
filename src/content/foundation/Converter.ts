@@ -49,22 +49,6 @@ export type GarticXHRData = {
     previous?:    any
 }
 
-export type ModeParameters = {
-    speed: ESpeed
-    turns: ETurns
-    flow:  EFlow
-    keep:  EKeep
-}
-export const modeParameterDefaults: ModeParameters = { speed: ESpeed.NORMAL, turns: ETurns.ALL, flow: 1 }
-export type SpeedParameters = {
-    write: number
-    draw: number
-    decayFunction: (n: number) => number
-    firstMultiplier: number,
-    // fallback?: number
-}
-export const speedParameterDefaults = { write: 40, draw: 150, decayFunction: () => 0, firstMultiplier: 1.25 }
-
 export enum EMode {
     NORMAL = 1,
     KNOCKOFF = 8,
@@ -133,6 +117,22 @@ export enum EKeep {
     PREVIOUS = 3,
     BY_TOP = 4
 }
+
+export type ModeParameters = {
+    speed: ESpeed
+    turns: ETurns
+    flow:  EFlow
+    keep:  EKeep
+}
+export const modeParameterDefaults: ModeParameters = { speed: ESpeed.NORMAL, turns: ETurns.ALL, flow: EFlow.WRITING_DRAWING, keep: EKeep.NONE }
+export type SpeedParameters = {
+    write: number
+    draw: number
+    decayFunction: (n: number) => number
+    firstMultiplier: number,
+    // fallback?: number
+}
+export const speedParameterDefaults = { write: 40, draw: 150, decayFunction: () => 0, firstMultiplier: 1.25 }
 
 const modeParametersMap = new Map<EMode, ModeParameters>([
     [EMode.NORMAL,  { speed: ESpeed.NORMAL, turns: ETurns.ALL,  flow: EFlow.WRITING_DRAWING, keep: EKeep.NONE }], // NORMAL
