@@ -10,7 +10,6 @@ import { Console, DEFAULTINWINDOWRATIO, DOMLOADINGALLOWANCE, globalGame, Inwindo
   * ---------------------------------------------------------------------- */
 class Koss extends CellulartModule { // [K1]
     name = "Koss"
-    isCheat = true
     setting = RedSettingsBelt(this.name.toLowerCase())
     // KOSS variables
     kossInwindow: Inwindow    // HTMLDivElement
