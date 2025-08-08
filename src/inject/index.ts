@@ -2,8 +2,6 @@ import { CrossCommand } from "../shared/Endpoint";
 
 abstract class Interceptor {
     abstract name: string
-    commandMap: { [key: string]: Function } = {}
-
     abstract proxy(): void
 
     constructor() { 
@@ -13,9 +11,15 @@ abstract class Interceptor {
             if (event.source !== window || event.data.direction !== `to${this.name}`) { return; }
             const purp = event.data.purpose
             const data = event.data.data
-            if (!(purp in this.commandMap)) { this.post('log', `No such ${this.name} command: ${purp}`)}
-            try { (this.commandMap[purp].bind(this))(data) } 
-            catch (e) { this.post('log', `${this.name} error executing ${purp}(${JSON.stringify(data)}): ${e}`) }
+            if (!(purp in this)) { 
+                this.post('log', `No such ${this.name} command: ${purp}`)
+                return
+            }
+            try { 
+                (this as unknown as Record<string, Function>)[purp](data) 
+            }  catch (e) { 
+                this.post('log', `${this.name} error executing ${purp}(${JSON.stringify(data)}): ${e}`) 
+            }
         }) 
     }
     interceptIncoming(str: string): Maybe<string> { return undefined }
@@ -52,12 +56,6 @@ declare global {
 
 class SocketInterceptor extends Interceptor {
     name = "Socket"
-    commandMap: { [key:string]:Function } = {
-        "roundEnd": this.roundEnd,
-        "clearStrokes": this.clearStrokes,
-        "setStrokeStack": this.setStrokeStack,
-        "sendGeomShape": this.sendGeomShape
-    }
 
     currentWS: WebSocket | null = null
     strokes: number[] = []
