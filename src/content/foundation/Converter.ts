@@ -223,32 +223,32 @@ const continuesParametersMap = new Map<EKeep, boolean>([
 export const Converter = {
     modeIndexToParameters(index: number): ModeParameters {
         const parameters = modeParametersMap.get(index)
-        if (parameters) { return parameters}
+        if (parameters !== undefined) { return parameters}
         Console.warn(`Unknown mode index ${index}`, "Converter")
         return modeParameterDefaults
     },
     speedIndexToParameters(index: number): SpeedParameters {
         const gotten = speedParametersMap.get(index)
-        if (gotten) { return gotten }
+        if (gotten !== undefined) { return gotten }
         Console.warn(`Couldn't get parameters for speed index ${index}`, "Converter")
         return speedParameterDefaults
     },
     flowIndexToFallback(index: number): number {
         const gotten = flowParametersMap.get(index)
-        if (gotten) { return gotten }
+        if (gotten !== undefined) { return gotten }
         Console.warn(`Couldn't get parameters for speed index ${index}`, "Converter")
         // return speedParameterDefaults
         return 1
     },
     turnsIndexToFunction(index: number): ((players: number) => number) {
         const gotten = turnsParametersMap.get(index)
-        if (gotten) { return gotten }
+        if (gotten !== undefined) { return gotten }
         Console.warn(`Couldn't get parameters for turns index ${index}`, "Converter")
         return () => 0
     },
     continuesIndexToBoolean(index: number): boolean {
         const gotten = continuesParametersMap.get(index)
-        if (gotten) { return gotten }
+        if (gotten !== undefined) { return gotten }
         Console.warn(`Couldn't get parameters for continues index ${index}`, "Converter")
         return true
     },
