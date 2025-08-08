@@ -191,6 +191,7 @@ const flowParametersMap = new Map<EFlow, number>([
     [EFlow.WRITING_END, 1],    // WRITING ONLY AT THE END
     [EFlow.SINGLE_SENTENCE, -1],  // SINGLE SENTENCE
     [EFlow.SINGLE_DRAWING, -1],  // SINGLE DRAWING
+    [EFlow.SOLO_DRAWING, -1],  // SOLO DRAWING
     [EFlow.WITH_BACKGROUND, -1], // DRAWINGS WITH A BACKGROUND
     [EFlow.WITH_BACKGROUND_NO_PREVIEW, -1], // DRAWINGS WITH A BACKGROUND, NO PREVIEW
 ])
@@ -236,7 +237,7 @@ export const Converter = {
     flowIndexToFallback(index: number): number {
         const gotten = flowParametersMap.get(index)
         if (gotten !== undefined) { return gotten }
-        Console.warn(`Couldn't get parameters for speed index ${index}`, "Converter")
+        Console.warn(`Couldn't get parameters for flow index ${index}`, "Converter")
         // return speedParameterDefaults
         return 1
     },
