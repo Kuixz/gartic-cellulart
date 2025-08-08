@@ -16,15 +16,8 @@ or
 [Firefox](https://addons.mozilla.org/addon/gartic-cellulart/)
 
 # How to use the BETA channel
-Installing the latest BETA version of Cellulart is ~~simple~~ a bit complicated:
-1. On your computer, navigate to the local directory where you want to store Cellulart
-2. Run the following command to copy Cellulart down to your machine:
-`git clone https://github.com/Kuixz/gartic-cellulart`
-3. In the new folder, run `pnpm i` and `pnpm build`. This will create a `/dist` folder
-4. In your browser, navigate to <chrome://extensions>
-5. Turn on "Developer Mode" and select "Load Unpacked"
-6. Select the `/dist` folder
-7. To get the latest Cellulart beta, run `git pull` and `pnpm run build`; then, reload your unpacked beta in <chrome://extensions>
+Cellulart has a wiki now!
+Installation instructions can be found over there.
 
 # Contact
 For questions or concerns contact #quixz0033 on Discord or u.quixz@gmail.com via email. Thank you!
