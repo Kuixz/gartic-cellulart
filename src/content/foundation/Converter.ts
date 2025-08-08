@@ -1,6 +1,7 @@
 import { Console } from "./Console"
 
 export type Phase = "start" | "lobby" | "draw" | "write" | "memory" | "book" | "first" | "mod" | "waiting"
+export type TransitionData = { turnNum: number, screen: number, previous: any }
 
 type GarticStroke = [number, number, [string, number, number], ...[number, number]]
 export type GarticUser = {

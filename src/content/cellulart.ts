@@ -8,7 +8,7 @@ import {
     setAttributes, setParent, configChildTrunk, globalGame,
     GarticUser,
     modeParameterDefaults,
-    EMessagePurpose,
+    EMessagePurpose, TransitionData
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
@@ -45,8 +45,8 @@ class Controller {
     roundStart() {
         this.liveModules.forEach(mod => mod.roundStart())
     }
-    mutation(oldPhase: Phase, newPhase: Phase) {
-        this.liveModules.forEach(mod => mod.mutation(oldPhase, newPhase))
+    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
+        this.liveModules.forEach(mod => mod.mutation(oldPhase, transitionData, newPhase))
     }
     patchReconnect(data: GarticXHRData) {
         this.liveModules.forEach(mod => mod.patchReconnect(data))
@@ -143,7 +143,6 @@ class Controller {
     }
 }   // [C2]
 
-type TransitionData = { turnNum: number, screen: number, previous: any }
 class Observer { 
     // static name: string = "Observer"
     content: Element | undefined
@@ -213,7 +212,7 @@ class Observer {
         delete this.onEntryXHR
     }
     mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
-        this.controller.mutation(oldPhase, newPhase)
+        this.controller.mutation(oldPhase, transitionData, newPhase)
     }
     roundEnd(oldPhase: Phase) {
         this.attachNextObserver()

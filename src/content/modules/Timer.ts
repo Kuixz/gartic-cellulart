@@ -1,7 +1,7 @@
 import { 
     Phase, Console, setAttributes, setParent,
     WhiteSettingsBelt, Converter, globalGame, SpeedParameters, speedParameterDefaults, DOMUNLOADINGALLOWANCE, 
-    GarticXHRData
+    GarticXHRData, TransitionData
 } from "../foundation";
 import { CellulartModule } from "./CellulartModule";
 
@@ -35,7 +35,7 @@ class Timer extends CellulartModule {
     // Maybe this.display still exists between transitions? If so we can avoid the costly thing.
     // But is it even possible, given that we pluck the clock and stick it in the holder?
     
-    mutation(oldPhase: Phase, newPhase: Phase): void {
+    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase): void {
         if (newPhase == "book") { return }
         setTimeout(this.placeTimer.bind(this), DOMUNLOADINGALLOWANCE)
 

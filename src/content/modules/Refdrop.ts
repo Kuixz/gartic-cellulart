@@ -2,8 +2,7 @@
 
 import { RedSettingsBelt, Console, Keybind, Phase, setAttributes, Inwindow, 
          setParent, getModuleAsset, preventDefaults, clamp, 
-         DOMUNLOADINGALLOWANCE,
-         globalGame} from "../foundation"
+         globalGame, TransitionData } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
  /* ----------------------------------------------------------------------
@@ -98,7 +97,7 @@ class Refdrop extends CellulartModule { // [R1]
 
         // this.refCtrl = this.initRefctrl()
     }
-    mutation(oldPhase: Phase, newPhase: Phase) {
+    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
         this.refImage.style.visibility = "hidden";
 
         this.tryPlace()

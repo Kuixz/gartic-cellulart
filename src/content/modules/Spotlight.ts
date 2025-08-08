@@ -2,13 +2,14 @@ import * as gifenc from "gifenc"
 
 import { Phase, WhiteSettingsBelt, Console, Converter, Inwindow, Setting,
     globalGame, getModuleAsset, setAttributes, configChildTrunk,
-    setParent
+    setParent,
+    TransitionData
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 import { createButton } from "../components"
 
 type Side = "L" | "M" | "R"
-type Indexable<T> = T[]|{[key:number]:T}
+type Indexable<T> = T[]|Record<number, T>
 
 function length (agg: Indexable<any>):number {
     if (Array.isArray(agg)) {
@@ -207,7 +208,7 @@ class Spotlight extends CellulartModule { // [S1]
         i.src = getModuleAsset("spotlight-base.png");
         this.bg = i
     }
-    mutation(oldPhase: Phase, newPhase: Phase) {
+    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
         if (oldPhase == 'start') { return }
         if (newPhase != 'book') { return }
 

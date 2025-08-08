@@ -3,7 +3,7 @@ import { WorkerResultShape } from "../../shared/WorkerResultShape"
 import { Phase, WhiteSettingsBelt, Console, Inwindow, Socket,
     svgNS, setAttributes, setParent, preventDefaults, getResource,
     globalGame,
-    Converter
+    Converter, TransitionData
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
@@ -74,7 +74,7 @@ class Geom extends CellulartModule {
         setAttributes(preview, { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424" })
         this.geomPreview = preview
     }
-    mutation(oldPhase: Phase, newPhase: Phase): void {
+    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase): void {
         this.setSendingPaused(true)
         this.geomPreview.innerHTML = ''
         if (this.shouldClearStrokesOnMutation) {
