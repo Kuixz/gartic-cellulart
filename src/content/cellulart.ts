@@ -8,6 +8,7 @@ import {
     setAttributes, setParent, configChildTrunk, globalGame,
     GarticUser,
     modeParameterDefaults,
+    EMessagePurpose,
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
@@ -142,19 +143,18 @@ class Controller {
     }
 }   // [C2]
 
+type TransitionData = { turnNum: number, screen: number, previous: any }
 class Observer { 
     // static name: string = "Observer"
     content: Element | undefined
     controller: Controller
     onEntryXHR: GarticXHRData | undefined
+    transitionData: TransitionData | null = null;
     
     constructor(controller: Controller) {
         this.controller = controller;
-        // Socket.addMessageListener('gameEvent', Observer.deduceSettingsFromSocket)
-        // Socket.addMessageListener('gameEventScreenTransition', Observer.deduceSettingsFromSocket)
-        Socket.addMessageListener('lobbySettings', this.deduceSettingsFromSocket.bind(this))
+        Socket.addMessageListener('socketIncoming', this.deduceSettingsFromSocket.bind(this))
         Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR.bind(this))
-        // Xhr.addMessageListener('lobbySettings', Timer.deduceSettingsFromXHR)
     }
     executePhaseTransition(newPhase: Phase): void {
         // Set variables
@@ -183,7 +183,7 @@ class Observer {
         if (oldPhase == "start")                         { this.enterLobby() }
         if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.roundStart(); }
 
-        if (!outOfGame(newPhase))                        { this.mutation(oldPhase, newPhase) }
+        if (!outOfGame(newPhase))                        { this.mutation(oldPhase, this.transitionData, newPhase) }
         if (oldPhase == "start" && !outOfGame(newPhase))  { this.patchReconnect(); } // Bypassing lobby phase means a reconnection.
         
         // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
@@ -191,6 +191,8 @@ class Observer {
         if (newPhase == "start")                         { this.exitLobby(oldPhase); } 
 
         if (newPhase == "waiting")                       { this.waiting(); } 
+
+        this.transitionData = null;
     }
     enterLobby() {
         this.attachNextObserver()
@@ -210,7 +212,7 @@ class Observer {
         this.controller.patchReconnect(this.onEntryXHR)
         delete this.onEntryXHR
     }
-    mutation(oldPhase: Phase, newPhase: Phase) {
+    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
         this.controller.mutation(oldPhase, newPhase)
     }
     roundEnd(oldPhase: Phase) {
@@ -293,18 +295,17 @@ class Observer {
             this.onEntryXHR = data
         }
     }
-    deduceSettingsFromSocket(data: [number, number, any]) {  
-        const messageType = data[1]
-        const messageData = data[2]
+    deduceSettingsFromSocket(data: [2, EMessagePurpose, any]) {  
+        const [ _, messageType, messageData ] = data
 
         switch (messageType) {
-            case 2: {  // New user joins
+            case EMessagePurpose.USER_JOIN: {  // New user joins
                 const newUser = messageData as GarticUser
                 newUser.avatar = "https://garticphone.com/images/avatar/" + newUser.avatar + ".svg"
                 globalGame.players.push(newUser)
                 break;
             }
-            case 3: {  // Existing user leaves
+            case EMessagePurpose.USER_LEAVE: {  // Existing user leaves
                 const index = globalGame.players.findIndex((user) => user.id === messageData.userLeft)
                 if (index == -1) {
                     Console.warn(`Could not remove user: no user with id ${messageData.userLeft} found`, "Observer")
@@ -313,7 +314,19 @@ class Observer {
                 globalGame.players.splice(index, 1)
                 break;
             }
-            case 18: {  // Custom settings changed
+            case EMessagePurpose.TURN_TRANSITION: {
+                // While I'd love to call executePhaseTransition here and remove the observer entirely,
+                // the unique memory phase doesn't emit a socket signal when exiting it,
+                // and is indistinguishable from a regular draw phase when entering.
+                // this.executePhaseTransition(messageData)
+
+                // Instead we abuse the fact that we catch and interpret Socket messages
+                // before they get to the Gartic client.
+                // This is bad, dumb code.
+                this.patchTransitionData(messageData)
+                break;
+            }
+            case EMessagePurpose.CHANGE_SETTINGS_CUSTOM: {  // Custom settings changed
                 for (const key in messageData) {
                     switch (key) {
                         case 'turns': 
@@ -332,7 +345,7 @@ class Observer {
                 }
                 break;
             }
-            case 26: {  // Default settings changed
+            case EMessagePurpose.CHANGE_SETTINGS_PRESET: {  // Default settings changed
                 const modeParameters = Converter.modeIndexToParameters(messageData)
                 globalGame.turnsIndex = modeParameters.turns
                 globalGame.speedIndex = modeParameters.speed
@@ -340,7 +353,7 @@ class Observer {
                 globalGame.keepIndex = modeParameters.keep
                 break;
             }
-            case 27: {  // Return to normal settings when changing tabs
+            case EMessagePurpose.APPLY_SETTINGS_PRESET: {  // Return to normal settings when changing tabs
                 const modeParameters = modeParameterDefaults
                 globalGame.turnsIndex = modeParameters.turns
                 globalGame.speedIndex = modeParameters.speed
@@ -376,6 +389,9 @@ class Observer {
                 }
             }
         }
+    }
+    patchTransitionData(data: any) {
+        this.transitionData = data
     }
 }
 

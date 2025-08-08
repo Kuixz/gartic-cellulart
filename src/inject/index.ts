@@ -98,7 +98,7 @@ class SocketInterceptor extends Interceptor {
         if (data.slice(0,5) != '42[2,') { return }
 
         var json = JSON.parse(data.slice(2))
-        this.post("lobbySettings", json)
+        this.post("socketIncoming", json)
 
         return
         // if (json[1] == 11) {

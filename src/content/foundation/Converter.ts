@@ -49,6 +49,22 @@ export type GarticXHRData = {
     previous?:    any
 }
 
+export enum EMessagePurpose {
+    USER_JOIN = 2,
+    USER_LEAVE = 3,
+    ROUND_START = 5,
+    WRITE = 6,
+    DRAW = 7,
+    GALLERY_SHOW_TURN = 9,
+    TURN_TRANSITION = 11,
+    GALLERY_CHANGE_TIMELINE = 12,
+    DECLARE_DONE = 15,
+    CHANGE_SETTINGS_CUSTOM = 18,
+    GALLERY_END = 20,
+    ROUND_END = 24,
+    CHANGE_SETTINGS_PRESET = 26,
+    APPLY_SETTINGS_PRESET = 27,
+}
 export enum EMode {
     NORMAL = 1,
     KNOCKOFF = 8,
