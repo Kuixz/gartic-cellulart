@@ -194,8 +194,6 @@ class Observer {
         this.transitionData = null;
     }
     enterLobby() {
-        this.attachNextObserver()
-
         this.controller.enterLobby() 
     }
     roundStart() {
@@ -215,8 +213,6 @@ class Observer {
         this.controller.mutation(oldPhase, transitionData, newPhase)
     }
     roundEnd(oldPhase: Phase) {
-        this.attachNextObserver()
-
         this.controller.roundEnd(oldPhase) 
     }
     exitLobby(oldPhase: Phase) {
@@ -225,23 +221,10 @@ class Observer {
         this.controller.exitLobby(oldPhase) 
     }
 
-    attachNextObserver() {
-        const observeTarget = document.querySelector("#__next")
-        if (!observeTarget) { Console.warn("Could not find id:__next to observe", "Observer"); }
-        else { this.nextObserver.observe(observeTarget, configChildTrunk); }
-    }
     waiting() { Console.log("Waiting", "Observer") } // [C4]
     // reconnect() {
         
     // },
-
-    nextObserver: MutationObserver = new MutationObserver((records) => {     
-        // todo: add a button to manually reattach the lobby observer in popup, if I try to disconnect the observer early.
-
-        // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
-        if(records[0].addedNodes.length <= 0) { return; }
-        this.deduceSettingsFromDocument()
-    })
     contentObserver: MutationObserver = new MutationObserver((records) => {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
@@ -359,33 +342,6 @@ class Observer {
                 globalGame.flowIndex = modeParameters.flow
                 globalGame.keepIndex = modeParameters.keep
                 break;
-            }
-        }
-    }
-    deduceSettingsFromDocument() {
-        const playerList = document.querySelector(".players .scrollElements")
-        if (playerList) { 
-            for (const playerElem of playerList.children) {
-                if (!(playerElem instanceof HTMLElement)) { continue }
-                // console.log(playerElem)
-                const player = Converter.tryToUser(playerElem)
-                if (!player) { continue }
-                // console.log(player)
-
-                // Do not overwrite XHR players wherever possible
-                const existingPlayer = globalGame.players.find((user) => user.nick === player.nick)
-                if (existingPlayer) { 
-                    existingPlayer.avatar = player.avatar
-                    continue
-                }
-
-                globalGame.players.push(player)
-                if (player.owner) {
-                    globalGame.host = player.nick
-                }
-                if (playerElem.getElementsByTagName("i").length > 0) {
-                    globalGame.user = player
-                }
             }
         }
     }
