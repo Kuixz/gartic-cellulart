@@ -15,7 +15,7 @@ abstract class Interceptor {
             const data = event.data.data
             if (!(purp in this.commandMap)) { this.post('log', `No such ${this.name} command: ${purp}`)}
             try { (this.commandMap[purp].bind(this))(data) } 
-            catch (e) { this.post('log', `Socket error executing ${purp}(${JSON.stringify(data)}): ${e}`) }
+            catch (e) { this.post('log', `${this.name} error executing ${purp}(${JSON.stringify(data)}): ${e}`) }
         }) 
     }
     interceptIncoming(str: string): Maybe<string> { return undefined }
