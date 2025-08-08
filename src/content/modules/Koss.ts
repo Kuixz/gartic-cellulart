@@ -1,5 +1,5 @@
 import { CellulartModule } from "./CellulartModule";
-import { Console, DEFAULTINWINDOWRATIO, DefaultSettings, DOMLOADINGALLOWANCE, globalGame, Inwindow, Phase, RedSettingsBelt, setAttributes } from "../foundation";
+import { Console, DEFAULTINWINDOWRATIO, DOMLOADINGALLOWANCE, globalGame, Inwindow, Phase, RedSettingsBelt, setAttributes, TransitionData } from "../foundation";
 
  /* ----------------------------------------------------------------------
   *                                  Koss 
@@ -10,7 +10,6 @@ import { Console, DEFAULTINWINDOWRATIO, DefaultSettings, DOMLOADINGALLOWANCE, gl
   * ---------------------------------------------------------------------- */
 class Koss extends CellulartModule { // [K1]
     name = "Koss"
-    isCheat = true
     setting = RedSettingsBelt(this.name.toLowerCase())
     // KOSS variables
     kossInwindow: Inwindow    // HTMLDivElement
@@ -28,7 +27,7 @@ class Koss extends CellulartModule { // [K1]
         setAttributes(image, { style: "position: absolute", class:"wiw-img" })
         this.kossImage = image
     }
-    mutation(oldPhase: Phase, newPhase: Phase) { 
+    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) { 
         // ssView.childNodes[1].appendChild(kossImage);
         const wiwBody = this.kossInwindow.body
         

@@ -1,4 +1,4 @@
-import { Console, Phase, SettingsBelt, Keybind, DefaultSettings, GarticXHRData } from "../foundation"
+import { Console, Phase, SettingsBelt, Keybind, DefaultSettings, GarticXHRData, TransitionData } from "../foundation"
 
 abstract class ModuleLike {
     abstract name: string           // All modules have a name property
@@ -42,7 +42,7 @@ abstract class CellulartModule extends ModuleLike { // [F2]
 
     // This function is called whenever the game transitions to a new phase.
     // To be overridden by each module.
-    abstract mutation(oldPhase: Phase, newPhase: Phase): void
+    abstract mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase): void
 
     // These functions set critical persistent variables when a game starts.
     // To be overridden by each module.

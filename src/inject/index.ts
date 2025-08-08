@@ -2,8 +2,6 @@ import { CrossCommand } from "../shared/Endpoint";
 
 abstract class Interceptor {
     abstract name: string
-    commandMap: { [key: string]: Function } = {}
-
     abstract proxy(): void
 
     constructor() { 
@@ -13,9 +11,15 @@ abstract class Interceptor {
             if (event.source !== window || event.data.direction !== `to${this.name}`) { return; }
             const purp = event.data.purpose
             const data = event.data.data
-            if (!(purp in this.commandMap)) { this.post('log', `No such ${this.name} command: ${purp}`)}
-            try { (this.commandMap[purp].bind(this))(data) } 
-            catch (e) { this.post('log', `Socket error executing ${purp}(${JSON.stringify(data)}): ${e}`) }
+            if (!(purp in this)) { 
+                this.post('log', `No such ${this.name} command: ${purp}`)
+                return
+            }
+            try { 
+                (this as unknown as Record<string, Function>)[purp](data) 
+            }  catch (e) { 
+                this.post('log', `${this.name} error executing ${purp}(${JSON.stringify(data)}): ${e}`) 
+            }
         }) 
     }
     interceptIncoming(str: string): Maybe<string> { return undefined }
@@ -52,12 +56,6 @@ declare global {
 
 class SocketInterceptor extends Interceptor {
     name = "Socket"
-    commandMap: { [key:string]:Function } = {
-        "roundEnd": this.roundEnd,
-        "clearStrokes": this.clearStrokes,
-        "setStrokeStack": this.setStrokeStack,
-        "sendGeomShape": this.sendGeomShape
-    }
 
     currentWS: WebSocket | null = null
     strokes: number[] = []
@@ -98,7 +96,7 @@ class SocketInterceptor extends Interceptor {
         if (data.slice(0,5) != '42[2,') { return }
 
         var json = JSON.parse(data.slice(2))
-        this.post("lobbySettings", json)
+        this.post("socketIncoming", json)
 
         return
         // if (json[1] == 11) {
@@ -165,7 +163,7 @@ class SocketInterceptor extends Interceptor {
         this.strokeCount += 1
         const toSend = data.fst + this.strokeCount + data.snd;
         this.currentWS!.expressSend(toSend);
-        this.post('log', "Sent: " + toSend);
+        // this.post('log', "Sent: " + toSend);
     }
     onDisconnect(data: any) {  // Type alert suppressed
         this.currentWS = null

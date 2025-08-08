@@ -5,7 +5,7 @@ import {
     GarticUser,
     setParent,
     Inwindow,
-    GarticXHRData
+    GarticXHRData, TransitionData
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
@@ -22,7 +22,7 @@ class Scry extends CellulartModule { // [F2]
     scryWIW: Inwindow
     indicatorLabel: HTMLDivElement
     indicatorTray: HTMLDivElement  
-    indicators: { [key: number]: HTMLElement } = {}
+    indicators: Record<number, HTMLElement> = {}
 
     constructor() { 
         super() 
@@ -54,12 +54,10 @@ class Scry extends CellulartModule { // [F2]
             }
         })
     }
-    mutation(oldPhase: Phase, newPhase: Phase): void {
+    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase): void {
         if (["book", "start"].includes(newPhase)) { return }
         if (oldPhase == "memory" && newPhase != "memory") { return }
-        for (const indicator of Object.values(this.indicators)) {
-            indicator.style.backgroundColor = "red"
-        }
+        this.resetIndicators()
     }
     roundStart(): void {
         Console.log(`Constructing Scry with ${globalGame.players.length} players`, "Scry")
@@ -112,6 +110,11 @@ class Scry extends CellulartModule { // [F2]
         }
     }
 
+    resetIndicators() {
+        for (const indicator of Object.values(this.indicators)) {
+            indicator.style.backgroundColor = "red"
+        }
+    }
     clearIndicators() {
         for (const indicator of Object.values(this.indicators)) {
             indicator.remove()

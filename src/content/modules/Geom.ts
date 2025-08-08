@@ -1,7 +1,9 @@
 // import { ShapeTypes } from "geometrizejs"
 import { WorkerResultShape } from "../../shared/WorkerResultShape"
 import { Phase, WhiteSettingsBelt, Console, Inwindow, Socket,
-    svgNS, setAttributes, setParent, preventDefaults, getResource
+    svgNS, setAttributes, setParent, preventDefaults, getResource,
+    globalGame,
+    Converter, TransitionData
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
@@ -44,7 +46,7 @@ type GeomScreenData = {
   * ---------------------------------------------------------------------- */
 /** Geom (Geometrize) is the second generation of Gartic autodrawers 
   * after rate limiting culled the first generation.     
-  * The longest module at 360 lines. Previously some of my finer work.                  
+  * The longest module at 360 lines. cringe                  
   * ---------------------------------------------------------------------- */
 class Geom extends CellulartModule {
     name = "Geom"        
@@ -58,6 +60,7 @@ class Geom extends CellulartModule {
     flags: GeomFlags = new GeomFlags()
     counters: { created: number, sent: number } = { created: 0, sent: 0 }
     config: { distance: number, max: number } = { distance: 1200, max: 20000 }
+    shouldClearStrokesOnMutation: boolean = true
 
     constructor() {
         super()
@@ -71,17 +74,34 @@ class Geom extends CellulartModule {
         setAttributes(preview, { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424" })
         this.geomPreview = preview
     }
-    mutation(oldPhase: Phase, newPhase: Phase): void {
+    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase): void {
         this.setSendingPaused(true)
-        if (newPhase != 'draw') { 
+        this.geomPreview.innerHTML = ''
+        if (this.shouldClearStrokesOnMutation) {
+            Socket.post('clearStrokes')
+        } else {
+            if (!(transitionData?.previous.data)) {
+                Console.warn("Strokes need to be preserved but no strokes were patched", "Geom")
+            } else {
+                if (transitionData?.previous.data instanceof Array) {
+                    Socket.post('setStrokeStack', transitionData.previous.data)
+                } else {
+                    // Console.log("What kind of Frankenstein round settings are you playing with?")
+                }
+            }
+        }
+
+        if (newPhase == 'draw') { 
+            this.flags.mode = true
+            setParent(this.geomPreview, document.querySelector(".core")!)
+        } else {
             this.flags.mode = false; 
             return 
-        }
-        this.flags.mode = true
-
-        setParent(this.geomPreview, document.querySelector(".core")!)
+        } 
     }
-    roundStart() {}
+    roundStart() {
+        this.shouldClearStrokesOnMutation = Converter.continuesIndexToBoolean(globalGame.keepIndex)
+    }
     roundEnd(): void {
         this.flags.mode = false; 
         this.geomPreview.innerHTML = ""
@@ -428,12 +448,9 @@ class Geom extends CellulartModule {
                 return // else if LINE
             }
     
-            return { fst: '42[2,7,{"t":0,"d":1,"v":[' + type + ',',
-                    snd: ',["#' + color + '",2,"0.5"],['
-                    + coords[0] + ',' + coords[1]
-                    + '],['
-                    + coords[2] + ',' + coords[3]
-                    + ']]}]'}
+            return { fst: `42[2,7,{"t":${globalGame.currentTurn - 1},"d":1,"v":[${type},`,
+                    snd: `,["#${color}",2,"0.5"],[${coords[0]},${coords[1]}],[${coords[2]},${coords[3]}]]}]`
+                }
         }
         function svg_format(shape: WorkerResultShape) {
             const raw = shape.raw
