@@ -79,6 +79,16 @@ class Geom extends CellulartModule {
         this.geomPreview.innerHTML = ''
         if (this.shouldClearStrokesOnMutation) {
             Socket.post('clearStrokes')
+        } else {
+            if (!(transitionData?.previous.data)) {
+                Console.warn("Strokes need to be preserved but no strokes were patched", "Geom")
+            } else {
+                if (transitionData?.previous.data instanceof Array) {
+                    Socket.post('setStrokeStack', transitionData.previous.data)
+                } else {
+                    // Console.log("What kind of Frankenstein round settings are you playing with?")
+                }
+            }
         }
 
         if (newPhase == 'draw') { 
