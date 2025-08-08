@@ -5,7 +5,7 @@ IUC = $(shell echo '$(1)' | tr '[:lower:]' '[:upper:]')
 LC = $(call ILC,$(1))
 ILC = $(shell echo '$(1)' | tr '[:upper:]' '[:lower:]')
 
-PACKAGE_VERSION := 1.5.0
+PACKAGE_VERSION := 1.5.1
 
 MANIFEST ?= Chrome
 
