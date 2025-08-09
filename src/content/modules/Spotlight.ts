@@ -231,7 +231,7 @@ export class Spotlight extends CellulartModule { // [S1]
         this.beginCompilation()
     }
     protected onalbumchange(event: AlbumChangeEvent): void {
-        console.log('i got the album change event')
+        // console.log('i got the album change event')
         if (event.detail.data === undefined) {
             Console.log('End of timeline reached. Beginning frame grabbing', 'Spotlight')
             this.writeResponseFrames()  
