@@ -168,7 +168,7 @@ class Observer {
     
     constructor(controller: Controller) {
         this.controller = controller;
-        this.controller.socket.addMessageListener('socketIncoming', this.deduceSettingsFromSocket.bind(this))
+        this.controller.socket.addEventListener('socketIncoming', this.deduceSettingsFromSocket.bind(this))
         Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR.bind(this))
     }
     executePhaseTransition(newPhase: Phase): void {
@@ -291,8 +291,8 @@ class Observer {
             this.onEntryXHR = data
         }
     }
-    deduceSettingsFromSocket(data: [2, EMessagePurpose, any]) {  
-        const [ _, messageType, messageData ] = data
+    deduceSettingsFromSocket(event: Event) {  
+        const { detail: [ _, messageType, messageData ] } = event as CustomEvent
 
         switch (messageType) {
             case EMessagePurpose.USER_JOIN: {  // New user joins

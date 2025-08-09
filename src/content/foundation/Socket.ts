@@ -1,12 +1,7 @@
 import { Console } from "./Console";
 import { BaseGame, CellulartEventType, EventListening } from "./Global";
 
-class Socket extends EventListening() {
-    private handlers: {filter:string, handle:(data?:any) => void}[] =
-    [
-        { filter:'log', handle:(data: string) => { Console.log(data, 'Socket') }}
-    ]
-
+class Socket extends EventListening(EventTarget) {
     constructor(globalGame: BaseGame) {
         super()
 
@@ -18,7 +13,7 @@ class Socket extends EventListening() {
             const purp = event.data.purpose
             const data = event.data.data
             Console.log(`incoming (${purp}, ${JSON.stringify(data)})`, 'Socket')
-            this.handle(purp, data)
+            this.dispatchEvent(new CustomEvent(purp, { detail: data }))
         })
     }
     protected onroundleave() {
@@ -26,11 +21,6 @@ class Socket extends EventListening() {
     }
     protected onlobbyleave(){
         this.post("exitLobby")
-    }
-    public handle(purp: string, data?: any){
-        this.handlers.forEach(handler => { 
-            if (handler.filter == purp) { handler.handle(data) }
-        })
     }
     public post(purp: string, data?: any) {
         Console.log(`outgoing (${purp}, ${data})`, 'Socket')
@@ -40,9 +30,6 @@ class Socket extends EventListening() {
             purpose: purp,
             data: data
         }, 'https://garticphone.com')
-    }
-    public addMessageListener(purp:string, handler: (data?:any) => void) {
-        this.handlers.push({ filter:purp, handle:handler });
     }
 }
 
