@@ -4,7 +4,7 @@ import {
     Keybinder, SHAuth,
     Socket, Xhr,
     // IAuth, SHAuth as SHAuth, 
-    IShelf, Shelf,
+    Shelf,
     setAttributes, setParent, configChildTrunk,
     GarticUser,
     modeParameterDefaults,
@@ -23,7 +23,8 @@ import { createButton, createModuleButton } from "./components"
 
 class Controller { 
     // static name: Controller
-    game: BaseGame
+    public game: BaseGame
+    public socket: Socket
     menu: HTMLElement | undefined // [C1]
     liveModules: CellulartModule[] = []
     liveMetamodules: Metamodule[] = []
@@ -31,20 +32,22 @@ class Controller {
     auth: SHAuth /*IAuth*/ // = new SHAuth(new Shelf())
 
     constructor(
-        game: BaseGame,
         modules: ModuleChamber, 
         metamodules: MetaChamber,
     ) {
-        this.game = game;
+        this.game = new BaseGame();
+        this.socket = new Socket(this.game);
 
-        Socket.init()
         Xhr.init()
         Keybinder.init()
 
         this.auth = new SHAuth(new Shelf())
         this.initPopupAuth()
 
-        this.createMenu({ game, socket: Socket }, modules, metamodules)
+        this.createMenu({ 
+            game: this.game, 
+            socket: this.socket 
+        }, modules, metamodules)
     }
     onlobbyenter() {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ENTER_LOBBY))
@@ -64,11 +67,9 @@ class Controller {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ALBUM_CHANGE, { detail: data }))
     }
     onroundleave() {
-        Socket.roundEnd()
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_ROUND))
     }
     onlobbyleave() {
-        Socket.exitLobby()
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_LOBBY))
     }
 
@@ -159,26 +160,24 @@ class Controller {
 
 class Observer { 
     // static name: string = "Observer"
-    game: BaseGame
     content: Element | undefined
     targetBook : Element | null = null
     controller: Controller
     onEntryXHR: GarticXHRData | undefined
     transitionData: TransitionData | null = null;
     
-    constructor(game: BaseGame, controller: Controller) {
-        this.game = game
+    constructor(controller: Controller) {
         this.controller = controller;
-        Socket.addMessageListener('socketIncoming', this.deduceSettingsFromSocket.bind(this))
+        this.controller.socket.addMessageListener('socketIncoming', this.deduceSettingsFromSocket.bind(this))
         Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR.bind(this))
     }
     executePhaseTransition(newPhase: Phase): void {
         // Set variables
-        const oldPhase = this.game.currentPhase
-        this.game.currentPhase = newPhase
+        const oldPhase = this.controller.game.currentPhase
+        this.controller.game.currentPhase = newPhase
         Console.log(`Transitioned to ${newPhase}`, "Observer")
 
-        this.game.currentTurn = (() => {
+        this.controller.game.currentTurn = (() => {
             if (["first", "draw", "write", "memory", "mod"].includes(newPhase)) {
                 const step = document.querySelector(".step")
                 if (!step) { Console.warn("Could not find turn counter", "Observer"); return -1 }
@@ -275,18 +274,18 @@ class Observer {
     deduceSettingsFromXHR(data: GarticXHRData) {
         Console.log(`Deducing from XHR ${JSON.stringify(data)}`, "Observer")
 
-        this.game.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
-        this.game.user = data.user
-        this.game.user.avatar = "https://garticphone.com/images/avatar/" + data.user.avatar + ".svg"
+        this.controller.game.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
+        this.controller.game.user = data.user
+        this.controller.game.user.avatar = "https://garticphone.com/images/avatar/" + data.user.avatar + ".svg"
 
-        this.game.players = data.users
-        for (const player of this.game.players) {
+        this.controller.game.players = data.users
+        for (const player of this.controller.game.players) {
             player.avatar = "https://garticphone.com/images/avatar/" + player.avatar + ".svg"
         }
-        this.game.turnsIndex = data.configs.turns
-        this.game.flowIndex = data.configs.first
-        this.game.speedIndex = data.configs.speed
-        this.game.keepIndex = data.configs.keep
+        this.controller.game.turnsIndex = data.configs.turns
+        this.controller.game.flowIndex = data.configs.first
+        this.controller.game.speedIndex = data.configs.speed
+        this.controller.game.keepIndex = data.configs.keep
 
         if (data.screen != 1) {  // Bad solution to this two-systems thing we have going on. 
             this.onEntryXHR = data
@@ -299,16 +298,16 @@ class Observer {
             case EMessagePurpose.USER_JOIN: {  // New user joins
                 const newUser = messageData as GarticUser
                 newUser.avatar = "https://garticphone.com/images/avatar/" + newUser.avatar + ".svg"
-                this.game.players.push(newUser)
+                this.controller.game.players.push(newUser)
                 break;
             }
             case EMessagePurpose.USER_LEAVE: {  // Existing user leaves
-                const index = this.game.players.findIndex((user) => user.id === messageData.userLeft)
+                const index = this.controller.game.players.findIndex((user) => user.id === messageData.userLeft)
                 if (index == -1) {
                     Console.warn(`Could not remove user: no user with id ${messageData.userLeft} found`, "Observer")
                     break
                 }
-                this.game.players.splice(index, 1)
+                this.controller.game.players.splice(index, 1)
                 break;
             }
             case EMessagePurpose.TURN_TRANSITION: {
@@ -331,16 +330,16 @@ class Observer {
                 for (const key in messageData) {
                     switch (key) {
                         case 'turns': 
-                            this.game.turnsIndex = messageData[key]
+                            this.controller.game.turnsIndex = messageData[key]
                             break
                         case 'speed': 
-                            this.game.speedIndex = messageData[key]
+                            this.controller.game.speedIndex = messageData[key]
                             break
                         case 'flow': 
-                            this.game.flowIndex = messageData[key]
+                            this.controller.game.flowIndex = messageData[key]
                             break
                         case 'keep': 
-                            this.game.keepIndex = messageData[key]
+                            this.controller.game.keepIndex = messageData[key]
                             break
                     }
                 }
@@ -348,18 +347,18 @@ class Observer {
             }
             case EMessagePurpose.CHANGE_SETTINGS_PRESET: {  // Default settings changed
                 const modeParameters = Converter.modeIndexToParameters(messageData)
-                this.game.turnsIndex = modeParameters.turns
-                this.game.speedIndex = modeParameters.speed
-                this.game.flowIndex = modeParameters.flow
-                this.game.keepIndex = modeParameters.keep
+                this.controller.game.turnsIndex = modeParameters.turns
+                this.controller.game.speedIndex = modeParameters.speed
+                this.controller.game.flowIndex = modeParameters.flow
+                this.controller.game.keepIndex = modeParameters.keep
                 break;
             }
             case EMessagePurpose.CHANGE_SETTINGS_DEFAULT: {  // Return to normal settings when changing tabs
                 const modeParameters = modeParameterDefaults
-                this.game.turnsIndex = modeParameters.turns
-                this.game.speedIndex = modeParameters.speed
-                this.game.flowIndex = modeParameters.flow
-                this.game.keepIndex = modeParameters.keep
+                this.controller.game.turnsIndex = modeParameters.turns
+                this.controller.game.speedIndex = modeParameters.speed
+                this.controller.game.flowIndex = modeParameters.flow
+                this.controller.game.keepIndex = modeParameters.keep
                 break;
             }
         }
@@ -383,8 +382,8 @@ function main() {
     const metamodules = [Red, Debug]
 
     const game = new BaseGame()
-    const controller = new Controller(game, modules, metamodules)
-    const observer = new Observer(game, controller)
+    const controller = new Controller(modules, metamodules)
+    const observer = new Observer(controller)
     observer.observe("#content")
 
     // document.querySelector(".side").remove() // lol
