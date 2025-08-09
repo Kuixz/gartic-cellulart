@@ -46,28 +46,28 @@ class Controller {
 
         this.createMenu(modules, metamodules)
     }
-    enterLobby() {
+    onlobbyenter() {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ENTER_LOBBY))
     }
-    roundStart() {
+    onroundenter() {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ENTER_ROUND))
     }
-    mutation(oldPhase: Phase, data: TransitionData | null, newPhase: Phase) {
+    onphasechange(oldPhase: Phase, data: TransitionData | null, newPhase: Phase) {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.PHASE_CHANGE, { 
             detail: { oldPhase, data, newPhase } 
         }))
     }
-    patchReconnect(data: GarticXHRData) {
+    onreconnect(data: GarticXHRData) {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.RECONNECT, { detail: data }))
     }
-    albumChange(data: AlbumChangeData) {
+    onalbumchange(data: AlbumChangeData) {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ALBUM_CHANGE, { detail: data }))
     }
-    roundEnd() {
+    onroundleave() {
         Socket.roundEnd()
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_ROUND))
     }
-    exitLobby() {
+    onlobbyleave() {
         Socket.exitLobby()
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_LOBBY))
     }
@@ -195,44 +195,47 @@ class Observer {
         const outOfGame = (phase: Phase) => phase == "start" || phase == "lobby"
 
         // Handle transitions
-        if (oldPhase == "start")                         { this.enterLobby() }
-        if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.roundStart(); }
+        if (oldPhase == "start")                         { this.onlobbyenter() }
+        if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.onroundenter(); }
 
-        if (!outOfGame(newPhase))                        { this.mutation(oldPhase, this.transitionData, newPhase) }
-        if (oldPhase == "start" && !outOfGame(newPhase))  { this.patchReconnect(); } // Bypassing lobby phase means a reconnection.
+        if (!outOfGame(newPhase))                        { this.onphasechange(oldPhase, this.transitionData, newPhase) }
+        if (oldPhase == "start" && !outOfGame(newPhase))  { this.onreconnect(); } // Bypassing lobby phase means a reconnection.
         
         // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
-        if (!outOfGame(oldPhase) && outOfGame(newPhase))  { this.roundEnd(); }  
-        if (newPhase == "start")                         { this.exitLobby(); } 
+        if (!outOfGame(oldPhase) && outOfGame(newPhase))  { this.onroundleave(); }  
+        if (newPhase == "start")                         { this.onlobbyleave(); } 
 
         if (newPhase == "waiting")                       { this.waiting(); } 
 
         this.transitionData = null;
     }
-    enterLobby() {
-        this.controller.enterLobby() 
+    onlobbyenter() {
+        this.controller.onlobbyenter() 
     }
-    roundStart() {
-        this.controller.roundStart()
+    onroundenter() {
+        this.controller.onroundenter()
     }
-    patchReconnect() {
+    onreconnect() {
         if (this.onEntryXHR === undefined) { 
             Console.warn("Trying to patch data for reconnection but no XHR data found")
             return 
         }
         // Expected to patch Socket stroke data here as well
-        this.controller.patchReconnect(this.onEntryXHR)
+        this.controller.onreconnect(this.onEntryXHR)
         delete this.onEntryXHR
     }
-    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
-        this.controller.mutation(oldPhase, transitionData, newPhase)
+    onphasechange(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
+        this.controller.onphasechange(oldPhase, transitionData, newPhase)
     }
-    roundEnd() {
+    onalbumchange(element: HTMLElement, data: any) {
+        this.controller.onalbumchange({ element, data })
+    }
+    onroundleave() {
         this.targetBook = null
-        this.controller.roundEnd() 
+        this.controller.onroundleave() 
     }
-    exitLobby() {
-        this.controller.exitLobby() 
+    onlobbyleave() {
+        this.controller.onlobbyleave() 
     }
 
     waiting() { Console.log("Waiting", "Observer") } // [C4]
@@ -319,6 +322,10 @@ class Observer {
                 this.patchTransitionData(messageData)
                 break;
             }
+            case EMessagePurpose.GALLERY_SHOW_TURN: {
+                if ((messageData.data === undefined) && (messageData.user !== undefined)) { return }
+                this.onalbumchange(this.getMostRecentExhibit(), messageData.data)
+            }
             case EMessagePurpose.CHANGE_SETTINGS_CUSTOM: {  // Custom settings changed
                 for (const key in messageData) {
                     switch (key) {
@@ -356,7 +363,16 @@ class Observer {
             }
         }
     }
-    patchTransitionData(data: any) {
+
+    private getMostRecentExhibit(): HTMLElement {
+        if (this.targetBook === null) {
+            this.targetBook = document.querySelector('.timeline .scrollElements')
+        }
+
+        const children = this.targetBook!.children
+        return children[children.length - 1] as HTMLElement
+    }
+    private patchTransitionData(data: any) {
         this.transitionData = data
     }
 }

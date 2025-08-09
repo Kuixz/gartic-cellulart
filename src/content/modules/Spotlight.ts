@@ -8,6 +8,7 @@ import {
     Converter, Inwindow, Setting,
     getModuleAsset, setAttributes, configChildTrunk, setParent,
     CellulartEventType,
+    AlbumChangeEvent,
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 import { createButton } from "../components"
@@ -206,6 +207,7 @@ export class Spotlight extends CellulartModule { // [S1]
         super(globalGame, [
             CellulartEventType.ENTER_ROUND,
             CellulartEventType.PHASE_CHANGE,
+            CellulartEventType.ALBUM_CHANGE,
             CellulartEventType.LEAVE_ROUND,
         ])
 
@@ -228,6 +230,13 @@ export class Spotlight extends CellulartModule { // [S1]
         //     this.username = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
         // }
         this.beginCompilation()
+    }
+    protected onalbumchange(event: AlbumChangeEvent): void {
+        console.log('i got the album change event')
+        if (event.detail.data === undefined) {
+            Console.log('End of timeline reached. Beginning frame grabbing', 'Spotlight')
+            this.writeResponseFrames()  
+        }
     }
     protected onroundleave() {
         if (this.globalGame.currentPhase != "book") { return }
@@ -262,42 +271,7 @@ export class Spotlight extends CellulartModule { // [S1]
         this.globalGame.turnCount > 0 
             ? this.compositedFrameDatas = new Array(this.globalGame.turnCount - 1) 
             : this.compositedFrameDatas = {}
-        this.attachBookObserver();
     }
-    // These four determine when things should fire.
-    private attachBookObserver() { // [S2]
-        var frame = document.querySelector(".timeline")//.previousSibling//.parentElement;
-        if (!frame) {
-            setTimeout(this.attachBookObserver, 500);
-            return
-        }
-        this.bookObserver.observe(frame, configChildTrunk);// { characterData: true });
-        Console.log("Attached book observer", "Spotlight")
-    }
-    private bookObserver = new MutationObserver((records) => {
-        Console.log("book obse fired; attaching timeline obse", "Spotlight"); 
-        this.attachTimelineObserver(); 
-        this.bookObserver.disconnect();
-    })
-    private attachTimelineObserver() {
-        var frame = document.querySelector(".timeline > * > *")  // .childNodes[0].childNodes[0];
-        if (!frame) {
-            setTimeout(this.attachTimelineObserver, 500);
-            return
-        }
-        this.timelineObserver.observe(frame, configChildTrunk);
-    }
-    private timelineObserver: MutationObserver = new MutationObserver((records) => { // Catch errors when the NEXT button shows up / the next round begins to load
-        // console.log("timeline obse fired")
-        // console.log(records)
-
-        // TODO: Spurious call at start of new timeline, why?
-        const added = records[0].addedNodes[0]
-        if (!(added instanceof HTMLDivElement)) {
-            Console.log('End of timeline reached. Beginning frame grabbing', 'Spotlight')
-            this.writeResponseFrames()  
-        }
-    })
 
     // These functions manage the compositing of timelines into ImageDatas.
     private compositeBackgrounds() {
