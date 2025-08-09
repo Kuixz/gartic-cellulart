@@ -1,11 +1,10 @@
 import { 
-    Phase, Console, 
-    WhiteSettingsBelt, Converter, SpeedParameters, speedParameterDefaults, DOMUNLOADINGALLOWANCE, 
-    GarticXHRData,
-    PhaseChangeEvent,
-    constructElement,
     BaseGame,
-    CellulartEventType
+    Console, 
+    WhiteSettingsBelt, 
+    Phase, CellulartEventType, GarticXHRData, PhaseChangeEvent,
+    Converter, SpeedParameters, speedParameterDefaults, DOMUNLOADINGALLOWANCE, 
+    constructElement,
 } from "../foundation";
 import { CellulartModule } from "./CellulartModule";
 
