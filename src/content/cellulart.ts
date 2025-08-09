@@ -68,6 +68,7 @@ class Controller {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_ROUND))
     }
     exitLobby() {
+        Socket.exitLobby()
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_LOBBY))
     }
 
@@ -159,6 +160,7 @@ class Observer {
     // static name: string = "Observer"
     game: BaseGame
     content: Element | undefined
+    targetBook : Element | null = null
     controller: Controller
     onEntryXHR: GarticXHRData | undefined
     transitionData: TransitionData | null = null;
@@ -226,6 +228,7 @@ class Observer {
         this.controller.mutation(oldPhase, transitionData, newPhase)
     }
     roundEnd() {
+        this.targetBook = null
         this.controller.roundEnd() 
     }
     exitLobby() {
@@ -233,9 +236,7 @@ class Observer {
     }
 
     waiting() { Console.log("Waiting", "Observer") } // [C4]
-    // reconnect() {
-        
-    // },
+
     contentObserver: MutationObserver = new MutationObserver((records) => {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
@@ -243,11 +244,10 @@ class Observer {
         const newPhaseElement = this.content?.firstChild?.firstChild
         if (!newPhaseElement) { Console.warn("Cannot find element to read game phase from", "Observer"); return }
 
-        const newPhaseString = (newPhaseElement as Element).classList.item(1)
-        if (!newPhaseString) { Console.warn("Cannot read game phase from selected element"); return }
+        const newPhase = (newPhaseElement as Element).classList.item(1) as Phase
+        if (!newPhase) { Console.warn("Cannot read game phase from selected element"); return }
 
-        this.executePhaseTransition(newPhaseString as Phase)
-
+        this.executePhaseTransition(newPhase)
         // console.log('content fired')
     })
     observe(selector: string) {

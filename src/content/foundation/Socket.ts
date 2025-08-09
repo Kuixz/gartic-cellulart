@@ -19,6 +19,9 @@ const Socket = {
     roundEnd() {
         Socket.post("roundEnd")
     },
+    exitLobby() {
+        Socket.post("exitLobby")
+    },
     handle(purp: string, data?: any){
         Socket.handlers.forEach(handler => { 
             if (handler.filter == purp) { handler.handle(data) }

@@ -87,8 +87,10 @@ class SocketInterceptor extends Interceptor {
         console.log("[Cellulart] WebSocket proxified")
     }
     roundEnd() {
-        this.currentWS = null
         this.clearStrokes()
+    }
+    exitLobby() {
+        this.currentWS = null
     }
     readIncoming(data: string): void {
         // console.log(data)
