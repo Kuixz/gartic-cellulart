@@ -362,8 +362,8 @@ class Observer {
 }
 
 function main() {
-    const modules: ModuleChamber = [Timer]
-    const metamodules: MetaChamber = [Red, Debug]
+    const modules = [Timer, Koss, Refdrop, Spotlight, Geom, Scry]
+    const metamodules = [Red, Debug]
 
     const game = new BaseGame()
     const controller = new Controller(game, modules, metamodules)
