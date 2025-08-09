@@ -1,7 +1,6 @@
 
 
 import { 
-    BaseGame,
     Console, 
     RedSettingsBelt, 
     CellulartEventType, PhaseChangeEvent,
@@ -9,7 +8,7 @@ import {
     Keybind, 
     setAttributes, setParent, getModuleAsset, preventDefaults, clamp, 
 } from "../foundation"
-import { CellulartModule } from "./CellulartModule"
+import { ModuleArgs, CellulartModule } from "./CellulartModule"
 
  /* ----------------------------------------------------------------------
   *                                 Refdrop 
@@ -34,8 +33,8 @@ export class Refdrop extends CellulartModule { // [R1]
     refCtrl : HTMLDivElement | undefined     // HTMLDivElement
     refFloating : Inwindow[] = []
 
-    constructor(globalGame: BaseGame) {
-        super(globalGame, [
+    constructor(moduleArgs: ModuleArgs) {
+        super(moduleArgs, [
             CellulartEventType.PHASE_CHANGE,
             CellulartEventType.LEAVE_ROUND,
         ])

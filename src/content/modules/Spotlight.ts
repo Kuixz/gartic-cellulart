@@ -1,16 +1,15 @@
 import * as gifenc from "gifenc"
 
 import { 
-    BaseGame,
     Console, 
     WhiteSettingsBelt, 
     PhaseChangeEvent,
     Converter, Inwindow, Setting,
-    getModuleAsset, setAttributes, configChildTrunk, setParent,
+    getModuleAsset, setAttributes, setParent,
     CellulartEventType,
     AlbumChangeEvent,
 } from "../foundation"
-import { CellulartModule } from "./CellulartModule"
+import { ModuleArgs, CellulartModule } from "./CellulartModule"
 import { createButton } from "../components"
 
 type Side = "L" | "M" | "R"
@@ -203,8 +202,8 @@ export class Spotlight extends CellulartModule { // [S1]
     bg: HTMLImageElement                  // HTMLImageElement [S1]
     canbase: HTMLCanvasElement | undefined // HTMLCanvasElement
     
-    constructor(globalGame: BaseGame) {
-        super(globalGame, [
+    constructor(moduleArgs: ModuleArgs) {
+        super(moduleArgs, [
             CellulartEventType.ENTER_ROUND,
             CellulartEventType.PHASE_CHANGE,
             CellulartEventType.ALBUM_CHANGE,

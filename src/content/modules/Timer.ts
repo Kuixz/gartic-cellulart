@@ -1,12 +1,11 @@
 import { 
-    BaseGame,
     Console, 
     WhiteSettingsBelt, 
     Phase, CellulartEventType, GarticXHRData, PhaseChangeEvent,
     Converter, SpeedParameters, speedParameterDefaults, DOMUNLOADINGALLOWANCE, 
     constructElement,
 } from "../foundation";
-import { CellulartModule } from "./CellulartModule";
+import { ModuleArgs, CellulartModule } from "./CellulartModule";
 
 enum Count {
     Up = 1,
@@ -30,8 +29,8 @@ export class Timer extends CellulartModule {
     parameters: SpeedParameters = speedParameterDefaults
     decay: number = 0 
 
-    constructor(globalGame: BaseGame) { 
-        super(globalGame, [
+    constructor(moduleArgs: ModuleArgs) { 
+        super(moduleArgs, [
             CellulartEventType.ENTER_ROUND,
             CellulartEventType.PHASE_CHANGE,
             CellulartEventType.RECONNECT,

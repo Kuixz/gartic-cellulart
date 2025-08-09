@@ -1,8 +1,8 @@
-import { CellulartModule } from "./CellulartModule";
+import { ModuleArgs, CellulartModule } from "./CellulartModule";
 import { 
     Console, 
     RedSettingsBelt, 
-    BaseGame, CellulartEventType, PhaseChangeEvent, 
+    CellulartEventType, PhaseChangeEvent, 
     DEFAULTINWINDOWRATIO, DOMLOADINGALLOWANCE, Inwindow, 
     constructElement
 } from "../foundation";
@@ -21,8 +21,8 @@ export class Koss extends CellulartModule { // [K1]
     kossImage: HTMLElement    // HTMLImageElement
     kossCanvas: HTMLElement | undefined   // HTMLCanvasElement
 
-    constructor(globalGame: BaseGame) {
-        super(globalGame, [
+    constructor(moduleArgs: ModuleArgs) {
+        super(moduleArgs, [
             CellulartEventType.PHASE_CHANGE,
             CellulartEventType.LEAVE_ROUND
         ])

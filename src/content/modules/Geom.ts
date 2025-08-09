@@ -1,7 +1,6 @@
 // import { ShapeTypes } from "geometrizejs"
 import { WorkerResultShape } from "../../shared/WorkerResultShape"
 import { 
-    BaseGame,
     Console, 
     WhiteSettingsBelt, 
     PhaseChangeEvent, CellulartEventType,
@@ -9,7 +8,7 @@ import {
     svgNS, setAttributes, setParent, preventDefaults, getResource,
     Converter,
 } from "../foundation"
-import { CellulartModule } from "./CellulartModule"
+import { ModuleArgs, CellulartModule } from "./CellulartModule"
 
 const ShapeTypes = {
     RECTANGLE: 0, 
@@ -65,8 +64,8 @@ export class Geom extends CellulartModule {
     config: { distance: number, max: number } = { distance: 1200, max: 20000 }
     shouldClearStrokesOnMutation: boolean = true
 
-    constructor(globalGame: BaseGame) {
-        super(globalGame, [
+    constructor(moduleArgs: ModuleArgs) {
+        super(moduleArgs, [
             CellulartEventType.ENTER_ROUND,
             CellulartEventType.PHASE_CHANGE,
             CellulartEventType.LEAVE_ROUND,

@@ -1,7 +1,7 @@
 // const dogSrc: string = 'https://media.tenor.com/fej4_qoxdHYAAAAM/cute-puppy.gif'
 import { 
     Phase, Console, Converter, GarticXHRData, 
-    Keybinder, Keybind, SHAuth,
+    Keybinder, SHAuth,
     Socket, Xhr,
     // IAuth, SHAuth as SHAuth, 
     IShelf, Shelf,
@@ -16,7 +16,7 @@ import {
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
 import { 
-    ModuleLike, CellulartModule, Metamodule,
+    ModuleArgs, CellulartModule, Metamodule,
     ModuleChamber, MetaChamber
 } from "./modules/CellulartModule"
 import { createButton, createModuleButton } from "./components"
@@ -44,7 +44,7 @@ class Controller {
         this.auth = new SHAuth(new Shelf())
         this.initPopupAuth()
 
-        this.createMenu(modules, metamodules)
+        this.createMenu({ game, socket: Socket }, modules, metamodules)
     }
     onlobbyenter() {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ENTER_LOBBY))
@@ -86,6 +86,7 @@ class Controller {
     unhide() {}
     async createMenu(  // TODO separate into two functions: initialize ([], [], []) and createMenu([], [])
         // auxmodules: AuxChamber,
+        moduleArgs: ModuleArgs,
         modules: ModuleChamber, 
         metamodules: MetaChamber,
     ){  // TODO don't initalize all immediately, maybe? because some people will never use the RED mode
@@ -110,7 +111,7 @@ class Controller {
             },
         ))
         modules.forEach((modTemplate: typeof CellulartModule) => { 
-            const mod = new (modTemplate as new(globalGame: BaseGame) => CellulartModule)(this.game)
+            const mod = new (modTemplate as new(moduleArgs: ModuleArgs) => CellulartModule)(moduleArgs)
             this.liveModules.push(mod)
 
             const newButton = createModuleButton(mod)

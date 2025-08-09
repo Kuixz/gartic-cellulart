@@ -1,5 +1,4 @@
 import { 
-    BaseGame,
     Console, 
     WhiteSettingsBelt, 
     CellulartEventType, PhaseChangeEvent,
@@ -9,7 +8,7 @@ import {
     Inwindow,
     GarticXHRData
 } from "../foundation"
-import { CellulartModule } from "./CellulartModule"
+import { ModuleArgs, CellulartModule } from "./CellulartModule"
 
 /* ----------------------------------------------------------------------
   *                                 Scry 
@@ -25,8 +24,8 @@ export class Scry extends CellulartModule { // [F2]
     indicatorTray: HTMLDivElement  
     indicators: Record<number, HTMLElement> = {}
 
-    constructor(globalGame: BaseGame) {
-        super(globalGame, [
+    constructor(moduleArgs: ModuleArgs) {
+        super(moduleArgs, [
             CellulartEventType.ENTER_ROUND,
             CellulartEventType.PHASE_CHANGE,
             CellulartEventType.RECONNECT,
