@@ -1,8 +1,14 @@
 
 
-import { RedSettingsBelt, Console, Keybind, Phase, setAttributes, Inwindow, 
-         setParent, getModuleAsset, preventDefaults, clamp, 
-         globalGame, TransitionData } from "../foundation"
+import { 
+    BaseGame,
+    Console, 
+    RedSettingsBelt, 
+    CellulartEventType, PhaseChangeEvent,
+    Inwindow, 
+    Keybind, 
+    setAttributes, setParent, getModuleAsset, preventDefaults, clamp, 
+} from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
  /* ----------------------------------------------------------------------
@@ -29,8 +35,11 @@ class Refdrop extends CellulartModule { // [R1]
     refCtrl : HTMLDivElement | undefined     // HTMLDivElement
     refFloating : Inwindow[] = []
 
-    constructor() {
-        super()
+    constructor(globalGame: BaseGame) {
+        super(globalGame, [
+            CellulartEventType.PHASE_CHANGE,
+            CellulartEventType.LEAVE_ROUND,
+        ])
 
         const refImage = document.createElement("img")
         setAttributes(refImage, { class: "bounded", id: "ref-img" })
@@ -97,16 +106,16 @@ class Refdrop extends CellulartModule { // [R1]
 
         // this.refCtrl = this.initRefctrl()
     }
-    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
+    protected onphasechange(_: PhaseChangeEvent): void {
         this.refImage.style.visibility = "hidden";
 
         this.tryPlace()
     }
-    roundStart() {}
-    roundEnd() {
+    protected onroundleave() {
         this.refImage.src = "";
     }
-    adjustSettings() {
+
+    public adjustSettings() {
         if (this.isOff()) {
             for (const floating of this.refFloating) {
                 floating.element.remove()
@@ -120,17 +129,17 @@ class Refdrop extends CellulartModule { // [R1]
         } 
         this.tryPlace()
     }
-    togglePlus(plus: boolean) { 
-        super.togglePlus(plus)
+    public toggleRed(plus: boolean) { 
+        super.toggleRed(plus)
 
         // TODO: This needs refactoring.
         if (plus && this.refCtrl === undefined) { this.refCtrl = this.initRefctrl() }
     }
 
-    canPlace(): boolean { 
-        return globalGame.currentPhase == "draw"
+    private canPlace(): boolean { 
+        return this.globalGame.currentPhase == "draw"
     }
-    tryPlace() {
+    private tryPlace() {
         if (!this.canPlace()) { return }
         
         if (this.isOff()) {
@@ -143,14 +152,14 @@ class Refdrop extends CellulartModule { // [R1]
             this.placeRefCtrl()
         } 
     }
-    placeRefUpload() {
+    private placeRefUpload() {
         const tools = document.querySelector(".tools")
         if (!tools) { Console.warn("Couldn't find where to insert Refdrop controls", "Refdrop"); return }
 
         tools.insertAdjacentElement("beforebegin", this.refUpload);
         this.refUpload.style.visibility = "visible"
     }
-    placeRefCtrl() {
+    private placeRefCtrl() {
         if (!this.refCtrl) { return }
 
         const tools = document.querySelector(".tools")
@@ -159,7 +168,7 @@ class Refdrop extends CellulartModule { // [R1]
         tools.insertAdjacentElement("afterend", this.refCtrl);
         this.refCtrl!.style.visibility = "visible" 
     }
-    screenshot() {
+    private screenshot() {
         const core = document.querySelector(".core")
         if (!core) { Console.warn("Could not find core", "Refdrop"); return }
         const coreCanvas = core.querySelector("canvas")
@@ -170,7 +179,7 @@ class Refdrop extends CellulartModule { // [R1]
         core.insertAdjacentElement("afterbegin", this.refImage);
         Console.log("Screenshot taken", 'Refdrop')
     }
-    initRefctrl() {
+    private initRefctrl() {
         const refCtrl = document.createElement("div"); setAttributes(refCtrl, { id: "ref-sw", class: "ref-square", style:"visibility: hidden" })
         const refpos = document.createElement("div"); setAttributes(refpos, { class: "ref-border canvas-in-square"}); setParent(refpos, refCtrl)
         const refdot = document.createElement("div"); setAttributes(refdot, { id: "ref-dot", class: "ref-border bounded"}); setParent(refdot, refpos)
@@ -273,7 +282,7 @@ class Refdrop extends CellulartModule { // [R1]
             })
         }
     } // [R6]
-    onSocketClick() {
+    private onSocketClick() {
         if (this.isOn()) {
             this.refBridge.click()
         } else if (this.isRed()) {
@@ -282,7 +291,7 @@ class Refdrop extends CellulartModule { // [R1]
             Console.warn(`No behaviour is defined for onSocketClick in setting ${this.setting.current.internalName}`)
         }
     }
-    newRefimgInwindow(object: File): Inwindow {
+    private newRefimgInwindow(object: File): Inwindow {
         const i = new Image()
         setAttributes(i, { class: "wiw-img", src: URL.createObjectURL(object) })
         const newRefWindow = new Inwindow("default", { visible:true, ratio:i.height / i.width, close:true });
@@ -291,7 +300,7 @@ class Refdrop extends CellulartModule { // [R1]
         }
         return newRefWindow
     } // [R4]
-    handleFiles (files: FileList | null) {
+    private handleFiles (files: FileList | null) {
         if (files === null || files.length < 1) { 
             Console.warn("handleFiles was triggered but no files were passed", "Refdrop")
             return 
