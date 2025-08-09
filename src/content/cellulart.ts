@@ -5,10 +5,12 @@ import {
     Socket, Xhr,
     // IAuth, SHAuth as SHAuth, 
     IShelf, Shelf,
-    setAttributes, setParent, configChildTrunk, globalGame,
+    setAttributes, setParent, configChildTrunk,
     GarticUser,
     modeParameterDefaults,
-    EMessagePurpose, TransitionData
+    EMessagePurpose, TransitionData,
+    BaseGame,
+    AlbumChangeData
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
@@ -20,6 +22,7 @@ import { createButton, createModuleButton } from "./components"
 
 class Controller { 
     // static name: Controller
+    game: BaseGame
     menu: HTMLElement | undefined // [C1]
     liveModules: CellulartModule[] = []
     liveMetamodules: Metamodule[] = []
@@ -27,9 +30,12 @@ class Controller {
     auth: SHAuth /*IAuth*/ // = new SHAuth(new Shelf())
 
     constructor(
+        game: BaseGame,
         modules: ModuleChamber, 
         metamodules: MetaChamber,
     ) {
+        this.game = game;
+
         Socket.init()
         Xhr.init()
         Keybinder.init()
@@ -40,23 +46,28 @@ class Controller {
         this.createMenu(modules, metamodules)
     }
     enterLobby() {
-        this.liveModules.forEach(mod => mod.enterLobby())
+        this.game.dispatchEvent(new CustomEvent('lobbyenter'))
     }
     roundStart() {
-        this.liveModules.forEach(mod => mod.roundStart())
+        this.game.dispatchEvent(new CustomEvent('roundenter'))
     }
-    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
-        this.liveModules.forEach(mod => mod.mutation(oldPhase, transitionData, newPhase))
+    mutation(oldPhase: Phase, data: TransitionData | null, newPhase: Phase) {
+        this.game.dispatchEvent(new CustomEvent('phasechange', { 
+            detail: { oldPhase, data, newPhase } 
+        }))
     }
     patchReconnect(data: GarticXHRData) {
-        this.liveModules.forEach(mod => mod.patchReconnect(data))
+        this.game.dispatchEvent(new CustomEvent('reconnect', { detail: data }))
     }
-    roundEnd(oldPhase: Phase) {
+    albumChange(data: AlbumChangeData) {
+        this.game.dispatchEvent(new CustomEvent('albumchange', { detail: data }))
+    }
+    roundEnd() {
         Socket.roundEnd()
-        this.liveModules.forEach(mod => mod.roundEnd(oldPhase))
+        this.game.dispatchEvent(new CustomEvent('roundleave'))
     }
-    exitLobby(oldPhase: Phase) {
-        this.liveModules.forEach(mod => mod.exitLobby(oldPhase))
+    exitLobby() {
+        this.game.dispatchEvent(new CustomEvent('lobbyleave'))
     }
 
     initPopupAuth() {
@@ -145,23 +156,25 @@ class Controller {
 
 class Observer { 
     // static name: string = "Observer"
+    game: BaseGame
     content: Element | undefined
     controller: Controller
     onEntryXHR: GarticXHRData | undefined
     transitionData: TransitionData | null = null;
     
-    constructor(controller: Controller) {
+    constructor(game: BaseGame, controller: Controller) {
+        this.game = game
         this.controller = controller;
         Socket.addMessageListener('socketIncoming', this.deduceSettingsFromSocket.bind(this))
         Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR.bind(this))
     }
     executePhaseTransition(newPhase: Phase): void {
         // Set variables
-        const oldPhase = globalGame.currentPhase
-        globalGame.currentPhase = newPhase
+        const oldPhase = this.game.currentPhase
+        this.game.currentPhase = newPhase
         Console.log(`Transitioned to ${newPhase}`, "Observer")
 
-        globalGame.currentTurn = (() => {
+        this.game.currentTurn = (() => {
             if (["first", "draw", "write", "memory", "mod"].includes(newPhase)) {
                 const step = document.querySelector(".step")
                 if (!step) { Console.warn("Could not find turn counter", "Observer"); return -1 }
@@ -186,8 +199,8 @@ class Observer {
         if (oldPhase == "start" && !outOfGame(newPhase))  { this.patchReconnect(); } // Bypassing lobby phase means a reconnection.
         
         // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
-        if (!outOfGame(oldPhase) && outOfGame(newPhase))  { this.roundEnd(oldPhase); }  
-        if (newPhase == "start")                         { this.exitLobby(oldPhase); } 
+        if (!outOfGame(oldPhase) && outOfGame(newPhase))  { this.roundEnd(); }  
+        if (newPhase == "start")                         { this.exitLobby(); } 
 
         if (newPhase == "waiting")                       { this.waiting(); } 
 
@@ -197,7 +210,6 @@ class Observer {
         this.controller.enterLobby() 
     }
     roundStart() {
-        globalGame.roundStart()
         this.controller.roundStart()
     }
     patchReconnect() {
@@ -212,13 +224,11 @@ class Observer {
     mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
         this.controller.mutation(oldPhase, transitionData, newPhase)
     }
-    roundEnd(oldPhase: Phase) {
-        this.controller.roundEnd(oldPhase) 
+    roundEnd() {
+        this.controller.roundEnd() 
     }
-    exitLobby(oldPhase: Phase) {
-        globalGame.players = []
-
-        this.controller.exitLobby(oldPhase) 
+    exitLobby() {
+        this.controller.exitLobby() 
     }
 
     waiting() { Console.log("Waiting", "Observer") } // [C4]
@@ -260,18 +270,18 @@ class Observer {
     deduceSettingsFromXHR(data: GarticXHRData) {
         Console.log(`Deducing from XHR ${JSON.stringify(data)}`, "Observer")
 
-        globalGame.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
-        globalGame.user = data.user
-        globalGame.user.avatar = "https://garticphone.com/images/avatar/" + data.user.avatar + ".svg"
+        this.game.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
+        this.game.user = data.user
+        this.game.user.avatar = "https://garticphone.com/images/avatar/" + data.user.avatar + ".svg"
 
-        globalGame.players = data.users
-        for (const player of globalGame.players) {
+        this.game.players = data.users
+        for (const player of this.game.players) {
             player.avatar = "https://garticphone.com/images/avatar/" + player.avatar + ".svg"
         }
-        globalGame.turnsIndex = data.configs.turns
-        globalGame.flowIndex = data.configs.first
-        globalGame.speedIndex = data.configs.speed
-        globalGame.keepIndex = data.configs.keep
+        this.game.turnsIndex = data.configs.turns
+        this.game.flowIndex = data.configs.first
+        this.game.speedIndex = data.configs.speed
+        this.game.keepIndex = data.configs.keep
 
         if (data.screen != 1) {  // Bad solution to this two-systems thing we have going on. 
             this.onEntryXHR = data
@@ -284,16 +294,16 @@ class Observer {
             case EMessagePurpose.USER_JOIN: {  // New user joins
                 const newUser = messageData as GarticUser
                 newUser.avatar = "https://garticphone.com/images/avatar/" + newUser.avatar + ".svg"
-                globalGame.players.push(newUser)
+                this.game.players.push(newUser)
                 break;
             }
             case EMessagePurpose.USER_LEAVE: {  // Existing user leaves
-                const index = globalGame.players.findIndex((user) => user.id === messageData.userLeft)
+                const index = this.game.players.findIndex((user) => user.id === messageData.userLeft)
                 if (index == -1) {
                     Console.warn(`Could not remove user: no user with id ${messageData.userLeft} found`, "Observer")
                     break
                 }
-                globalGame.players.splice(index, 1)
+                this.game.players.splice(index, 1)
                 break;
             }
             case EMessagePurpose.TURN_TRANSITION: {
@@ -312,16 +322,16 @@ class Observer {
                 for (const key in messageData) {
                     switch (key) {
                         case 'turns': 
-                            globalGame.turnsIndex = messageData[key]
+                            this.game.turnsIndex = messageData[key]
                             break
                         case 'speed': 
-                            globalGame.speedIndex = messageData[key]
+                            this.game.speedIndex = messageData[key]
                             break
                         case 'flow': 
-                            globalGame.flowIndex = messageData[key]
+                            this.game.flowIndex = messageData[key]
                             break
                         case 'keep': 
-                            globalGame.keepIndex = messageData[key]
+                            this.game.keepIndex = messageData[key]
                             break
                     }
                 }
@@ -329,18 +339,18 @@ class Observer {
             }
             case EMessagePurpose.CHANGE_SETTINGS_PRESET: {  // Default settings changed
                 const modeParameters = Converter.modeIndexToParameters(messageData)
-                globalGame.turnsIndex = modeParameters.turns
-                globalGame.speedIndex = modeParameters.speed
-                globalGame.flowIndex = modeParameters.flow
-                globalGame.keepIndex = modeParameters.keep
+                this.game.turnsIndex = modeParameters.turns
+                this.game.speedIndex = modeParameters.speed
+                this.game.flowIndex = modeParameters.flow
+                this.game.keepIndex = modeParameters.keep
                 break;
             }
-            case EMessagePurpose.APPLY_SETTINGS_PRESET: {  // Return to normal settings when changing tabs
+            case EMessagePurpose.CHANGE_SETTINGS_DEFAULT: {  // Return to normal settings when changing tabs
                 const modeParameters = modeParameterDefaults
-                globalGame.turnsIndex = modeParameters.turns
-                globalGame.speedIndex = modeParameters.speed
-                globalGame.flowIndex = modeParameters.flow
-                globalGame.keepIndex = modeParameters.keep
+                this.game.turnsIndex = modeParameters.turns
+                this.game.speedIndex = modeParameters.speed
+                this.game.flowIndex = modeParameters.flow
+                this.game.keepIndex = modeParameters.keep
                 break;
             }
         }
@@ -354,8 +364,9 @@ function main() {
     const modules: ModuleChamber = [Timer, Koss, Refdrop, Spotlight, Geom, Scry]
     const metamodules: MetaChamber = [Red, Debug]
 
-    const controller = new Controller(modules, metamodules)
-    const observer = new Observer(controller)
+    const game = new BaseGame()
+    const controller = new Controller(game, modules, metamodules)
+    const observer = new Observer(game, controller)
     observer.observe("#content")
 
     // document.querySelector(".side").remove() // lol

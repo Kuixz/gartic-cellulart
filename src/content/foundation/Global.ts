@@ -50,6 +50,9 @@ export class BaseGame extends EventTarget {
         this.addEventListener('roundenter', () => {
             this.turnCount = Converter.turnsIndexToFunction(this.turnsIndex)(this.players.length)
         })
+        this.addEventListener('lobbyleave', () => {
+            this.players = []
+        })
     }
 }
 
