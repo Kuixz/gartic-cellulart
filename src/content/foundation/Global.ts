@@ -6,7 +6,15 @@ import {
 } from "./Converter"
 import { GarticUser } from "./Converter"
 
-export type CellulartEventType = 'lobbyenter' | 'roundenter' | 'phasechange' | 'reconnect' | 'albumchange' | 'roundleave' | 'lobbyleave'
+export enum CellulartEventType {
+    ENTER_LOBBY = 'lobbyenter',
+    ENTER_ROUND = 'roundenter',
+    PHASE_CHANGE = 'phasechange',
+    RECONNECT = 'reconnect',
+    ALBUM_CHANGE = 'albumchange',
+    LEAVE_ROUND = 'roundleave',
+    LEAVE_LOBBY = 'lobbyleave',
+}
 
 export interface PhaseChangeData {
     oldPhase: Phase,

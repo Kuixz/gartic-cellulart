@@ -38,16 +38,15 @@ export class CellulartModule extends EventListening(ModuleLike) { // [F2]
     public keybinds: Keybind[] = []        // Some modules have keybinds
 
     // Initialization. 
-    // To be overridden by each module.
-    constructor(globalGame: BaseGame) { 
+    // To be overridden by each module to expose only globalGame.
+    constructor(globalGame: BaseGame, listensFor: CellulartEventType[]) { 
       super() 
       this.globalGame = globalGame
-      for (const eventType of this.listensFor) {
+      for (const eventType of listensFor) {
         globalGame.addEventListener(eventType, this)
       }
     }
 
-    protected listensFor: CellulartEventType[] = []
     // A CellulartModule can respond to seven game events:
     protected onlobbyenter() {}
     protected onroundenter() {}

@@ -10,7 +10,8 @@ import {
     modeParameterDefaults,
     EMessagePurpose, TransitionData,
     BaseGame,
-    AlbumChangeData
+    AlbumChangeData,
+    CellulartEventType
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
@@ -46,28 +47,28 @@ class Controller {
         this.createMenu(modules, metamodules)
     }
     enterLobby() {
-        this.game.dispatchEvent(new CustomEvent('lobbyenter'))
+        this.game.dispatchEvent(new CustomEvent(CellulartEventType.ENTER_LOBBY))
     }
     roundStart() {
-        this.game.dispatchEvent(new CustomEvent('roundenter'))
+        this.game.dispatchEvent(new CustomEvent(CellulartEventType.ENTER_ROUND))
     }
     mutation(oldPhase: Phase, data: TransitionData | null, newPhase: Phase) {
-        this.game.dispatchEvent(new CustomEvent('phasechange', { 
+        this.game.dispatchEvent(new CustomEvent(CellulartEventType.PHASE_CHANGE, { 
             detail: { oldPhase, data, newPhase } 
         }))
     }
     patchReconnect(data: GarticXHRData) {
-        this.game.dispatchEvent(new CustomEvent('reconnect', { detail: data }))
+        this.game.dispatchEvent(new CustomEvent(CellulartEventType.RECONNECT, { detail: data }))
     }
     albumChange(data: AlbumChangeData) {
-        this.game.dispatchEvent(new CustomEvent('albumchange', { detail: data }))
+        this.game.dispatchEvent(new CustomEvent(CellulartEventType.ALBUM_CHANGE, { detail: data }))
     }
     roundEnd() {
         Socket.roundEnd()
-        this.game.dispatchEvent(new CustomEvent('roundleave'))
+        this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_ROUND))
     }
     exitLobby() {
-        this.game.dispatchEvent(new CustomEvent('lobbyleave'))
+        this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_LOBBY))
     }
 
     initPopupAuth() {
@@ -108,7 +109,7 @@ class Controller {
             },
         ))
         modules.forEach((modTemplate: typeof CellulartModule) => { 
-            const mod = new (modTemplate as new() => CellulartModule)()
+            const mod = new (modTemplate as new(globalGame: BaseGame) => CellulartModule)(this.game)
             this.liveModules.push(mod)
 
             const newButton = createModuleButton(mod)
@@ -361,7 +362,7 @@ class Observer {
 }
 
 function main() {
-    const modules: ModuleChamber = [Timer, Koss, Refdrop, Spotlight, Geom, Scry]
+    const modules: ModuleChamber = [Timer]
     const metamodules: MetaChamber = [Red, Debug]
 
     const game = new BaseGame()
