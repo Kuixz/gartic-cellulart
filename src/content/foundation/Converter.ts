@@ -21,7 +21,8 @@ export type GarticUser = {
 
     ready?: boolean
 }
-export type GarticXHRData = {
+
+export interface GarticXHRData {
     animationConfigs: {speed: number, loop: number} 
     bookAutomatic:    boolean 
     bookNum:          number

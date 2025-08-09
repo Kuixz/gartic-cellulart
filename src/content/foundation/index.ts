@@ -2,6 +2,7 @@
 export * from "./Console"
 export * from "./Const"
 export * from "./Converter"
+export * from "./Global"
 export * from "./Inwindow"
 export * from "./Keybind"
 export * from "./SettingsBelt"

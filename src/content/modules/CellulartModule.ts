@@ -1,28 +1,28 @@
-import { Console, Phase, SettingsBelt, Keybind, DefaultSettings, GarticXHRData, TransitionData } from "../foundation"
+import { Console, SettingsBelt, Keybind, DefaultSettings, GarticXHRData } from "../foundation"
+import { AlbumChangeEvent, BaseGame, CellulartEventType, EventListening, PhaseChangeEvent } from "../foundation/Global";
 
-abstract class ModuleLike {
-    abstract name: string           // All modules have a name property
-    abstract setting: SettingsBelt  // All modules have a SettingsBelt
-    isCheat: boolean = false        // Most modules declare if they are unfair or not
+export class ModuleLike {
+    name!: string            // All modules have a name property
+    setting!: SettingsBelt   // All modules have a SettingsBelt
+    isCheat: boolean = false // All modules declare if they are unfair
 
     // This function makes required changes when switching between settings. 
     // To be overridden by each (controllable) module.
-    abstract adjustSettings(previous: string, current: string): void
+    protected adjustSettings(): void {}
 
     // menuStep receive messages from the in-window menu and are almost universally shared between modules.
-    menuStep() { 
-      const c = this.setting.current; 
+    public menuStep() { 
       const n = this.setting.next(); 
-      this.adjustSettings(c.internalName, n.internalName); 
+      this.adjustSettings(); 
       Console.log(n.internalName, this.name); 
       return n 
     }
 
     // Syntactic getters for the setting. Shared between modules.
-    isSetTo(internalName: string): boolean { return this.setting.isSetTo(internalName) } 
-    isOn(): boolean { return this.isSetTo(DefaultSettings.on) }
-    isOff(): boolean { return this.isSetTo(DefaultSettings.off) }
-    isRed(): boolean { return this.isSetTo(DefaultSettings.red) }
+    protected isSetTo(internalName: string): boolean { return this.setting.isSetTo(internalName) } 
+    protected isOn(): boolean { return this.isSetTo(DefaultSettings.on) }
+    protected isOff(): boolean { return this.isSetTo(DefaultSettings.off) }
+    protected isRed(): boolean { return this.isSetTo(DefaultSettings.red) }
 }
 
 /* ----------------------------------------------------------------------
@@ -33,45 +33,43 @@ abstract class ModuleLike {
   * to the lobby), amongst other frameworks to make adding new functionalities
   * easy as pie.
   * ---------------------------------------------------------------------- */
-abstract class CellulartModule extends ModuleLike { // [F2]
-    keybinds: Keybind[] = []        // Some modules have keybinds
+export class CellulartModule extends EventListening(ModuleLike) { // [F2]
+    protected globalGame: BaseGame
+    public keybinds: Keybind[] = []        // Some modules have keybinds
 
     // Initialization. 
     // To be overridden by each module.
-    constructor() { super() }
+    constructor(globalGame: BaseGame) { 
+      super() 
+      this.globalGame = globalGame
+      for (const eventType of this.listensFor) {
+        globalGame.addEventListener(eventType, this)
+      }
+    }
 
-    // This function is called whenever the game transitions to a new phase.
-    // To be overridden by each module.
-    abstract mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase): void
-
-    // These functions set critical persistent variables when a game starts.
-    // To be overridden by each module.
-    enterLobby(): void {}
-    roundStart(): void {}
-    patchReconnect(data: GarticXHRData): void {}
-
-    // These functions "clean the slate" when a game ends. 
-    // To be overridden by each module.
-    roundEnd(oldPhase: Phase): void {}
-    exitLobby(oldPhase: Phase): void {}
+    protected listensFor: CellulartEventType[] = []
+    // A CellulartModule can respond to seven game events:
+    protected onlobbyenter() {}
+    protected onroundenter() {}
+    protected onphasechange(event: PhaseChangeEvent) {}
+    protected onreconnect(event: GarticXHRData) {}
+    protected onalbumchange(event: AlbumChangeEvent) {}
+    protected onroundleave() {}
+    protected onlobbyleave() {}
 
     // This function makes required changes when switching between settings. 
     // To be overridden by each (controllable) module.
-    abstract adjustSettings(): void
+    protected adjustSettings(): void {}
 
     // togglePlus handles module extensions.
-    togglePlus(plus: boolean) { if (plus) { this.setting.extend() } else { this.setting.retract() } }
+    public toggleRed(plus: boolean) { if (plus) { this.setting.extend() } else { this.setting.retract() } }
     // An unstated assumption is that the following is always equal to 0 or 1:
     // the number of times togglePlus(true) is called minus the number of times togglePlus(false) is called.
 }
 
-abstract class Metamodule extends ModuleLike {
+export abstract class Metamodule extends ModuleLike {
   constructor(num: CellulartModule[]) { super() }
 }
 
-// type AuxChamber = (typeof Auxmodule)[]
-type ModuleChamber = (typeof CellulartModule)[]
-type MetaChamber = (typeof Metamodule)[]
-
-export { CellulartModule, Metamodule }
-export type { /*AuxChamber, */ ModuleChamber, MetaChamber, ModuleLike }
+export type ModuleChamber = (typeof CellulartModule)[]
+export type MetaChamber = (typeof Metamodule)[]
