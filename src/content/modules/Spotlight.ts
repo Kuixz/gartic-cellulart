@@ -193,7 +193,7 @@ class GarticCompositor {
 /** Spotlight condenses your performance for the current round into a gif. 
   * The most spaghetti, convoluted module, second longest at 300 lines.
   * And it's not even particularly useful.                                 */
-class Spotlight extends CellulartModule { // [S1]
+export class Spotlight extends CellulartModule { // [S1]
     name = "Spotlight"
     setting = WhiteSettingsBelt(this.name.toLowerCase())
     // Spotlight variables
@@ -455,5 +455,3 @@ class Spotlight extends CellulartModule { // [S1]
     //     _window.document.write('<iframe src="' + intend.toDataURL() + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>');
     // }
 }
-
-export { Spotlight }

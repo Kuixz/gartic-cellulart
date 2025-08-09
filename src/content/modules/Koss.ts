@@ -12,9 +12,8 @@ import {
   * ---------------------------------------------------------------------- */
 /** Knock-Off Screenshot (Koss), self-explanatory:
   * automatically takes a screenshot of the image you're supposed to 
-  * memorize. The lightest module, being only 70 lines long.                    
-  * ---------------------------------------------------------------------- */
-class Koss extends CellulartModule { // [K1]
+  * memorize. The lightest module, being only 70 lines long.               */
+export class Koss extends CellulartModule { // [K1]
     name = "Koss"
     setting = RedSettingsBelt(this.name.toLowerCase())
     // KOSS variables
@@ -104,7 +103,3 @@ class Koss extends CellulartModule { // [K1]
         this.kossCanvas = undefined;
     }
 }
-
-// const KossInstance = new Koss()
-
-export { Koss }

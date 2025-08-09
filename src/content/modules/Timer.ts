@@ -18,7 +18,7 @@ enum Count {
   * ---------------------------------------------------------------------- */
 /** Timer adds a digital timer displaying time remaining (or elapsed) 
   * in the top right corner, just under the analog clock.                  */
-class Timer extends CellulartModule {
+export class Timer extends CellulartModule {
     name = "Timer"
     setting = WhiteSettingsBelt(this.name.toLowerCase(), true)
 
@@ -154,5 +154,3 @@ class Timer extends CellulartModule {
         } 
     }
 }
-
-export { Timer }

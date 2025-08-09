@@ -16,9 +16,8 @@ import { CellulartModule } from "./CellulartModule"
   * ---------------------------------------------------------------------- */
 /** Refdrop allows you to upload reference images over or behind the canvas,
   * with controls for position and opacity.
-  * Includes arrow key keybinds for adjustment of the image when in Red mode.
-  * ---------------------------------------------------------------------- */
-class Refdrop extends CellulartModule { // [R1]
+  * Includes arrow key keybinds for adjustment of the image when in Red mode. */
+export class Refdrop extends CellulartModule { // [R1]
     name = "Refdrop"
     setting = RedSettingsBelt(this.name.toLowerCase(), true)
     keybinds = [
@@ -325,5 +324,3 @@ class Refdrop extends CellulartModule { // [R1]
         }
     }    
 }
-
-export { Refdrop }
