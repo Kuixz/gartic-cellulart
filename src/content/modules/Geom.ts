@@ -1,9 +1,13 @@
 // import { ShapeTypes } from "geometrizejs"
 import { WorkerResultShape } from "../../shared/WorkerResultShape"
-import { Phase, WhiteSettingsBelt, Console, Inwindow, Socket,
+import { 
+    BaseGame,
+    Console, 
+    WhiteSettingsBelt, 
+    PhaseChangeEvent, CellulartEventType,
+    Inwindow, Socket,
     svgNS, setAttributes, setParent, preventDefaults, getResource,
-    globalGame,
-    Converter, TransitionData
+    Converter,
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
@@ -46,9 +50,8 @@ type GeomScreenData = {
   * ---------------------------------------------------------------------- */
 /** Geom (Geometrize) is the second generation of Gartic autodrawers 
   * after rate limiting culled the first generation.     
-  * The longest module at 360 lines. cringe                  
-  * ---------------------------------------------------------------------- */
-class Geom extends CellulartModule {
+  * The longest module at 360 lines. cringe                                */
+export class Geom extends CellulartModule {
     name = "Geom"        
     isCheat = true
     setting = WhiteSettingsBelt(this.name.toLowerCase())
@@ -62,8 +65,12 @@ class Geom extends CellulartModule {
     config: { distance: number, max: number } = { distance: 1200, max: 20000 }
     shouldClearStrokesOnMutation: boolean = true
 
-    constructor() {
-        super()
+    constructor(globalGame: BaseGame) {
+        super(globalGame, [
+            CellulartEventType.ENTER_ROUND,
+            CellulartEventType.PHASE_CHANGE,
+            CellulartEventType.LEAVE_ROUND,
+        ])
         Socket.addMessageListener('flag', (data: boolean) => {
             this.flags.ws = data
         })
@@ -74,17 +81,18 @@ class Geom extends CellulartModule {
         setAttributes(preview, { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424" })
         this.geomPreview = preview
     }
-    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase): void {
+    protected onphasechange(event: PhaseChangeEvent): void {
+        const { data, newPhase } = event.detail
         this.setSendingPaused(true)
         this.geomPreview.innerHTML = ''
         if (this.shouldClearStrokesOnMutation) {
             Socket.post('clearStrokes')
         } else {
-            if (!(transitionData?.previous.data)) {
+            if (!(data?.previous.data)) {
                 Console.warn("Strokes need to be preserved but no strokes were patched", "Geom")
             } else {
-                if (transitionData?.previous.data instanceof Array) {
-                    Socket.post('setStrokeStack', transitionData.previous.data)
+                if (data?.previous.data instanceof Array) {
+                    Socket.post('setStrokeStack', data.previous.data)
                 } else {
                     // Console.log("What kind of Frankenstein round settings are you playing with?")
                 }
@@ -99,15 +107,16 @@ class Geom extends CellulartModule {
             return 
         } 
     }
-    roundStart() {
-        this.shouldClearStrokesOnMutation = Converter.continuesIndexToBoolean(globalGame.keepIndex)
+    protected onroundenter() {
+        this.shouldClearStrokesOnMutation = Converter.continuesIndexToBoolean(this.globalGame.keepIndex)
     }
-    roundEnd(): void {
+    protected onroundleave(): void {
         this.flags.mode = false; 
         this.geomPreview.innerHTML = ""
         // if (oldPhase != 'start') { this.stopGeometrize() }  // Technically redundant.
     }
-    adjustSettings() { 
+
+    public adjustSettings() { 
         // hide or show Geom window without stopping web worker (just like Koss)
         if (this.isOff()) {
             this.setSendingPaused(true)
@@ -117,11 +126,11 @@ class Geom extends CellulartModule {
         }
     }
 
-    setSendingPaused(newIsPaused: boolean): void {} // Dynamically initialized
-    stopGeometrize(): void {}                // Dynamically initialized
-    updateLabel(which: 'total'|'sent'|'both', newValue: string) {}    // Dynamically initialized
+    private setSendingPaused(newIsPaused: boolean): void {} // Dynamically initialized
+    private stopGeometrize(): void {}                // Dynamically initialized
+    private updateLabel(which: 'total'|'sent'|'both', newValue: string) {}    // Dynamically initialized
 
-    initGeomWIW(): Inwindow { // [G8]
+    private initGeomWIW(): Inwindow { // [G8]
         const constructScreen1 = () => { 
             const toReturn: GeomScreenData = {
                 elements: {},
@@ -410,7 +419,7 @@ class Geom extends CellulartModule {
             step() 
         }
     }
-    queueShape(shape: WorkerResultShape) {
+    private queueShape(shape: WorkerResultShape) {
         this.counters.created += 1
         this.shapeQueue.push(shape)
         this.flags.queue = true
@@ -418,8 +427,8 @@ class Geom extends CellulartModule {
     
         window.setTimeout(() => { this.trySend() }, 0) // Maybe an overcomplication
     }
-    trySend() {
-        function gartic_format(shape: WorkerResultShape) {
+    private trySend() {
+        const gartic_format = (shape: WorkerResultShape) => {
             const raw = shape.raw
             const type = ((x: number) => {
                 if (x == ShapeTypes.RECTANGLE) { return 6 }
@@ -448,11 +457,11 @@ class Geom extends CellulartModule {
                 return // else if LINE
             }
     
-            return { fst: `42[2,7,{"t":${globalGame.currentTurn - 1},"d":1,"v":[${type},`,
+            return { fst: `42[2,7,{"t":${this.globalGame.currentTurn - 1},"d":1,"v":[${type},`,
                     snd: `,["#${color}",2,"0.5"],[${coords[0]},${coords[1]}],[${coords[2]},${coords[3]}]]}]`
                 }
         }
-        function svg_format(shape: WorkerResultShape) {
+        const svg_format = (shape: WorkerResultShape) => {
             const raw = shape.raw
             const type = ((x: number) => {
                 if (x == ShapeTypes.RECTANGLE) { return 'rect' }
@@ -512,5 +521,3 @@ class Geom extends CellulartModule {
         return response
     }
 }
-
-export { Geom }
