@@ -1,4 +1,4 @@
-import { Console, SettingsBelt, Keybind, DefaultSettings, GarticXHRData, Socket } from "../foundation"
+import { Console, SettingsBelt, Keybind, DefaultSettings, GarticXHRData, Socket, StrokeSender } from "../foundation"
 import { AlbumChangeEvent, BaseGame, CellulartEventType, EventListening, PhaseChangeEvent } from "../foundation/Global";
 
 export class ModuleLike {
@@ -27,7 +27,8 @@ export class ModuleLike {
 
 export interface ModuleArgs {
   game: BaseGame,
-  socket: Socket
+  socket: Socket,
+  strokeSender: StrokeSender,
 }
 
 /* ----------------------------------------------------------------------
