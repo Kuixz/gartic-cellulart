@@ -1,5 +1,17 @@
-import { Console, SettingsBelt, Keybind, DefaultSettings, GarticXHRData, Socket, StrokeSender } from "../foundation"
-import { AlbumChangeEvent, BaseGame, CellulartEventType, EventListening, PhaseChangeEvent } from "../foundation/Global";
+import { 
+  Console, 
+  SettingsBelt, 
+  Keybind, 
+  DefaultSettings, 
+  Socket, 
+  StrokeSender,
+  GarticXHRData, 
+  AlbumChangeEvent, 
+  BaseGame, 
+  CellulartEventType, 
+  EventListening, 
+  PhaseChangeEvent 
+} from "../foundation";
 
 export class ModuleLike {
     name!: string            // All modules have a name property
