@@ -78,7 +78,6 @@ export class StrokeSender extends EventListening(EventTarget) {
 
     // 2. Queue management
     public enqueueStroke(toolName: string, stroke: CellulartStroke) {
-        console.log('enqueued stroke')
         if (!this.queues.has(toolName)) {
             this.queues.set(toolName, []);
         }
@@ -87,7 +86,6 @@ export class StrokeSender extends EventListening(EventTarget) {
     }
 
     public clearQueue(toolName: string) {
-        console.log('clear active queue')
         if (this.currentTool == toolName) {
             this.stop()
             // Possible race condition with trySend. Look carefully later
@@ -96,14 +94,12 @@ export class StrokeSender extends EventListening(EventTarget) {
         this.dispatchQueueStateChangeEvent()
     }
     public resumeQueue(toolName: string) {
-        console.log('resuming queue')
         this.currentTool = toolName
         this.paused = false
         this.dispatchQueueStateChangeEvent()
         this.trySend()
     }
     private dispatchQueueStateChangeEvent() {
-        console.log('dispatching event')
         this.dispatchEvent(new CustomEvent('queuestatechange', {
             detail: {
                 queue: this.currentTool,
@@ -161,9 +157,7 @@ export class StrokeSender extends EventListening(EventTarget) {
 
     // 5. Manual pause/resume control
     public pause(toolName: string) { 
-        console.log('pausing queue')
         if (this.currentTool != toolName) { 
-            console.log('not the active queue')
             return
         }
         this.paused = true; 
@@ -177,9 +171,7 @@ export class StrokeSender extends EventListening(EventTarget) {
     //     return true
     // }
     public unpause(toolName: string) { 
-        console.log('unpausing queue')
         if (this.currentTool != toolName) { 
-            console.log('not the active queue')
             return
         }
         this.paused = false; 
