@@ -70,6 +70,9 @@ class Controller {
     onalbumchange(data: AlbumChangeData) {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ALBUM_CHANGE, { detail: data }))
     }
+    ontimelinechange() {
+        this.game.dispatchEvent(new CustomEvent(CellulartEventType.TIMELINE_CHANGE))
+    }
     onroundleave() {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_ROUND))
     }
@@ -234,6 +237,9 @@ class Observer {
     onalbumchange(element: HTMLElement, data: any) {
         this.controller.onalbumchange({ element, data })
     }
+    ontimelinechange() {
+        this.controller.ontimelinechange()
+    }
     onroundleave() {
         this.targetBook = null
         this.controller.onroundleave() 
@@ -329,6 +335,9 @@ class Observer {
             case EMessagePurpose.GALLERY_SHOW_TURN: {
                 if ((messageData.data === undefined) && (messageData.user !== undefined)) { return }
                 this.onalbumchange(this.getMostRecentExhibit(), messageData.data)
+            }
+            case EMessagePurpose.GALLERY_CHANGE_TIMELINE: {
+                this.ontimelinechange()
             }
             case EMessagePurpose.CHANGE_SETTINGS_CUSTOM: {  // Custom settings changed
                 for (const key in messageData) {

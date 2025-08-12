@@ -65,12 +65,13 @@ export class CellulartModule extends EventListening(ModuleLike) { // [F2]
       }
     }
 
-    // A CellulartModule can respond to seven game events:
+    // A CellulartModule can respond to eight game events:
     protected onlobbyenter() {}
     protected onroundenter() {}
     protected onphasechange(event: PhaseChangeEvent) {}
     protected onreconnect(event: GarticXHRData) {}
     protected onalbumchange(event: AlbumChangeEvent) {}
+    protected ontimelinechange() {}
     protected onroundleave() {}
     protected onlobbyleave() {}
 

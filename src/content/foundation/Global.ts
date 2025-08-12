@@ -13,6 +13,7 @@ export enum CellulartEventType {
     PHASE_CHANGE = 'phasechange',
     RECONNECT = 'reconnect',
     ALBUM_CHANGE = 'albumchange',
+    TIMELINE_CHANGE = 'timelinechange',
     LEAVE_ROUND = 'roundleave',
     LEAVE_LOBBY = 'lobbyleave',
 }
