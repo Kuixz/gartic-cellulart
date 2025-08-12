@@ -37,14 +37,15 @@ class Controller {
         modules: ModuleChamber, 
         metamodules: MetaChamber,
     ) {
+        const shelf = new Shelf()
         this.game = new BaseGame();
         this.socket = new Socket(this.game);
         this.strokeSender = new StrokeSender(this.socket, this.game);
+        this.auth = new SHAuth(shelf)
 
         Xhr.init()
         Keybinder.init()
 
-        this.auth = new SHAuth(new Shelf())
         this.initPopupAuth()
 
         this.createMenu({ 
@@ -335,9 +336,11 @@ class Observer {
             case EMessagePurpose.GALLERY_SHOW_TURN: {
                 if ((messageData.data === undefined) && (messageData.user !== undefined)) { return }
                 this.onalbumchange(this.getMostRecentExhibit(), messageData.data)
+                break;
             }
             case EMessagePurpose.GALLERY_CHANGE_TIMELINE: {
                 this.ontimelinechange()
+                break;
             }
             case EMessagePurpose.CHANGE_SETTINGS_CUSTOM: {  // Custom settings changed
                 for (const key in messageData) {
