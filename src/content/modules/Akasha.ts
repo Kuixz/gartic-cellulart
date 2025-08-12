@@ -5,7 +5,7 @@ import { CellulartModule, ModuleArgs } from "./CellulartModule";
  /* ----------------------------------------------------------------------
   *                                 Akasha 
   * ----------------------------------------------------------------------
-  *                     Suggested by  
+  *                          Suggested by Daniel
   * ----------------------------------------------------------------------  */
 /** There will be nothing new under the sun (coming from your client) 
   * if you use Akasha to save and carbon copy incoming drawings back out. 
