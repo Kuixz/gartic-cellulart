@@ -22,7 +22,7 @@ class Red extends Metamodule {
         // console.log(this.modules)
     }
     adjustSettings() {
-        this.modules.forEach((mod) => { mod.togglePlus(this.isRed()) })
+        this.modules.forEach((mod) => { mod.toggleRed(this.isRed()) })
     }
 }
 
