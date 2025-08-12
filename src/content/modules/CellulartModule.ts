@@ -57,7 +57,7 @@ export class CellulartModule extends EventListening(ModuleLike) { // [F2]
 
     // Initialization. 
     // To be overridden by each module to expose only globalGame.
-    constructor(moduleArgs: ModuleArgs, listensFor: CellulartEventType[]) { 
+    constructor(moduleArgs: ModuleArgs, listensFor: CellulartEventType[] = []) { 
       super() 
       this.globalGame = moduleArgs.game
       for (const eventType of listensFor) {
