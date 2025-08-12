@@ -47,21 +47,3 @@ Object.defineProperty(isGeomRawShape, Symbol.hasInstance, {
 })
 
 
-type GeomSerializedShape = {
-    fst: string
-    snd: string
-}
-
-const isGeomSerializedShape = (value: any): value is GeomSerializedShape => {
-    return (
-        value 
-        && typeof value.fst === "string" 
-        && typeof value.snd === "string"
-    )
-}
-
-Object.defineProperty(isGeomSerializedShape, Symbol.hasInstance, {
-    value(instance) {
-        return isGeomSerializedShape(instance);
-    },
-})
