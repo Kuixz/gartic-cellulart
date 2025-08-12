@@ -47,7 +47,8 @@ interface GeomStroke extends CellulartStroke {
   * ---------------------------------------------------------------------- */
 /** Geom (Geometrize) is the second generation of Gartic autodrawers 
   * after rate limiting culled the first generation.     
-  * The longest module at 360 lines. cringe                                */
+  * Previously the longest module. After having its guts rearranged 
+  * to accommodate Akasha, that title is a bit more ambiguous.             */
 export class Geom extends CellulartModule {
     name = "Geom"        
     isCheat = true
