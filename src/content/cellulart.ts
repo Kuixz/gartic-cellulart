@@ -14,7 +14,7 @@ import {
     CellulartEventType,
     StrokeSender
 } from "./foundation"
-import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
+import { Timer, Koss, Refdrop, Spotlight, Geom, Scry, Akasha } from "./modules"
 import { Red, Debug } from "./metamodules"
 import { 
     ModuleArgs, CellulartModule, Metamodule,
@@ -382,7 +382,7 @@ class Observer {
 }
 
 function main() {
-    const modules = [Timer, Koss, Refdrop, Spotlight, Geom, Scry]
+    const modules = [Timer, Koss, Refdrop, Spotlight, Geom, Scry, Akasha]
     const metamodules = [Red, Debug]
 
     const controller = new Controller(modules, metamodules)
