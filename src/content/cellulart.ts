@@ -385,7 +385,6 @@ function main() {
     const modules = [Timer, Koss, Refdrop, Spotlight, Geom, Scry]
     const metamodules = [Red, Debug]
 
-    const game = new BaseGame()
     const controller = new Controller(modules, metamodules)
     const observer = new Observer(controller)
     observer.observe("#content")
