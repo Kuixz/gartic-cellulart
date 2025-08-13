@@ -1,7 +1,14 @@
 import { Console } from "./Console"
 
 export type Phase = "start" | "lobby" | "draw" | "write" | "memory" | "book" | "first" | "mod" | "waiting"
-export type TransitionData = { turnNum: number, screen: number, previous: any }
+export interface TransitionData { 
+    turnNum: number, 
+    screen: number, 
+    previous: {
+        user: GarticUser,
+        data: GarticData
+    } 
+}
 
 export type GarticStroke = [number, number, [string, number, number], ...[number, number]]
 export type GarticUser = {
@@ -21,6 +28,7 @@ export type GarticUser = {
 
     ready?: boolean
 }
+export type GarticData = undefined | string | GarticStroke[]
 
 export interface GarticXHRData {
     animationConfigs: {speed: number, loop: number} 

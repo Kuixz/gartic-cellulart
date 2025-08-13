@@ -3,7 +3,7 @@ import {
     EFlow, EKeep, ESpeed, ETurns, 
     GarticXHRData,
     TransitionData,
-    GarticStroke
+    GarticData,
 } from "./Converter"
 import { GarticUser } from "./Converter"
 
@@ -25,7 +25,7 @@ export interface PhaseChangeData {
 }
 export interface AlbumChangeData {
     element: Element,
-    data: undefined | string | GarticStroke[],
+    data: GarticData,
 } 
 export interface PhaseChangeEvent extends CustomEvent {
     detail: PhaseChangeData
