@@ -20,50 +20,39 @@ export class Akasha extends CellulartModule {
 
   constructor(moduleArgs: ModuleArgs) {
     super(moduleArgs, [
+        CellulartEventType.PHASE_CHANGE,
         CellulartEventType.ALBUM_CHANGE,
         CellulartEventType.TIMELINE_CHANGE,
     ])
   }
 
+  protected onphasechange(event: PhaseChangeEvent): void {
+    const { data, newPhase } = event.detail
+    if (newPhase != 'memory') {
+      return
+    }
+    if (!(data.previous.data instanceof Array)) {
+      return
+    }
+
+    const canvas = document.querySelector(".core canvas")!
+    const turnCount = document.querySelector(".step")!
+    const newButton = this.createDownloadButton(canvas as HTMLCanvasElement, data.previous.data)
+    turnCount.appendChild(newButton)
+  }
+
   protected onalbumchange(event: AlbumChangeEvent): void {
-    console.log(event)
+    // console.log(event)
 
     const { data, element } = event.detail
     if (!(data instanceof Array)) {
       return
     }
 
-    const canvas = element.querySelector(".drawBalloon canvas")!
-    if (!canvas) {
-      return
-    } 
-    
+    const canvas = element.querySelector(".drawBalloon canvas") as HTMLCanvasElement
     const avatar = element.querySelector(".avatar")!
-    const newButton = constructElement({
-      type: "div",
-      class: "akasha-button-outer hover-button",
-      style: `visibility: ${this.isOn() ? "initial" : "hidden"}`,
-      children: [{
-        type: "div",
-        class: "akasha-button-inner",
-        style: `clip-path: url(#cellulart-akasha-download)`,
-      }]
-    })
-
-    newButton.addEventListener(
-      'click', 
-      () => {
-        this.records.push({
-          dataURL: (canvas as HTMLCanvasElement).toDataURL(),
-          strokes: data
-        })
-        console.log(this.records)
-      },
-      { once: true }
-    )
-
+    const newButton = this.createDownloadButton(canvas, data)
     avatar.appendChild(newButton)
-    this.activeDownloadButtons.push(newButton)
   }
 
   protected ontimelinechange(): void {
@@ -80,6 +69,35 @@ export class Akasha extends CellulartModule {
         elem.style.visibility = "hidden"
       }
     }
+  }
+
+  private createDownloadButton(canvas: HTMLCanvasElement, data: GarticStroke[]): HTMLElement {
+    const newButton = constructElement({
+      type: "div",
+      class: "akasha-button-outer hover-button",
+      style: `visibility: ${this.isOn() ? "initial" : "hidden"}`,
+      children: [{
+        type: "div",
+        class: "akasha-button-inner",
+        style: `clip-path: url(#cellulart-akasha-download)`,
+      }]
+    })
+
+    newButton.addEventListener(
+      'click', 
+      () => {
+        this.records.push({
+          dataURL: canvas.toDataURL(),
+          strokes: data
+        })
+        console.log(this.records)
+      },
+      { once: true }
+    )
+
+    this.activeDownloadButtons.push(newButton)
+
+    return newButton
   }
 }
 
