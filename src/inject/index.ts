@@ -65,25 +65,28 @@ class SocketInterceptor extends Interceptor {
     proxy() {
         const registerWS = this.registerWS.bind(this)
         const interceptOutgoing = this.interceptOutgoing.bind(this)
-        const wsSend = window.WebSocket.prototype.send;
 
-        window.WebSocket.prototype.expressSend = function() {
-            return wsSend.apply(this, arguments as any); 
-        }
-        window.WebSocket.prototype.send = function(data) {
-            registerWS(this)
-
-            const modifiedData = interceptOutgoing(data.toString())
-            if (!modifiedData) { 
-                console.log("short circuit")
-                return
+        class M extends WebSocket {
+            constructor(url: string | URL, protocols?: string | string[]) {
+                super(url, protocols)
+                registerWS(this)
             }
 
-            const args = arguments
-            args[0] = modifiedData
-    
-            return wsSend.apply(this, args as any);
-        }; 
+            public send(data: Sendable): void {
+                const modifiedData = interceptOutgoing(data.toString())
+                if (!modifiedData) { 
+                    console.log("short circuit")
+                    return
+                }
+
+                super.send(modifiedData)
+            }
+
+            public expressSend(data: Sendable): void {
+                super.send(data)
+            }
+        }
+        window.WebSocket = M
     
         console.log("[Cellulart] WebSocket proxified")
     }
@@ -102,15 +105,6 @@ class SocketInterceptor extends Interceptor {
         this.post("socketIncoming", json)
 
         return
-        // if (json[1] == 11) {
-        //     if ('draw' in message) { 
-        //         console.log(message.draw)
-        //         Socket.setStrokeStack(message.draw)
-        //         // Socket.post('turnNum', json.turnNum)
-        //     } else {
-        //         Socket.clearStrokes()
-        //     }
-        // }
     }
     interceptOutgoing(data: string): Maybe<string> {
         // TODO: Bad workaround right here
@@ -155,7 +149,13 @@ class SocketInterceptor extends Interceptor {
         // console.log(this)
         if (this.currentWSOpen()) { return }
         this.currentWS = ws
-        ws.addEventListener('message', (event) => { this.readIncoming(event.data) })
+        ws.addEventListener(
+            'message', 
+            (event) => { 
+                this.readIncoming(event.data) 
+            },
+            { capture: true }
+        )
         this.post("flag", true)
     }
     currentWSOpen() { return this.currentWS && this.currentWS.readyState === this.currentWS.OPEN }
