@@ -21,6 +21,19 @@ Default.InwindowNode.innerHTML = `
 <div class = "wiw-header">≡<div class = "wiw-close"></div></div>
 <div class = "wiw-body"></div>`
 
+export type InwindowOptions = {
+    header?: HTMLElement, 
+    body?: HTMLElement, 
+    close?: HTMLElement | boolean,
+    visible?: boolean,
+    shaded?: boolean,
+    position?: { left: string, top: string }
+
+    width?: number,
+    height?: number,
+    ratio?: number,
+    maxGrowFactor?: number
+}
 
 var currentZIndex: number = 20 
 
@@ -32,18 +45,8 @@ class InwindowElement {
 
     constructor(
         element: HTMLElement | "default" = "default", 
-        options?: {
-            header?: HTMLElement, 
-            body?: HTMLElement, 
-            close?: HTMLElement | boolean,
-            visible?: boolean,
-            shaded?: boolean,
-
-            width?: number,
-            height?: number,
-            ratio?: number,
-            maxGrowFactor?: number
-        }) {
+        options?: InwindowOptions
+    ) {
         const e = element == "default" ? Default.InwindowNode.cloneNode(true) as HTMLElement : element
         this.element = e
         this.header = options?.header ?? e.querySelector('.wiw-header') ?? e
@@ -60,6 +63,10 @@ class InwindowElement {
 
         if (options?.shaded) {
             e.classList.add('shaded')
+        }
+        if (options?.position) {
+            e.style.top = options.position.top
+            e.style.left = options.position.left
         }
 
         this.setVisibility(options?.visible || false)
