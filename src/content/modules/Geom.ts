@@ -247,7 +247,7 @@ export class Geom extends CellulartModule {
                 Console.warn("Mysterious error, no shape was produced; terminating", 'Geom'); 
                 return;
             }     
-            if (buffer !== this.strokeBuffer) { return }
+            if (this.strokeBuffer == null || this.strokeBuffer !== buffer) { return }
 
             Console.log(shape, 'Worker')       
             this.queueShape(shape)
@@ -261,15 +261,15 @@ export class Geom extends CellulartModule {
             return 
         }
 
-        if (this.strokeBuffer == null) {
-            Console.warn("Buffer not found while queueing shape", this.name)
-            return
-        }
+        // if (this.strokeBuffer == null) {
+        //     Console.warn("Buffer not found while queueing shape", this.name)
+        //     return
+        // }
         // this.strokeBuffer.dispatchEvent(new CustomEvent("enqueuestroke", {
         //     detail: shapeAsGarticStroke
         // }))
         // console.log(this.strokeBuffer)
-        this.strokeBuffer.enqueueStroke(shapeAsGarticStroke)
+        this.strokeBuffer!.enqueueStroke(shapeAsGarticStroke)
     }
     async queryGW(purpose: any, data: any = undefined) {
         const message = (data === undefined) ? { function: purpose } : { function: purpose, data: data } 
