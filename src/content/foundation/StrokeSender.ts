@@ -88,9 +88,12 @@ export class StrokeSender extends EventListening(EventTarget) {
 
     // 3. Listen for phase changes from event bus
     protected onphasechange(event: PhaseChangeEvent) {
-        const { data, newPhase } = event.detail
-        this.phaseReady = newPhase == 'draw'
+        const { oldPhase, data, newPhase } = event.detail
+        if (oldPhase == 'memory') {
+            return
+        }
 
+        this.phaseReady = newPhase == 'draw'
         this.ifActivePause()
         
         if (this.shouldClearStrokesOnMutation) {
