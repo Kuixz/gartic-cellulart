@@ -292,7 +292,7 @@ export class Refdrop extends CellulartModule { // [R1]
     private newRefimgInwindow(object: File): Inwindow {
         const i = new Image()
         setAttributes(i, { class: "wiw-img", src: URL.createObjectURL(object) })
-        const newRefWindow = new Inwindow("default", { visible:true, ratio:i.height / i.width, close:true });
+        const newRefWindow = new Inwindow("default", { visible:true, ratio:i.width / i.height, close:true });
         i.onload = function() {
             newRefWindow.body.appendChild(i)
         }

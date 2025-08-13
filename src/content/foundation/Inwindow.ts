@@ -6,7 +6,7 @@ const headerHeight = INWINDOWHEADERHEIGHT
 const Default = {
     Width: document.body.clientWidth / 8,
     get Height() {
-        return this.Width * DEFAULTINWINDOWRATIO
+        return this.Width / DEFAULTINWINDOWRATIO
     },
 
     InwindowNode: document.createElement("div")
@@ -162,9 +162,9 @@ function initResizeElement(inwindow: InwindowElement, ratio?: number) {
 
     function doDrag(e: MouseEvent) {
         if (ratio) {
-            var dist = Math.max(e.clientX - startX, (e.clientY - startY) / ratio)
-            elmnt.style.width = startWidth + dist + "px";
-            elmnt.style.height = startHeight + ratio * dist + "px";
+            var dist = Math.max((e.clientX - startX) / ratio, e.clientY - startY)
+            elmnt.style.width = startWidth + ratio * dist + "px";
+            elmnt.style.height = startHeight + dist + "px";
         } else {
             elmnt.style.width = startWidth + (e.clientX - startX) + "px";
             elmnt.style.height = startHeight + (e.clientY - startY) + "px";
@@ -187,25 +187,25 @@ function initSizeElement(inwindow: InwindowElement, options: undefined | {
     var computedHeight = Default.Height
     if (options) {
         if (options.width && options.height && options.ratio) {
-            if (options.width * options.ratio != options.height) {
+            if (options.width != options.ratio * options.height) {
                 Console.warn("Inconsistent dimensions supplied to Inwindow constructor")
             }
             computedWidth = options.width
             computedHeight = options.height
         }
         else if (!options.width && !options.height && options.ratio) {
-            computedHeight = Default.Width * options.ratio
+            computedHeight = Default.Width / options.ratio
         } else {
             if (options.width) {
                 computedWidth = options.width
                 if (options.ratio) {
-                    computedHeight = options.width * options.ratio
+                    computedHeight = options.width / options.ratio
                 }
             }
             if (options.height) {
                 computedHeight = options.height
                 if (options.ratio) {
-                    computedWidth = options.height / options.ratio
+                    computedWidth = options.height * options.ratio
                 }
             }
         }
