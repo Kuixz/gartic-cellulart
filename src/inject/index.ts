@@ -188,7 +188,7 @@ type GarticStroke = [number, number, [string, number, number], ...[number, numbe
   * that transmit information about the game state.                        */
  /* ---------------------------------------------------------------------- */
  class XHRInterceptor extends Interceptor {
-    name = "XHR"
+    name = "Xhr"
 
     currentWS: WebSocket | null = null
     strokes: number[] = []

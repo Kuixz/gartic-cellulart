@@ -2,7 +2,7 @@ class Console { // Only print certain messages
     name: string = "Console"
     // enabled: new Set(),
     shouldLog: boolean = true
-    enabledLoggingFor: Set<string|undefined> = new Set(['Console', undefined, 'Spotlight', 'Socket', 'Xhr'])
+    enabledLoggingFor: Set<string|undefined> = new Set(['Console', undefined, 'Socket', 'Observer'])
 
     toggle(modName: string) {
         this.set(modName, !this.enabledLoggingFor.has(modName))
