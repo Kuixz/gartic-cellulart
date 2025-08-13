@@ -37,6 +37,7 @@ class InwindowElement {
             body?: HTMLElement, 
             close?: HTMLElement | boolean,
             visible?: boolean,
+            shaded?: boolean,
 
             width?: number,
             height?: number,
@@ -57,8 +58,11 @@ class InwindowElement {
         const resizeRatio = options?.ratio
         const closeable = options?.close !== false
 
-        const v = options?.visible ? "visible" : "hidden"
-        this.element.style.visibility = v
+        if (options?.shaded) {
+            e.classList.add('shaded')
+        }
+
+        this.setVisibility(options?.visible || false)
 
         initDragElement(this)
         initSizeElement(this, options)
@@ -212,7 +216,12 @@ function initSizeElement(inwindow: InwindowElement, options: undefined | {
 function initRemoveElement(inwindow: InwindowElement, closeable: boolean = true) {
     if (!inwindow.close){ return }
     if (closeable) {
-        inwindow.close.onmousedown = function() { inwindow.element.remove() }
+        inwindow.close.addEventListener(
+            'click',
+            () => { 
+                inwindow.element.remove() 
+            }
+        )
     } else {
         inwindow.close.remove()
     }
