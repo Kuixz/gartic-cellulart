@@ -285,7 +285,7 @@ class Observer {
             newPhase = 'write'
         }
 
-        console.log(newPhase)
+        // console.log(newPhase)
         if (!outOfGame(newPhase)) {
             this.recordObserverTransition([newPhase, currentTurn])
         }
