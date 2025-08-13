@@ -75,6 +75,7 @@ export enum EMessagePurpose {
     ROUND_END = 24,
     CHANGE_SETTINGS_PRESET = 26,
     CHANGE_SETTINGS_DEFAULT = 27,
+    AWAIT_MODERATION = 38
 }
 export enum EMode {
     NORMAL = 1,
