@@ -1,4 +1,4 @@
-import { CellulartStroke } from "../content/foundation";
+import { Stroke } from "../content/foundation";
 import { CrossCommand } from "../shared/Endpoint";
 
 abstract class Interceptor {
@@ -159,7 +159,7 @@ class SocketInterceptor extends Interceptor {
         this.post("flag", true)
     }
     currentWSOpen() { return this.currentWS && this.currentWS.readyState === this.currentWS.OPEN }
-    sendStroke(data: CellulartStroke) {
+    sendStroke(data: Stroke) {
         if (!data) { return }
         if (!this.currentWSOpen()) { this.onDisconnect(data); return }
     
