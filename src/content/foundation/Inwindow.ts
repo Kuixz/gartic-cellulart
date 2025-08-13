@@ -4,7 +4,7 @@ import { setAttributes, setParent } from "./Util"
 
 const headerHeight = INWINDOWHEADERHEIGHT
 const Default = {
-    Width: document.body.clientWidth / 8,
+    Width: document.body.clientWidth / 7,
     get Height() {
         return this.Width / DEFAULTINWINDOWRATIO
     },
