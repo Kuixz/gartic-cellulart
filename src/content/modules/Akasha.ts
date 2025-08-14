@@ -1,5 +1,11 @@
 
-import { AlbumChangeEvent, CellulartEventType, constructElement, GarticStroke, getResource, Inwindow, PhaseChangeEvent, RedSettingsBelt } from "../foundation";
+import { createIconHTML } from "../components";
+import { 
+  RedSettingsBelt, 
+  PhaseChangeEvent, AlbumChangeEvent, CellulartEventType, 
+  Inwindow, constructElement, 
+  GarticStroke, StrokeSender 
+} from "../foundation";
 import { CellulartModule, ModuleArgs } from "./CellulartModule";
 
 function cloneCanvas(oldCanvas: HTMLCanvasElement) {
@@ -9,6 +15,12 @@ function cloneCanvas(oldCanvas: HTMLCanvasElement) {
   newCanvas.height = oldCanvas.height;
   context.drawImage(oldCanvas, 0, 0);
   return newCanvas;
+}
+
+type AkashicRecord = { 
+  element: HTMLElement, 
+  dataURL: string, 
+  strokes: GarticStroke[] 
 }
 
  /* ----------------------------------------------------------------------
@@ -25,8 +37,10 @@ export class Akasha extends CellulartModule {
   public isCheat = true
 
   private inwindow: Inwindow
+  private strokeSender: StrokeSender
   private activeDownloadButtons: HTMLElement[] = []
-  private records: { dataURL: string, strokes: GarticStroke[] }[] = []
+  private records: AkashicRecord[] = []
+  private activeRecord: AkashicRecord | null = null
 
   constructor(moduleArgs: ModuleArgs) {
     super(moduleArgs, [
@@ -35,6 +49,7 @@ export class Akasha extends CellulartModule {
         CellulartEventType.TIMELINE_CHANGE,
     ])
 
+    this.strokeSender = moduleArgs.strokeSender
     this.inwindow = this.constructInwindow()
   }
 
@@ -91,15 +106,43 @@ export class Akasha extends CellulartModule {
       shaded: true,
       maxGrowFactor: 2,
     })
-    inwindow.body.classList.add("akasha-layout")
-    inwindow.body.innerHTML = `
+    const body = inwindow.body
+    body.classList.add("akasha-layout")
+    body.innerHTML = `
       <div class="akasha-album"></div>
       <div class="akasha-tray">
-        <span></span>
-        <span></span>
-        <span></span>
+        <span>
+          <button class="akasha-button theme-border hover-button">
+            ${createIconHTML("cellulart-akasha-upload", { type: "div" })}
+          </button>
+        </span>
+        <span>
+          <button class="akasha-button theme-border hover-button">
+            ${createIconHTML("cellulart-save", { type: "div" })}
+          </button>
+        </span>
+        <span>
+          <button class="akasha-button theme-border hover-button">
+            ${createIconHTML("cellulart-upload", { type: "div" })}
+          </button>
+        </span>
       </div>
     `
+
+    const [ drawBtn, saveBtn, uploadBtn ] = body.querySelectorAll("button")
+    drawBtn.addEventListener(
+      'click',
+      () => {
+        if (!this.activeRecord) { 
+          return 
+        }
+
+        this.strokeSender.createSendingInwindow(
+          this.activeRecord.dataURL,
+          this.activeRecord.strokes
+        )
+      }
+    )
 
     return inwindow
   }
@@ -108,12 +151,8 @@ export class Akasha extends CellulartModule {
       type: "div",
       class: "akasha-button-outer hover-button",
       style: `visibility: ${this.isOn() ? "initial" : "hidden"}`,
-      children: [{
-        type: "div",
-        class: "akasha-button-inner",
-        style: `clip-path: url(#cellulart-akasha-download)`,
-      }]
     })
+    newButton.innerHTML = createIconHTML("cellulart-akasha-download", { type: "div" })
 
     newButton.addEventListener(
       'click', 
@@ -130,14 +169,35 @@ export class Akasha extends CellulartModule {
   }
 
   private downloadCanvas(canvas: HTMLCanvasElement, strokes: GarticStroke[]) {
-    this.records.push({
+    const newCanvas = cloneCanvas(canvas)
+    newCanvas.classList.add("akasha-entry", "theme-border", "hover-button")
+
+    const newRecord: AkashicRecord = {
+      element: newCanvas,
       dataURL: canvas.toDataURL(),
       strokes: strokes
-    })
+    }
 
-    const newCanvas = cloneCanvas(canvas)
-    newCanvas.classList.add("akasha-entry")
+    newCanvas.addEventListener(
+      "click",
+      () => { this.focusRecord(newRecord) }
+    )
+
+    this.records.push(newRecord)
     this.inwindow.body.querySelector(".akasha-album")!.appendChild(newCanvas)
+  }
+  private focusRecord(record: AkashicRecord) {
+    if (this.activeRecord == record) {
+      record.element.classList.remove("highlight")
+      this.activeRecord = null
+      return
+    } 
+    
+    if (this.activeRecord) {
+      this.activeRecord.element.classList.remove("highlight")
+    } 
+    this.activeRecord = record
+    record.element.classList.add("highlight")
   }
 }
 
