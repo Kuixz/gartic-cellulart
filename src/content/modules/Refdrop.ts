@@ -1,12 +1,12 @@
 
-
+import { getModuleAsset } from "../components"
 import { 
     Console, 
     RedSettingsBelt, 
     CellulartEventType, PhaseChangeEvent,
     Inwindow, 
     Keybind, 
-    setAttributes, setParent, getModuleAsset, preventDefaults, clamp, 
+    setAttributes, setParent, preventDefaults, clamp, 
 } from "../foundation"
 import { ModuleArgs, CellulartModule } from "./CellulartModule"
 

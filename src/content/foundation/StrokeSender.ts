@@ -1,4 +1,4 @@
-import { createIconHTML } from "../components/Icon";
+import { createIconHTML } from "../components";
 import { Console } from "./Console";
 import { Converter } from "./Converter";
 import { BaseGame, CellulartEventType, EventListening, PhaseChangeEvent } from "./Global";

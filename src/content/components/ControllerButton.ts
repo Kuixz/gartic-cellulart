@@ -1,6 +1,7 @@
-import { Console, DefaultSettings, getResource, setAttributes, Setting } from "../foundation"
-import { ModuleLike } from "../modules"
+import { getResource } from "./Assets"
 import { createIconHTML } from "./Icon"
+import { Console, DefaultSettings, setAttributes, Setting } from "../foundation"
+import { ModuleLike } from "../modules"
 
 function updateButtonTexture(button: HTMLElement, setting: Setting) {
     // console.log(setting.internalName)

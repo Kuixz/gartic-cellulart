@@ -1,12 +1,12 @@
 // import { ShapeTypes } from "geometrizejs"
 import { WorkerResultShape } from "../../shared/WorkerResultShape"
+import { getModuleAsset } from "../components"
 import { 
     Console, 
     WhiteSettingsBelt, 
     PhaseChangeEvent, CellulartEventType,
     Inwindow, 
-    svgNS, setAttributes, setParent, preventDefaults, getResource,
-    constructElement,
+    svgNS, setAttributes, setParent, preventDefaults,
     StrokeSender,
     Stroke,
     StrokeBuffer
@@ -118,7 +118,7 @@ export class Geom extends CellulartModule {
             <form class="upload-form">
                 <input class="upload-bridge" type="file">
                 <div id="geom-socket" class="theme-border upload-socket hover-button" 
-                    style="background-image:url(${getResource("assets/module-assets/geom-ul.png")})">
+                    style="background-image:url(${getModuleAsset("geom-ul.png")})">
                 </div>
             </form>
         `

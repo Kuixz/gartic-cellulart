@@ -1,4 +1,4 @@
-import { getMenuIcon } from "./Util"
+import { getMenuIcon } from "../components"
 
 class Setting {
     internalName: string

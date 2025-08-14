@@ -1,4 +1,5 @@
-import { Console, ElementDefinition, getResource } from "../foundation"
+import { getResource } from "./Assets";
+import { Console, ElementDefinition } from "../foundation"
 
 export function createIconHTML(svgName: string, def: ElementDefinition): string {
     return `<${def.type} class="cellulart-icon-contain ${def.class ?? ""}" style="clip-path: url(#${svgName}); ${def.style ?? ""}">${def.textContent ?? ""}</${def.type}>`
