@@ -8,8 +8,8 @@ import {
     Inwindow, 
     svgNS, setAttributes, setParent, preventDefaults,
     StrokeSender,
-    Stroke,
-    StrokeBuffer
+    StrokeBuffer,
+    GarticStroke
 } from "../foundation"
 import { ModuleArgs, CellulartModule } from "./CellulartModule"
 
@@ -36,11 +36,6 @@ function viewFit(minx: number, miny: number, elementx: number, elementy: number)
         return { margin: { x: minx - resizedx, y: 0 }, x: resizedx,  y: miny };
     }
 }
-
-interface GeomStroke extends Stroke {
-    original: WorkerResultShape
-}
-
  /* ----------------------------------------------------------------------
   *                                  Geom 
   * ---------------------------------------------------------------------- */
@@ -183,8 +178,8 @@ export class Geom extends CellulartModule {
             buffer.addEventListener(
                 'dequeuestroke',
                 (e: Event) => {
-                    const stroke = (e as CustomEvent<Stroke>).detail
-                    const shapeAsSVG = this.formatShapeSVG((stroke as GeomStroke).original)
+                    const stroke = (e as CustomEvent<GarticStroke>).detail
+                    const shapeAsSVG = this.formatShapeSVG(stroke as [number, number, [string, number, string | 1], [number, number], [number, number]])
                     if (!shapeAsSVG) {
                         Console.warn("Failed to create svg from stroke", "Geom");
                         return;
@@ -256,7 +251,7 @@ export class Geom extends CellulartModule {
         }
     }
     private queueShape(shape: WorkerResultShape) {
-        const shapeAsGarticStroke: Stroke | void = this.formatShapeGartic(shape)
+        const shapeAsGarticStroke: GarticStroke | void = this.formatShapeGartic(shape)
         if (!shapeAsGarticStroke) { 
             return 
         }
@@ -278,7 +273,7 @@ export class Geom extends CellulartModule {
         return response
     }
 
-    private formatShapeGartic (shape: WorkerResultShape): GeomStroke | void {
+    private formatShapeGartic (shape: WorkerResultShape): GarticStroke | void {
         const raw = shape.raw
         const type = ((x: number) => {
             if (x == ShapeTypes.RECTANGLE) { return 6 }
@@ -307,44 +302,36 @@ export class Geom extends CellulartModule {
             return // else if LINE
         }
 
-        return { 
-            beforeN: `42[2,7,{"t":${this.globalGame.currentTurn - 1},"d":1,"v":[${type},`,
-            afterN: `,["#${color}",2,"0.5"],[${coords[0]},${coords[1]}],[${coords[2]},${coords[3]}]]}]`,
-            original: shape
-        }
+        return [type,0,[`#${color}`,2,"0.5"],[coords[0],coords[1]],[coords[2],coords[3]]]
     }
-    private formatShapeSVG (shape: WorkerResultShape): SVGElement | void {
-        const raw = shape.raw
+    private formatShapeSVG (v: [number, number, [string, number, string | 1], [number, number], [number, number]]): SVGElement | void {
+        const raw = [v[3][0], v[3][1], v[4][0], v[4][1]]
+        const rawType = v[0]
         const type = ((x: number) => {
-            if (x == ShapeTypes.RECTANGLE) { return 'rect' }
-            if (x == ShapeTypes.ELLIPSE) { return 'ellipse' }
-        })(shape.type)
+            if (x == 6) { return 'rect' }
+            if (x == 7) { return 'ellipse' }
+        })(rawType)
         if (!type) { 
             Console.warn(`Unknown shape type ${type}`, "Geom"); return
         }
-        const color = "#" + (function(){
-            const signed = shape.color
-            const unsigned = signed > 0 ? signed : signed + 0xFFFFFFFF + 1
-            const colora = unsigned.toString(16).padStart(8, '0')
-            return colora.slice(0,6)
-        })()
+        const color = `${v[2][0]}80`;
 
-        const coords = ((type):{[key:string]:number}|undefined => {
-            if (type == ShapeTypes.RECTANGLE) {
+        const coords = ((x: number) => {
+            if (x == 6) {
                 return { x: raw[0], y: raw[1], width: raw[2] - raw[0], height: raw[3] - raw[1] }
             }
-            else if (type == ShapeTypes.ELLIPSE) {
-                return { cx: raw[0], cy: raw[1], rx: raw[2], ry: raw[3]}
+            else if (x == 7) {
+                return { cx: raw[0] + raw[2], cy: raw[1] + raw[3], rx: raw[2], ry: raw[3]}
             }
-        })(shape.type)
+        })(rawType)
         if (!coords) {
             Console.warn(`Unknown shape type: ${type}`, "Geom")
             return// else if LINE
         }
 
         const ns = document.createElementNS(svgNS, type)
-        setAttributes(ns, coords as any)  // !DANGER: This is a suppressed type warning
-        setAttributes(ns, { ...coords, fill: color, "fill-opacity": "0.5" })
+        // !DANGER: This is a suppressed type warning
+        setAttributes(ns, { ...coords, fill: color, "fill-opacity": "0.5" } as unknown as Record<string, string>)
         return ns
     }
 }
