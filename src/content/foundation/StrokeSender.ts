@@ -1,13 +1,12 @@
 import { createIconHTML } from "../components";
 import { Console } from "./Console";
-import { Converter } from "./Converter";
+import { Converter, GarticStroke, OutboundGarticStroke } from "./Converter";
 import { BaseGame, CellulartEventType, EventListening, PhaseChangeEvent } from "./Global";
 import { Inwindow, InwindowOptions } from "./Inwindow";
 import { Socket } from "./Socket";
 
-export interface Stroke { beforeN: string; afterN: string };
 export class StrokeBuffer extends EventTarget {
-    private queue: Stroke[] = []
+    private queue: GarticStroke[] = []
 
     constructor(private abortController: AbortController) {
         super()
@@ -21,22 +20,24 @@ export class StrokeBuffer extends EventTarget {
         this.dispatchEvent(new Event('close'))
     }
 
-    public enqueueStroke(stroke: Stroke) {
+    public enqueueStroke(stroke: GarticStroke) {
         this.queue.push(stroke)
         this.dispatchEvent(new CustomEvent("enqueuestroke", {
             detail: stroke
         }))
     }
 
-    public dequeueStroke(): Stroke | undefined {
+    public dequeueStroke(): GarticStroke | undefined {
         const stroke = this.queue.shift() 
-        this.dispatchEvent(new CustomEvent("dequeuestroke", {
-            detail: stroke
-        }))
+        if (stroke) {
+            this.dispatchEvent(new CustomEvent("dequeuestroke", {
+                detail: stroke
+            }))
+        }
         return stroke
     }
 
-    public setStrokes(strokes: Stroke[]) {
+    public setStrokes(strokes: GarticStroke[]) {
         this.queue = strokes
     }
 
@@ -113,7 +114,7 @@ export class StrokeSender extends EventListening(EventTarget) {
 
     public createSendingInwindow(
         dataURL: string,
-        fixedQueue?: Stroke[],
+        fixedQueue?: GarticStroke[],
         options?: InwindowOptions
     ): {
         inwindow: Inwindow,
@@ -325,7 +326,11 @@ export class StrokeSender extends EventListening(EventTarget) {
                 return
             }
             
-            this.socket.post('sendStroke', stroke);
+            this.socket.post('sendStroke', {
+                t: this.globalGame.currentTurn - 1,
+                d: 1,
+                v: stroke
+            } as OutboundGarticStroke);
             this.throttleReady = false;
 
             setTimeout(() => {
