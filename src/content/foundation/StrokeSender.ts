@@ -1,9 +1,9 @@
+import { createIconHTML } from "../components/Icon";
 import { Console } from "./Console";
 import { Converter } from "./Converter";
 import { BaseGame, CellulartEventType, EventListening, PhaseChangeEvent } from "./Global";
 import { Inwindow, InwindowOptions } from "./Inwindow";
 import { Socket } from "./Socket";
-import { getResource } from "./Util";
 
 export interface Stroke { beforeN: string; afterN: string };
 export class StrokeBuffer extends EventTarget {
@@ -134,19 +134,19 @@ export class StrokeSender extends EventListening(EventTarget) {
             ratio:1,
             ...options,
         }
-        console.log(combinedOptions)
+        // console.log(combinedOptions)
         const inwindow = new Inwindow("default", combinedOptions);
         const body = inwindow.body
 
-        const iconPause = `url(${getResource("assets/module-assets/geom-pause.png")})`
-        const iconPlay = `url(${getResource("assets/module-assets/geom-play.png")})`
+        const iconPause = createIconHTML("cellulart-pause", { type: "div" })
+        const iconPlay = createIconHTML("cellulart-play", { type: "div" })
         body.innerHTML = `
             <div class="strokesender-layout">
                 <div class="theme-border strokesender-preview canvas-in-square" style="background-image: url(${dataURL})"></div>
                 <span class="cellulart-skewer strokesender-label send">0</span>
                 <span class="cellulart-skewer strokesender-label gen">0</span>
-                <button class="theme-border hover-button strokesender-button send" style="background-image: ${iconPlay};"></button>
-                <button class="theme-border hover-button strokesender-button gen" style="background-image: ${iconPause};"></button>
+                <button class="theme-border hover-button strokesender-button send">${iconPlay}</button>
+                <button class="theme-border hover-button strokesender-button gen">${iconPause}</button>
             </div>
         `
 
@@ -200,7 +200,7 @@ export class StrokeSender extends EventListening(EventTarget) {
                 const newIsPaused = queue != buffer || paused === true
 
                 Console.log("Send " + (newIsPaused ? "pause" : "play"), 'Geom')
-                sendBtn.style.backgroundImage = newIsPaused ? iconPlay : iconPause 
+                sendBtn.innerHTML = newIsPaused ? iconPlay : iconPause 
             },
             { signal: abort.signal }
         )
@@ -231,7 +231,7 @@ export class StrokeSender extends EventListening(EventTarget) {
                     shapeGenerationPaused = newIsPaused
 
                     console.log("Gen " + (newIsPaused ? "pause" : "play"))
-                    genBtn.style.backgroundImage = newIsPaused ? iconPlay : iconPause
+                    genBtn.innerHTML = newIsPaused ? iconPlay : iconPause
                     buffer.setStrokeGeneration(newIsPaused)
                 },
                 { signal: abort.signal }

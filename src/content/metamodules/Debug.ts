@@ -34,7 +34,7 @@ class Debug extends Metamodule {
                 },
             )
 
-            modButton.classList.add("fill-height")
+            modButton.classList.add("debug-button")
 
             if (Console.enabledLoggingFor.has(mod)) { 
                 modButton.classList.add("debug-selected")
