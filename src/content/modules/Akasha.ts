@@ -139,7 +139,7 @@ export class Akasha extends CellulartModule {
 
         this.strokeSender.createSendingInwindow(
           this.activeRecord.dataURL,
-          this.activeRecord.strokes
+          structuredClone(this.activeRecord.strokes) // Deep copy
         )
       }
     )
@@ -159,8 +159,7 @@ export class Akasha extends CellulartModule {
       () => {
         this.downloadCanvas(canvas, data)
         // console.log(this.records)
-      },
-      { once: true }
+      }
     )
 
     this.activeDownloadButtons.push(newButton)
