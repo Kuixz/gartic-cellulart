@@ -140,10 +140,10 @@ div.window-in-window {
         /* pointer-events: initial; */
     }
 
-    &.wiw-emphasis {
+    .wiw-emphasis {
         color: #43de99; 
     }
-    &.wiw-regular {
+    .wiw-regular {
         color: grey;
     }
 }
@@ -406,11 +406,11 @@ div#scry-indicator-label {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
 
-        >span {
+        >.square {
             aspect-ratio: 1;
         }
     }
-    .akasha-button {
+    .akasha-tray-button {
         width: 100%;
         height: 100%;
     }
