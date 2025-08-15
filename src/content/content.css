@@ -139,6 +139,13 @@ div.window-in-window {
         cursor: nwse-resize;
         /* pointer-events: initial; */
     }
+
+    &.wiw-emphasis {
+        color: #43de99; 
+    }
+    &.wiw-regular {
+        color: grey;
+    }
 }
 
 /* StrokeSender */
@@ -172,13 +179,6 @@ div.window-in-window {
     .strokesender-label {
         justify-content: center; 
         font-size: 13cqw;
-
-        &.send {
-            color: #43de99; 
-        }
-        &.gen {
-            color: grey;
-        }
     }
 }
 
