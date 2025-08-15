@@ -41,13 +41,13 @@ export class StrokeBuffer extends EventTarget {
         this.queue = strokes
     }
 
-    public setStrokeGeneration(paused: boolean): void {
+    public setStrokeGenerationPaused(paused: boolean): void {
         this.dispatchEvent(new CustomEvent("setstrokegeneration", {
             detail: paused
         }))
     }
 
-    public setStrokeSending(paused: boolean): void {
+    public setStrokeSendingPaused(paused: boolean): void {
         this.dispatchEvent(new CustomEvent("setstrokesending", {
             detail: paused
         }))
@@ -198,7 +198,7 @@ export class StrokeSender extends EventListening() {
             (event: Event) => {
                 const newIsPaused = (event as CustomEvent<boolean>).detail
 
-                Console.log("Send " + (newIsPaused ? "pause" : "play"), 'Geom')
+                Console.log("Send " + (newIsPaused ? "pause" : "play"), 'StrokeSender')
                 sendBtn.innerHTML = newIsPaused ? iconPlay : iconPause 
             }
         )
@@ -230,7 +230,7 @@ export class StrokeSender extends EventListening() {
 
                     console.log("Gen " + (newIsPaused ? "pause" : "play"))
                     genBtn.innerHTML = newIsPaused ? iconPlay : iconPause
-                    buffer.setStrokeGeneration(newIsPaused)
+                    buffer.setStrokeGenerationPaused(newIsPaused)
                 },
                 { signal: abort.signal }
             )
@@ -266,7 +266,7 @@ export class StrokeSender extends EventListening() {
 
     private removeQueue(buffer: StrokeBuffer) {
         if (this.currentQueue == buffer) {
-            buffer.setStrokeSending(false)
+            buffer.setStrokeSendingPaused(true)
             this.currentQueue = null
             this.paused = true
             // Possible race condition with trySend. Look carefully later
@@ -279,18 +279,18 @@ export class StrokeSender extends EventListening() {
             return
         }
         this.paused = true; 
-        buffer.setStrokeSending(false)
+        buffer.setStrokeSendingPaused(true)
     }
     private resumeQueue(buffer: StrokeBuffer) {
         if (!this.paused && this.currentQueue == buffer) { 
             return
         }
         if (this.currentQueue != buffer) {
-            buffer.setStrokeSending(false)
+            this.currentQueue?.setStrokeSendingPaused(true)
         }
         this.currentQueue = buffer
         this.paused = false
-        buffer.setStrokeSending(true)
+        buffer.setStrokeSendingPaused(false)
         this.trySend()
     }
 
