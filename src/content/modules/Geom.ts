@@ -231,7 +231,7 @@ export class Geom extends CellulartModule {
             // TODO: Step consistently overshoots the config max by 1 and config distance
             if (this.shapeGenerationPaused) { // || this.counters.created >= this.config.max || this.counters.created - this.counters.sent >= this.config.distance) { 
                 await this.queryGW(2)
-                this.stepCallback = window.setTimeout(step, 125); 
+                this.stepCallback = window.setTimeout(step, 500); 
                 return 
             }
 
