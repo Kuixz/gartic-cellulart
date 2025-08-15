@@ -4,6 +4,7 @@ import {
     Phase, CellulartEventType, GarticXHRData, PhaseChangeEvent,
     Converter, SpeedParameters, speedParameterDefaults, DOMUNLOADINGALLOWANCE, 
     constructElement,
+    formatTime,
 } from "../foundation";
 import { ModuleArgs, CellulartModule } from "./CellulartModule";
 
@@ -135,11 +136,7 @@ export class Timer extends CellulartModule {
     }
     private tick(increaseStep: Count) {
         const seconds = increaseStep == Count.Down ? (this.required - this.elapsed) : (this.elapsed)
-        const h = String(Math.floor(seconds / 3600)) + ":"
-        const m = String(Math.floor(seconds / 60)) + ":"
-        var s = String(seconds % 60);
-        if (s.length < 2) { s = 0 + s }
-        this.display.textContent = h == "0:" ? m + s : h + m + s
+        this.display.textContent = formatTime(seconds)
 
         if ((increaseStep == Count.Down && seconds <= 0) || !this.display) { Console.log("Countdown ended", 'Timer'); return }
         this.elapsed += 1

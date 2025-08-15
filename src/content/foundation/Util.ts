@@ -11,6 +11,16 @@ export const setParent = function(node: Element, parent: HTMLElement): typeof no
 
 export const clamp = (min: number, n: number, max: number) => Math.min(Math.max(min, n), max)
 export function preventDefaults (e: Event) { e.preventDefault(); e.stopPropagation() }
+export function formatTime(seconds: number): string {
+    const s = seconds % 60
+    const m = Math.floor(seconds / 60)
+    const h = Math.floor(m / 60) 
+    if (h == 0) {
+        return `${m}:${s.toString().padStart(2, '0')}`
+    } else {
+        return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+    }
+}
 
 export type ElementDefinition = {
     type: string,
