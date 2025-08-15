@@ -415,6 +415,16 @@ div#scry-indicator-label {
         height: 100%;
     }
 }
+.akasha-loading {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-color: #aaa9;
+    background-image: var(--akasha-loading-url);
+}
 
 /* Menu */
 
