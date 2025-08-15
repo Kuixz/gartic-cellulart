@@ -11,8 +11,9 @@ export interface TransitionData {
 }
 
 export type GarticStroke = 
-    | [number, number, [string, number, string | 1], ...[number, number][]]
-    | [number, number, [string, string | 1], ...number[]]
+    | [1|3|4|5|6|7|9|10, number, [string, number, string | 1], ...[number, number][]]
+    | [2, number, number, ...[number, number][]]
+    | [8, number, [string, string | 1], ...number[]]
 export type OutboundGarticStroke = {t:number, d:number, v:GarticStroke}
 export type GarticUser = {
     nick:   string
