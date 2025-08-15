@@ -55,6 +55,7 @@ class Controller {
             game: this.game, 
             socket: this.socket,
             strokeSender: this.strokeSender,
+            shelf: shelf,
         }, modules, metamodules)
     }
     onlobbyenter() {

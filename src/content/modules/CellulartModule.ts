@@ -10,7 +10,8 @@ import {
   BaseGame, 
   CellulartEventType, 
   EventListening, 
-  PhaseChangeEvent 
+  PhaseChangeEvent, 
+  IShelf
 } from "../foundation";
 
 export class ModuleLike {
@@ -41,6 +42,7 @@ export interface ModuleArgs {
   game: BaseGame,
   socket: Socket,
   strokeSender: StrokeSender,
+  shelf: IShelf,
 }
 
 /* ----------------------------------------------------------------------
