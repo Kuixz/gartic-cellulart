@@ -215,7 +215,7 @@ export class Akasha extends CellulartModule {
             ${createIconHTML("cellulart-akasha-upload", { type: "div" })}
           </button>
         </span>
-        <span class="cellulart-skewer wiw-regular" style="grid-column: span 2;"></span>
+        <span class="cellulart-skewer wiw-regular" style="grid-column: span 2; text-wrap-mode: nowrap;"></span>
         <span class="square">
           <button class="akasha-tray-button theme-border hover-button">
             ${createIconHTML("cellulart-save", { type: "div" })}
@@ -320,7 +320,7 @@ export class Akasha extends CellulartModule {
     } 
 
     this.activeRecord = record
-    this.eta.textContent = `⏲: ${formatTime(Math.ceil(record.strokes.length / 8))}`
+    this.eta.textContent = `⏲ ${formatTime(Math.ceil(record.strokes.length / 8))}`
     record.element.classList.add("highlight")
   }
   private deleteActiveRecord() {
