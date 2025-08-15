@@ -47,20 +47,18 @@ export class StrokeBuffer extends EventTarget {
         }))
     }
 
+    public setStrokeSending(paused: boolean): void {
+        this.dispatchEvent(new CustomEvent("setstrokesending", {
+            detail: paused
+        }))
+    }
+
     public addEventListener(type: string, callback: EventListenerOrEventListenerObject | null): void {
         super.addEventListener(type, callback, { signal: this.abortController.signal })
     }
 }
 
-export interface QueueStateChangeEvent extends CustomEvent {
-    detail: {
-        queue: StrokeBuffer,
-        paused: boolean
-    }
-}
-
-
-export class StrokeSender extends EventListening(EventTarget) {
+export class StrokeSender extends EventListening() {
     // private queues: Set<StrokeBuffer> = new Set()
     private currentQueue: StrokeBuffer | null = null;
 
@@ -95,7 +93,7 @@ export class StrokeSender extends EventListening(EventTarget) {
         }
 
         this.phaseReady = newPhase == 'draw'
-        this.ifActivePause()
+        this.pause(this.currentQueue)
         
         if (this.shouldClearStrokesOnMutation) {
             this.socket.post('clearStrokes')
@@ -121,7 +119,7 @@ export class StrokeSender extends EventListening(EventTarget) {
         buffer: StrokeBuffer,
     } {
         // Pause
-        this.ifActivePause()
+        this.pause(this.currentQueue)
         
         // Create queue buffer
         const abortController = new AbortController()
@@ -144,18 +142,19 @@ export class StrokeSender extends EventListening(EventTarget) {
         body.innerHTML = `
             <div class="strokesender-layout">
                 <div class="theme-border strokesender-preview canvas-in-square" style="background-image: url(${dataURL})"></div>
-                <span class="cellulart-skewer strokesender-label send">0</span>
-                <span class="cellulart-skewer strokesender-label gen">0</span>
+                <span class="cellulart-skewer strokesender-label wiw-emphasis">0</span>
+                <span class="cellulart-skewer strokesender-label wiw-regular">0</span>
                 <button class="theme-border hover-button strokesender-button send">${iconPlay}</button>
                 <button class="theme-border hover-button strokesender-button gen">${iconPause}</button>
             </div>
         `
 
         // Attach event listeners
-        const sendLabel = body.querySelector('.strokesender-label.send') as HTMLElement
-        const genLabel = body.querySelector('.strokesender-label.gen') as HTMLElement
+        const sendLabel = body.querySelector('.strokesender-label.wiw-emphasis') as HTMLElement
+        const genLabel = body.querySelector('.strokesender-label.wiw-regular') as HTMLElement
         const sendBtn = body.querySelector('.strokesender-button.send') as HTMLElement
         const genBtn = body.querySelector('.strokesender-button.gen') as HTMLElement
+        // const [ _, sendLabel, genLabel, sendBtn, genBtn ] = body.firstElementChild!.children
 
         const abort = new AbortController()
         let shapesSentCount = 0
@@ -194,16 +193,14 @@ export class StrokeSender extends EventListening(EventTarget) {
             },
             { signal: abort.signal }
         );
-        this.addEventListener(
-            "queuestatechange", 
+        buffer.addEventListener(
+            "setstrokesending", 
             (event: Event) => {
-                const { queue, paused } = (event as QueueStateChangeEvent).detail
-                const newIsPaused = queue != buffer || paused === true
+                const newIsPaused = (event as CustomEvent<boolean>).detail
 
                 Console.log("Send " + (newIsPaused ? "pause" : "play"), 'Geom')
                 sendBtn.innerHTML = newIsPaused ? iconPlay : iconPause 
-            },
-            { signal: abort.signal }
+            }
         )
 
         // Send label
@@ -269,44 +266,32 @@ export class StrokeSender extends EventListening(EventTarget) {
 
     private removeQueue(buffer: StrokeBuffer) {
         if (this.currentQueue == buffer) {
-            this.stop()
+            buffer.setStrokeSending(false)
+            this.currentQueue = null
+            this.paused = true
             // Possible race condition with trySend. Look carefully later
         }
         // this.queues.delete(buffer)
-        this.dispatchQueueStateChangeEvent()
     }
     // 5. Manual pause/resume control
-    private ifActivePause() {
-        if (!this.paused) {
-            this.paused = true
-            this.dispatchQueueStateChangeEvent()
-        }
-    }
-    private pause(buffer: StrokeBuffer) { 
-        if (this.currentQueue != buffer) { 
+    private pause(buffer: StrokeBuffer | null) { 
+        if (this.paused || buffer == null || this.currentQueue != buffer) { 
             return
         }
         this.paused = true; 
-        this.dispatchQueueStateChangeEvent()
+        buffer.setStrokeSending(false)
     }
     private resumeQueue(buffer: StrokeBuffer) {
+        if (!this.paused && this.currentQueue == buffer) { 
+            return
+        }
+        if (this.currentQueue != buffer) {
+            buffer.setStrokeSending(false)
+        }
         this.currentQueue = buffer
         this.paused = false
-        this.dispatchQueueStateChangeEvent()
+        buffer.setStrokeSending(true)
         this.trySend()
-    }
-    private dispatchQueueStateChangeEvent() {
-        this.dispatchEvent(new CustomEvent('queuestatechange', {
-            detail: {
-                queue: this.currentQueue,
-                paused: this.paused
-            }
-        }) as QueueStateChangeEvent)
-    }
-
-    private stop() {
-        this.currentQueue = null
-        this.paused = true
     }
 
     // 4. Throttling logic and send
