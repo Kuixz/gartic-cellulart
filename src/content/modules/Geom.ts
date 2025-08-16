@@ -8,9 +8,8 @@ import {
     svgNS, setAttributes, setParent, preventDefaults, getResource,
     constructElement,
     StrokeSender,
-    CellulartStroke,
-    StrokeSendEvent,
-    QueueStateChangeEvent
+    Stroke,
+    StrokeBuffer
 } from "../foundation"
 import { ModuleArgs, CellulartModule } from "./CellulartModule"
 
@@ -38,7 +37,7 @@ function viewFit(minx: number, miny: number, elementx: number, elementy: number)
     }
 }
 
-interface GeomStroke extends CellulartStroke {
+interface GeomStroke extends Stroke {
     original: WorkerResultShape
 }
 
@@ -47,17 +46,18 @@ interface GeomStroke extends CellulartStroke {
   * ---------------------------------------------------------------------- */
 /** Geom (Geometrize) is the second generation of Gartic autodrawers 
   * after rate limiting culled the first generation.     
-  * The longest module at 360 lines. cringe                                */
+  * Previously the longest module. After having its guts rearranged 
+  * to accommodate Akasha, that title is a bit more ambiguous.             */
 export class Geom extends CellulartModule {
     name = "Geom"        
     isCheat = true
     setting = WhiteSettingsBelt(this.name.toLowerCase())
 
     private strokeSender: StrokeSender
-    private shapesGeneratedLabel: HTMLElement | null = null
     private geomInwindow: Inwindow        // HTMLDivElement
     private geomPreview: SVGElement        // SVGElement
     private stepCallback: number | undefined           // TimeoutID
+    private strokeBuffer: StrokeBuffer | null = null
     private shapeGenerationPaused: boolean = false
 
     constructor(moduleArgs: ModuleArgs) {
@@ -69,7 +69,7 @@ export class Geom extends CellulartModule {
 
         this.geomInwindow = this.initGeomWIW()
         // this.socket = moduleArgs.socket
-        this.strokeSender = moduleArgs.strokeSender
+        this.strokeSender = moduleArgs.strokeSender;
 
         const preview = document.createElementNS(svgNS, "svg")
         setAttributes(preview, { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424" })
@@ -92,7 +92,9 @@ export class Geom extends CellulartModule {
         // hide or show Geom window without stopping web worker (just like Koss)
         if (this.isOff()) {
             // this.setSendingPaused(true)
-            this.strokeSender.pause(this.name)
+            // if (this.strokeBuffer) {
+            //     this.strokeSender.pause(this.strokeBuffer)
+            // }
             this.geomInwindow.setVisibility(false);
         } else {
             this.geomInwindow.setVisibility(true);
@@ -104,187 +106,113 @@ export class Geom extends CellulartModule {
     // private updateLabel(which: 'total'|'sent'|'both', newValue: string) {}    // Dynamically initialized
 
     private initGeomWIW(): Inwindow { // [G8]
-        const geomInwindow = new Inwindow("default", { close:false, visible:false, ratio:1 });
-        geomInwindow.element.id = "geom-wiw";
-
-        // Screen 1
-        const createScreen1 = () => {
-            const screen1 = constructElement({
-                type: "div",
-                class: "geom-carpet"
-            })
-            screen1.innerHTML = `
-                <form class="upload-form">
-                    <input class="upload-bridge" type="file">
-                    <div id="geom-socket" class="geom-border upload-socket hover-button" 
-                        style="background-image:url(${getResource("assets/module-assets/geom-ul.png")})">
-                    </div>
-                </form>
-            `
-            const bridge = screen1.querySelector('.upload-bridge')! as HTMLInputElement
-            const socket = screen1.querySelector('#geom-socket')! as HTMLElement
-        
-            ['dragenter'].forEach(eventName => {
-                socket.addEventListener(eventName, (e) => {
-                    preventDefaults(e)
-                    socket.classList.add('highlight')
-                }, false)
-            });
-            ['dragleave', 'drop'].forEach(eventName => {
-                socket.addEventListener(eventName, (e) => {
-                    preventDefaults(e)
-                    socket.classList.remove('highlight')
-                }, false)
-            })
-            socket.addEventListener("click", () => { bridge.click();})
-            bridge.addEventListener("change", () => { startGeometrize(bridge.files) })
-            socket.addEventListener('drop', (e: DragEvent) => {
-                const dt = e.dataTransfer
-                if (!dt) { return }
-                const files = dt.files
-                startGeometrize(files)
-            }, false)
-
-            return {
-                element: screen1
-            }
-        }
-
-        // Screen 2
-        const createScreen2 = (dataURL: string) => {
-            const screen2 = constructElement({
-                type: 'div',
-                class: 'geom-carpet',
-            })
-            const iconPause = `url(${getResource("assets/module-assets/geom-pause.png")})`
-            const iconPlay = `url(${getResource("assets/module-assets/geom-play.png")})`
-            screen2.innerHTML = `
-                <div class="geom-screen2">
-                    <div id="geom-echo" class="geom-border hover-button canvas-in-square" style="background-image: url(${dataURL})">
-                        <div id="geom-reselect" class="geom-border hover-button" style="background-image: url(${getResource("assets/module-assets/geom-cancel.png")})"></div>
-                    </div>
-                    <span id="geom-send-label" class="cellulart-skewer geom-status">0</span>
-                    <span id="geom-gen-label" class="cellulart-skewer geom-status">0</span>
-                    <button id="geom-send-pauser" class="geom-border geom-tray-button hover-button" style="background-image: ${iconPlay};"></button>
-                    <button id="geom-gen-pauser" class="geom-border geom-tray-button hover-button" style="background-image: ${iconPause};"></button>
+        // Drop zone
+        const geomInwindow = new Inwindow("default", { 
+            close:false, 
+            visible:false, 
+            shaded:true,
+            ratio:1,
+        });
+        const body = geomInwindow.body
+        body.innerHTML = `
+            <form class="upload-form">
+                <input class="upload-bridge" type="file">
+                <div id="geom-socket" class="theme-border upload-socket hover-button" 
+                    style="background-image:url(${getResource("assets/module-assets/geom-ul.png")})">
                 </div>
-            `
+            </form>
+        `
+        const bridge = body.querySelector('.upload-bridge')! as HTMLInputElement
+        const socket = body.querySelector('#geom-socket')! as HTMLElement
+    
+        ['dragenter'].forEach(eventName => {
+            socket.addEventListener(eventName, (e) => {
+                preventDefaults(e)
+                socket.classList.add('highlight')
+            }, false)
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            socket.addEventListener(eventName, (e) => {
+                preventDefaults(e)
+                socket.classList.remove('highlight')
+            }, false)
+        })
+        socket.addEventListener("click", () => { bridge.click();})
+        bridge.addEventListener("change", () => { startGeometrize(bridge.files) })
+        socket.addEventListener('drop', (e: DragEvent) => {
+            const dt = e.dataTransfer
+            if (!dt) { return }
+            const files = dt.files
+            startGeometrize(files)
+        }, false)
 
-            const screen2Back = screen2.querySelector('#geom-reselect') as HTMLElement
-            // const genShowConfig = screen2.querySelector('#geom-show-config') as HTMLElement
-            const screen2SendLabel = screen2.querySelector('#geom-send-label') as HTMLElement
-            const screen2GenLabel = screen2.querySelector('#geom-gen-label') as HTMLElement
-            const screen2SendBtn = screen2.querySelector('#geom-send-pauser') as HTMLElement
-            const screen2GenBtn = screen2.querySelector('#geom-gen-pauser') as HTMLElement
+        let sendingInwindow: Inwindow | null = null
 
-            const abortController = new AbortController()
-            let shapesSentCount = 0
+        const startGeometrize = (files: FileList | null) => { // [G1]
+            if (!files) { return }
+            const item = files.item(0)
+            if (!item) { return }
 
-            screen2Back.addEventListener(
-                "click", 
-                stopGeometrize, 
-                { signal: abortController.signal }
-            ) // TODO use an SVG for this button
-            screen2SendBtn.addEventListener(
-                "click", 
-                () => { 
-                    if (this.globalGame.currentPhase != "draw") {
-                        Console.log("Not the right phase - send blocked", "Geom")
-                        return 
-                    }
-                    if (this.strokeSender.isPaused) {
-                        // this.strokeSender.unpause(this.name)
-                        this.strokeSender.resumeQueue(this.name)
-                    } else {
-                        this.strokeSender.pause(this.name)
-                    } 
-                },
-                { signal: abortController.signal }
+            // Close existing Geometrize buffer
+            let sendingInwindowPosition = undefined;
+            if (sendingInwindow) {
+                sendingInwindowPosition = {
+                    top: sendingInwindow.element.style.top,
+                    left: sendingInwindow.element.style.left 
+                }
+            }
+            if (this.strokeBuffer) {
+                this.strokeBuffer.close()
+            }
+
+            // Create new buffer
+            const dataURL = URL.createObjectURL(item)
+            const { inwindow, buffer } = this.strokeSender.createSendingInwindow(
+                dataURL,
+                undefined,
+                { position: sendingInwindowPosition }
             )
-            this.strokeSender.addEventListener(
-                "queuestatechange", 
-                (event: Event) => {
-                    const { queue, paused } = (event as QueueStateChangeEvent).detail
-                    const newIsPaused = queue != this.name || paused === true
-
-                    Console.log("Send " + (newIsPaused ? "pause" : "play"), 'Geom')
-                    screen2SendBtn.style.backgroundImage = newIsPaused ? iconPlay : iconPause 
-                },
-                { signal: abortController.signal }
+            buffer.addEventListener(
+                'close', 
+                () => {
+                    this.strokeBuffer = null;
+                    sendingInwindow = null;
+                    stopGeometrize()
+                }, 
             )
-            screen2GenBtn.addEventListener(
-                "click", 
-                () => { 
-                    const newIsPaused = !this.shapeGenerationPaused
-                    this.shapeGenerationPaused = newIsPaused
-
-                    Console.log("Gen " + (newIsPaused ? "pause" : "play"), 'Geom')
-                    screen2GenBtn.style.backgroundImage = newIsPaused ? iconPlay : iconPause
-                },
-                { signal: abortController.signal }
-            )
-
-            // Listen for the strokeSent event, check that the fromQueue == this.name, then:
-            this.strokeSender.addEventListener(
-                'strokesend', 
+            buffer.addEventListener(
+                'dequeuestroke',
                 (e: Event) => {
-                    const { queue, stroke }  = (e as StrokeSendEvent).detail
-                    if (queue != this.name) { 
-                        return 
-                    }
-                    
+                    const stroke = (e as CustomEvent<Stroke>).detail
                     const shapeAsSVG = this.formatShapeSVG((stroke as GeomStroke).original)
                     if (!shapeAsSVG) {
                         Console.warn("Failed to create svg from stroke", "Geom");
                         return;
                     }
                     this.geomPreview.appendChild(shapeAsSVG)
-                    screen2SendLabel.textContent = (++shapesSentCount).toString()
-                },
-                { signal: abortController.signal })
+                }
+            )
+            buffer.addEventListener(
+                'setstrokegeneration',
+                (e: Event) => {
+                    const paused = (e as CustomEvent<boolean>).detail
+                    this.shapeGenerationPaused = paused
+                }
+            )
 
-            this.shapesGeneratedLabel = screen2GenLabel
+            sendingInwindow = inwindow;
+            this.strokeBuffer = buffer;
 
-            return {
-                element: screen2,
-                abort: abortController
-            }
-        }
-
-        let currentScreen: HTMLElement = createScreen1().element
-        let abortController: AbortController | null = null
-        geomInwindow.body.appendChild(currentScreen)
-
-        const stopGeometrize = () => {  // TODO this init can be lazier
-            currentScreen.remove()
-            abortController?.abort()
-            abortController = null
-
-            this.strokeSender.clearQueue(this.name)
-            clearTimeout(this.stepCallback)
-
-            currentScreen = createScreen1().element
-            geomInwindow.body.appendChild(currentScreen)
-        }
-        const startGeometrize = (files: FileList | null) => { // [G1]
-            currentScreen.remove()
-
-            if (!files) { return }
-            const item = files.item(0)
-            if (!item) { return }
-
-            const dataURL = URL.createObjectURL(item)
-
-            const screen2 = createScreen2(dataURL)
-            currentScreen = screen2.element
-            abortController = screen2.abort
-            geomInwindow.body.appendChild(currentScreen)
-
+            // Begin Geometrize on image load
             const img = new Image();
             img.src = dataURL;
             img.onload = () => {
                 this.geometrize(img)
             };
+        }
+        const stopGeometrize = () => {  
+            Console.log("Stopping Geometrize", this.name)
+            clearTimeout(this.stepCallback)
         }
 
         return geomInwindow 
@@ -311,30 +239,37 @@ export class Geom extends CellulartModule {
                 this.stepCallback = window.setTimeout(step, 125); 
                 return 
             }
+
+            // Get and buffer shape
+            const buffer = this.strokeBuffer
             const shape = await this.queryGW("step")
             if (shape === undefined) { 
                 Console.warn("Mysterious error, no shape was produced; terminating", 'Geom'); 
                 return;
             }     
+            if (this.strokeBuffer == null || this.strokeBuffer !== buffer) { return }
+
             Console.log(shape, 'Worker')       
             this.queueShape(shape)
+
             step() 
         }
     }
     private queueShape(shape: WorkerResultShape) {
-        // this.counters.created += 1
-        // this.shapeQueue.push(shape)
-        // this.flags.queue = true
-        // this.updateLabel('total', this.counters.created.toString())
-        const shapeAsGarticStroke: CellulartStroke | void = this.formatShapeGartic(shape)
+        const shapeAsGarticStroke: Stroke | void = this.formatShapeGartic(shape)
         if (!shapeAsGarticStroke) { 
             return 
         }
 
-        if (this.shapesGeneratedLabel) {
-            this.shapesGeneratedLabel.textContent = (Number(this.shapesGeneratedLabel.textContent) + 1).toString()
-        }
-        this.strokeSender.enqueueStroke(this.name, shapeAsGarticStroke)
+        // if (this.strokeBuffer == null) {
+        //     Console.warn("Buffer not found while queueing shape", this.name)
+        //     return
+        // }
+        // this.strokeBuffer.dispatchEvent(new CustomEvent("enqueuestroke", {
+        //     detail: shapeAsGarticStroke
+        // }))
+        // console.log(this.strokeBuffer)
+        this.strokeBuffer!.enqueueStroke(shapeAsGarticStroke)
     }
     async queryGW(purpose: any, data: any = undefined) {
         const message = (data === undefined) ? { function: purpose } : { function: purpose, data: data } 

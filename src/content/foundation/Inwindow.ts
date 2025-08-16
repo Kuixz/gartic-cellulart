@@ -21,6 +21,19 @@ Default.InwindowNode.innerHTML = `
 <div class = "wiw-header">≡<div class = "wiw-close"></div></div>
 <div class = "wiw-body"></div>`
 
+export type InwindowOptions = {
+    header?: HTMLElement, 
+    body?: HTMLElement, 
+    close?: HTMLElement | boolean,
+    visible?: boolean,
+    shaded?: boolean,
+    position?: { left: string, top: string }
+
+    width?: number,
+    height?: number,
+    ratio?: number,
+    maxGrowFactor?: number
+}
 
 var currentZIndex: number = 20 
 
@@ -32,17 +45,8 @@ class InwindowElement {
 
     constructor(
         element: HTMLElement | "default" = "default", 
-        options?: {
-            header?: HTMLElement, 
-            body?: HTMLElement, 
-            close?: HTMLElement | boolean,
-            visible?: boolean,
-
-            width?: number,
-            height?: number,
-            ratio?: number,
-            maxGrowFactor?: number
-        }) {
+        options?: InwindowOptions
+    ) {
         const e = element == "default" ? Default.InwindowNode.cloneNode(true) as HTMLElement : element
         this.element = e
         this.header = options?.header ?? e.querySelector('.wiw-header') ?? e
@@ -57,8 +61,15 @@ class InwindowElement {
         const resizeRatio = options?.ratio
         const closeable = options?.close !== false
 
-        const v = options?.visible ? "visible" : "hidden"
-        this.element.style.visibility = v
+        if (options?.shaded) {
+            e.classList.add('shaded')
+        }
+        if (options?.position) {
+            e.style.top = options.position.top
+            e.style.left = options.position.left
+        }
+
+        this.setVisibility(options?.visible || false)
 
         initDragElement(this)
         initSizeElement(this, options)
@@ -212,7 +223,12 @@ function initSizeElement(inwindow: InwindowElement, options: undefined | {
 function initRemoveElement(inwindow: InwindowElement, closeable: boolean = true) {
     if (!inwindow.close){ return }
     if (closeable) {
-        inwindow.close.onmousedown = function() { inwindow.element.remove() }
+        inwindow.close.addEventListener(
+            'click',
+            () => { 
+                inwindow.element.remove() 
+            }
+        )
     } else {
         inwindow.close.remove()
     }

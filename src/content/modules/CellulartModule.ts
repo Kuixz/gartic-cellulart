@@ -65,12 +65,13 @@ export class CellulartModule extends EventListening(ModuleLike) { // [F2]
       }
     }
 
-    // A CellulartModule can respond to seven game events:
+    // A CellulartModule can respond to eight game events:
     protected onlobbyenter() {}
     protected onroundenter() {}
     protected onphasechange(event: PhaseChangeEvent) {}
     protected onreconnect(event: GarticXHRData) {}
     protected onalbumchange(event: AlbumChangeEvent) {}
+    protected ontimelinechange() {}
     protected onroundleave() {}
     protected onlobbyleave() {}
 
@@ -78,10 +79,10 @@ export class CellulartModule extends EventListening(ModuleLike) { // [F2]
     // To be overridden by each (controllable) module.
     protected adjustSettings(): void {}
 
-    // togglePlus handles module extensions.
+    // toggleRed handles module extensions.
     public toggleRed(plus: boolean) { if (plus) { this.setting.extend() } else { this.setting.retract() } }
     // An unstated assumption is that the following is always equal to 0 or 1:
-    // the number of times togglePlus(true) is called minus the number of times togglePlus(false) is called.
+    // the number of times toggleRed(true) is called minus the number of times toggleRed(false) is called.
 }
 
 export abstract class Metamodule extends ModuleLike {

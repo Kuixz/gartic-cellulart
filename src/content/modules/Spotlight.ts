@@ -58,7 +58,7 @@ class GarticCompositor {
     }
 
     public drawDrawing(drawing: CanvasImageSource, side: Side) {
-        console.log(arguments)
+        // console.log(arguments)
         // console.log(side == "L" ? 33 : 825)
         this.context.drawImage(drawing, (side == "L" ? 33 : 825), 203);
     }
@@ -343,7 +343,7 @@ export class Spotlight extends CellulartModule { // [S1]
         const prevUser = this.findUsername(prevSlide);
         const prevAvatar = this.findAvatar(prevSlide);
 
-        console.log([side, keySlide, prevSlide, prevUser, prevAvatar])
+        // console.log([side, keySlide, prevSlide, prevUser, prevAvatar])
     
         // Draw everything
         canvas.drawName(prevUser.toUpperCase(), side.other)

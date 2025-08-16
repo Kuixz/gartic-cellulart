@@ -14,13 +14,16 @@ import {
     CellulartEventType,
     StrokeSender
 } from "./foundation"
-import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
+import { Timer, Koss, Refdrop, Spotlight, Geom, Scry, Akasha } from "./modules"
 import { Red, Debug } from "./metamodules"
 import { 
     ModuleArgs, CellulartModule, Metamodule,
     ModuleChamber, MetaChamber
 } from "./modules/CellulartModule"
 import { createButton, createModuleButton } from "./components"
+
+const outOfGame = (phase: Phase) => phase == "start" || phase == "lobby"
+// const inGame = (phase: Phase) => phase == "draw" || phase == "write" || phase == "memory" || phase == "first"
 
 class Controller { 
     // static name: Controller
@@ -37,14 +40,15 @@ class Controller {
         modules: ModuleChamber, 
         metamodules: MetaChamber,
     ) {
+        const shelf = new Shelf()
         this.game = new BaseGame();
         this.socket = new Socket(this.game);
         this.strokeSender = new StrokeSender(this.socket, this.game);
+        this.auth = new SHAuth(shelf)
 
         Xhr.init()
         Keybinder.init()
 
-        this.auth = new SHAuth(new Shelf())
         this.initPopupAuth()
 
         this.createMenu({ 
@@ -69,6 +73,9 @@ class Controller {
     }
     onalbumchange(data: AlbumChangeData) {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ALBUM_CHANGE, { detail: data }))
+    }
+    ontimelinechange() {
+        this.game.dispatchEvent(new CustomEvent(CellulartEventType.TIMELINE_CHANGE))
     }
     onroundleave() {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_ROUND))
@@ -168,50 +175,11 @@ class Observer {
     targetBook : Element | null = null
     controller: Controller
     onEntryXHR: GarticXHRData | undefined
-    transitionData: TransitionData | null = null;
     
     constructor(controller: Controller) {
         this.controller = controller;
         this.controller.socket.addEventListener('socketIncoming', this.deduceSettingsFromSocket.bind(this))
         Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR.bind(this))
-    }
-    executePhaseTransition(newPhase: Phase): void {
-        // Set variables
-        const oldPhase = this.controller.game.currentPhase
-        this.controller.game.currentPhase = newPhase
-        Console.log(`Transitioned to ${newPhase}`, "Observer")
-
-        this.controller.game.currentTurn = (() => {
-            if (["first", "draw", "write", "memory", "mod"].includes(newPhase)) {
-                const step = document.querySelector(".step")
-                if (!step) { Console.warn("Could not find turn counter", "Observer"); return -1 }
-                if (!(step.textContent)) { Console.warn("Could not read turn counter", "Observer"); return -1 }
-
-                const slashIndex = step.textContent.indexOf("/")
-                const turnCount = Number(step.textContent.slice(0, slashIndex))
-                if (isNaN(turnCount)) { Console.warn("Could not parse turn counter", "Observer"); return -1 }
-                return turnCount
-            } else {
-                return 0
-            }
-        })()
-
-        const outOfGame = (phase: Phase) => phase == "start" || phase == "lobby"
-
-        // Handle transitions
-        if (oldPhase == "start")                         { this.onlobbyenter() }
-        if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.onroundenter(); }
-
-        if (!outOfGame(newPhase))                        { this.onphasechange(oldPhase, this.transitionData, newPhase) }
-        if (oldPhase == "start" && !outOfGame(newPhase))  { this.onreconnect(); } // Bypassing lobby phase means a reconnection.
-        
-        // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
-        if (!outOfGame(oldPhase) && outOfGame(newPhase))  { this.onroundleave(); }  
-        if (newPhase == "start")                         { this.onlobbyleave(); } 
-
-        if (newPhase == "waiting")                       { this.waiting(); } // TODO: Overlaps with reconnect?
-
-        this.transitionData = null;
     }
     onlobbyenter() {
         this.controller.onlobbyenter() 
@@ -234,6 +202,9 @@ class Observer {
     onalbumchange(element: HTMLElement, data: any) {
         this.controller.onalbumchange({ element, data })
     }
+    ontimelinechange() {
+        this.controller.ontimelinechange()
+    }
     onroundleave() {
         this.targetBook = null
         this.controller.onroundleave() 
@@ -244,17 +215,80 @@ class Observer {
 
     waiting() { Console.log("Waiting", "Observer") } // [C4]
 
+    private observerTransition: [Phase, number] | null = null;
+    private socketTransition: TransitionData | null = null;
+    private recordObserverTransition(observerTransition: [Phase, number]) {
+        this.observerTransition = observerTransition
+        this.attemptPhaseTransition()
+    }
+    private recordSocketTransition(socketTransition: TransitionData) {
+        this.socketTransition = socketTransition
+        this.attemptPhaseTransition()
+    }
+    private attemptPhaseTransition() {
+        if (
+            this.observerTransition 
+            && this.socketTransition
+            && this.socketTransition.turnNum + 1 == this.observerTransition[1]
+        ) {
+            this.executePhaseTransition(this.socketTransition, this.observerTransition[0])
+        }
+    }
+    private executePhaseTransition(transitionData: TransitionData | null, newPhase: Phase): void {
+        // Set variables
+        const oldPhase = this.controller.game.currentPhase
+        this.controller.game.currentPhase = newPhase
+        Console.log(`Transitioned to ${newPhase}`, "Observer")
+
+        // Handle transitions
+        if (oldPhase == "start")                         { this.onlobbyenter() }
+        if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.onroundenter(); }
+
+        if (!outOfGame(newPhase))                        { this.onphasechange(oldPhase, transitionData, newPhase) }
+        if (oldPhase == "start" && !outOfGame(newPhase)) { this.onreconnect(); } // Bypassing lobby phase means a reconnection.
+        
+        // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
+        if (!outOfGame(oldPhase) && outOfGame(newPhase)) { this.onroundleave(); }  
+        if (newPhase == "start")                         { this.onlobbyleave(); } 
+
+        if (newPhase == "waiting")                       { this.waiting(); } // TODO: Overlaps with reconnect?
+    }
     contentObserver: MutationObserver = new MutationObserver((records) => {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
-        // Observer.nextObserver.disconnect()
+
+        // Find game phase
         const newPhaseElement = this.content?.firstChild?.firstChild
         if (!newPhaseElement) { Console.warn("Cannot find element to read game phase from", "Observer"); return }
+        let newPhase = (newPhaseElement as Element).classList.item(1) as Phase
+        if (!newPhase) { Console.warn("Cannot read game phase from selected element", "Observer"); return }
 
-        const newPhase = (newPhaseElement as Element).classList.item(1) as Phase
-        if (!newPhase) { Console.warn("Cannot read game phase from selected element"); return }
+        // Update current turn
+        const currentTurn = (() => {
+            if (["first", "draw", "write", "memory", "mod"].includes(newPhase)) {
+                const step = document.querySelector(".step")
+                if (!step) { Console.warn("Could not find turn counter", "Observer"); return -1 }
+                if (!(step.textContent)) { Console.warn("Could not read turn counter", "Observer"); return -1 }
 
-        this.executePhaseTransition(newPhase)
+                const slashIndex = step.textContent.indexOf("/")
+                const turnCount = Number(step.textContent.slice(0, slashIndex))
+                if (isNaN(turnCount)) { Console.warn("Could not parse turn counter", "Observer"); return -1 }
+                return turnCount
+            } else {
+                return 0
+            }
+        })()
+        this.controller.game.currentTurn = currentTurn
+
+        // For some reason, Story Mode's DOM is structured so that every turn is the first
+        if (currentTurn != 1 && newPhase == 'first') {
+            newPhase = 'write'
+        }
+
+        console.log(newPhase)
+        if (!outOfGame(newPhase)) {
+            this.recordObserverTransition([newPhase, currentTurn])
+        }
         // console.log('content fired')
     })
     observe(selector: string) {
@@ -269,7 +303,7 @@ class Observer {
         Console.log("Successfully attached observer", 'Observer');
         this.content = frame;
     }
-
+// TODO: the story phase uses First for every phase. fuck
 
     // TODO create DataExtractor interface?
 
@@ -320,15 +354,18 @@ class Observer {
                 // and is indistinguishable from a regular draw phase when entering.
                 // this.executePhaseTransition(messageData)
 
-                // Instead we abuse the fact that we catch and interpret Socket messages
-                // before they get to the Gartic client.
                 // This is bad, dumb code.
-                this.patchTransitionData(messageData)
+                this.recordSocketTransition(messageData)
                 break;
             }
             case EMessagePurpose.GALLERY_SHOW_TURN: {
                 if ((messageData.data === undefined) && (messageData.user !== undefined)) { return }
                 this.onalbumchange(this.getMostRecentExhibit(), messageData.data)
+                break;
+            }
+            case EMessagePurpose.GALLERY_CHANGE_TIMELINE: {
+                this.ontimelinechange()
+                break;
             }
             case EMessagePurpose.CHANGE_SETTINGS_CUSTOM: {  // Custom settings changed
                 for (const key in messageData) {
@@ -349,6 +386,14 @@ class Observer {
                 }
                 break;
             }
+            case EMessagePurpose.GALLERY_END: {
+                this.executePhaseTransition(null, 'lobby')
+                break;
+            }
+            case EMessagePurpose.ROUND_END: {
+                this.executePhaseTransition(null, 'book')
+                break;
+            }
             case EMessagePurpose.CHANGE_SETTINGS_PRESET: {  // Default settings changed
                 const modeParameters = Converter.modeIndexToParameters(messageData)
                 this.controller.game.turnsIndex = modeParameters.turns
@@ -365,6 +410,10 @@ class Observer {
                 this.controller.game.keepIndex = modeParameters.keep
                 break;
             }
+            // case EMessagePurpose.AWAIT_MODERATION: {
+            //     this.recordSocketTransition 
+            //     break;
+            // }
         }
     }
 
@@ -376,13 +425,10 @@ class Observer {
         const children = this.targetBook!.children
         return children[children.length - 1] as HTMLElement
     }
-    private patchTransitionData(data: any) {
-        this.transitionData = data
-    }
 }
 
 function main() {
-    const modules = [Timer, Koss, Refdrop, Spotlight, Geom, Scry]
+    const modules = [Timer, Koss, Refdrop, Spotlight, Geom, Scry, Akasha]
     const metamodules = [Red, Debug]
 
     const controller = new Controller(modules, metamodules)

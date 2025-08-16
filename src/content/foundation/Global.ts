@@ -3,7 +3,7 @@ import {
     EFlow, EKeep, ESpeed, ETurns, 
     GarticXHRData,
     TransitionData,
-    GarticStroke
+    GarticData,
 } from "./Converter"
 import { GarticUser } from "./Converter"
 
@@ -13,6 +13,7 @@ export enum CellulartEventType {
     PHASE_CHANGE = 'phasechange',
     RECONNECT = 'reconnect',
     ALBUM_CHANGE = 'albumchange',
+    TIMELINE_CHANGE = 'timelinechange',
     LEAVE_ROUND = 'roundleave',
     LEAVE_LOBBY = 'lobbyleave',
 }
@@ -24,7 +25,7 @@ export interface PhaseChangeData {
 }
 export interface AlbumChangeData {
     element: Element,
-    data: undefined | string | GarticStroke[],
+    data: GarticData,
 } 
 export interface PhaseChangeEvent extends CustomEvent {
     detail: PhaseChangeData
