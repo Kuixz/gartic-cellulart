@@ -11,7 +11,8 @@ import {
     EMessagePurpose, TransitionData,
     BaseGame,
     AlbumChangeData,
-    CellulartEventType
+    CellulartEventType,
+    StrokeSender
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
@@ -25,6 +26,7 @@ class Controller {
     // static name: Controller
     public game: BaseGame
     public socket: Socket
+    public strokeSender: StrokeSender
     menu: HTMLElement | undefined // [C1]
     liveModules: CellulartModule[] = []
     liveMetamodules: Metamodule[] = []
@@ -37,6 +39,7 @@ class Controller {
     ) {
         this.game = new BaseGame();
         this.socket = new Socket(this.game);
+        this.strokeSender = new StrokeSender(this.socket, this.game);
 
         Xhr.init()
         Keybinder.init()
@@ -46,7 +49,8 @@ class Controller {
 
         this.createMenu({ 
             game: this.game, 
-            socket: this.socket 
+            socket: this.socket,
+            strokeSender: this.strokeSender,
         }, modules, metamodules)
     }
     onlobbyenter() {
@@ -205,7 +209,7 @@ class Observer {
         if (!outOfGame(oldPhase) && outOfGame(newPhase))  { this.onroundleave(); }  
         if (newPhase == "start")                         { this.onlobbyleave(); } 
 
-        if (newPhase == "waiting")                       { this.waiting(); } 
+        if (newPhase == "waiting")                       { this.waiting(); } // TODO: Overlaps with reconnect?
 
         this.transitionData = null;
     }
@@ -381,7 +385,6 @@ function main() {
     const modules = [Timer, Koss, Refdrop, Spotlight, Geom, Scry]
     const metamodules = [Red, Debug]
 
-    const game = new BaseGame()
     const controller = new Controller(modules, metamodules)
     const observer = new Observer(controller)
     observer.observe("#content")

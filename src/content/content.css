@@ -264,6 +264,9 @@ div#geom-echo {
     background-position: center;
     /* border: 5px solid black; */
     position: relative;
+
+    grid-column: span 2; 
+    margin: 0px;
 }
 div#geom-lower-tray {
     margin: 0% 6% 6%;
@@ -284,9 +287,11 @@ svg.geom-svg {
 span.geom-status {
     justify-content: center; 
     font-size: 13cqw;
-    color: #43de99
 }
-span#geom-total {
+span#geom-send-label {
+    color: #43de99; 
+}
+span#geom-gen-label {
     color: grey; 
 }
 button.geom-tray-button {

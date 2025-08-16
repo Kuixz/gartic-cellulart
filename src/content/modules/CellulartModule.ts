@@ -1,5 +1,17 @@
-import { Console, SettingsBelt, Keybind, DefaultSettings, GarticXHRData, Socket } from "../foundation"
-import { AlbumChangeEvent, BaseGame, CellulartEventType, EventListening, PhaseChangeEvent } from "../foundation/Global";
+import { 
+  Console, 
+  SettingsBelt, 
+  Keybind, 
+  DefaultSettings, 
+  Socket, 
+  StrokeSender,
+  GarticXHRData, 
+  AlbumChangeEvent, 
+  BaseGame, 
+  CellulartEventType, 
+  EventListening, 
+  PhaseChangeEvent 
+} from "../foundation";
 
 export class ModuleLike {
     name!: string            // All modules have a name property
@@ -27,7 +39,8 @@ export class ModuleLike {
 
 export interface ModuleArgs {
   game: BaseGame,
-  socket: Socket
+  socket: Socket,
+  strokeSender: StrokeSender,
 }
 
 /* ----------------------------------------------------------------------
@@ -44,7 +57,7 @@ export class CellulartModule extends EventListening(ModuleLike) { // [F2]
 
     // Initialization. 
     // To be overridden by each module to expose only globalGame.
-    constructor(moduleArgs: ModuleArgs, listensFor: CellulartEventType[]) { 
+    constructor(moduleArgs: ModuleArgs, listensFor: CellulartEventType[] = []) { 
       super() 
       this.globalGame = moduleArgs.game
       for (const eventType of listensFor) {

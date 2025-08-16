@@ -1,3 +1,4 @@
+import { CellulartStroke } from "../content/foundation";
 import { CrossCommand } from "../shared/Endpoint";
 
 abstract class Interceptor {
@@ -158,12 +159,12 @@ class SocketInterceptor extends Interceptor {
         this.post("flag", true)
     }
     currentWSOpen() { return this.currentWS && this.currentWS.readyState === this.currentWS.OPEN }
-    sendGeomShape(data: GeomSerializedShape) {
+    sendStroke(data: CellulartStroke) {
         if (!data) { return }
         if (!this.currentWSOpen()) { this.onDisconnect(data); return }
     
         this.strokeCount += 1
-        const toSend = data.fst + this.strokeCount + data.snd;
+        const toSend = data.beforeN + this.strokeCount + data.afterN;
         this.currentWS!.expressSend(toSend);
         // this.post('log', "Sent: " + toSend);
     }
@@ -179,12 +180,6 @@ const Socket = new SocketInterceptor()
 
 
 type GarticStroke = [number, number, [string, number, number], ...[number, number]]
-
-declare global {
-    interface XMLHttpRequest {
-        chamberedCallback: () => void
-    }
-} 
 
  /* ----------------------------------------------------------------------
   *                         Observer XHR Hijack 

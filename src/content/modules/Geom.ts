@@ -4,9 +4,13 @@ import {
     Console, 
     WhiteSettingsBelt, 
     PhaseChangeEvent, CellulartEventType,
-    Inwindow, Socket,
+    Inwindow, 
     svgNS, setAttributes, setParent, preventDefaults, getResource,
-    Converter,
+    constructElement,
+    StrokeSender,
+    CellulartStroke,
+    StrokeSendEvent,
+    QueueStateChangeEvent
 } from "../foundation"
 import { ModuleArgs, CellulartModule } from "./CellulartModule"
 
@@ -21,27 +25,21 @@ const ShapeTypes = {
     QUADRATIC_BEZIER: 7
 }
 
-// extract to SemaphoreArray class
-// extract to BuffChan class
-// TODO: I don't think there's a gen pause flag for checking if Geom (the module) is turned off in the menu icons
-class GeomFlags {  
-    interval: boolean = true
-    queue: boolean = false
-    sendingPaused: boolean = true
-    mode: boolean = false
-    ws: boolean = false
-    
-    generationPaused: boolean = false
+function viewFit(minx: number, miny: number, elementx: number, elementy: number) {
+    const ratiox = elementx / minx;
+    const ratioy = elementy / miny
 
-    notClearToSend(): boolean { 
-        // console.log(this)
-        return !(this.interval && this.queue && !this.sendingPaused && this.mode && this.ws) 
-    } 
+    if (ratiox < ratioy) {
+        const resizedy = Math.ceil(elementy / ratiox);
+        return { margin: { x: 0, y: miny - resizedy }, x: minx, y: resizedy };
+    } else {
+        const resizedx = Math.ceil(elementx / ratioy);
+        return { margin: { x: minx - resizedx, y: 0 }, x: resizedx,  y: miny };
+    }
 }
 
-type GeomScreenData = {
-    elements: { [key:string]:HTMLElement }
-    functions: { [key:string]:(...args: any[]) => void }
+interface GeomStroke extends CellulartStroke {
+    original: WorkerResultShape
 }
 
  /* ----------------------------------------------------------------------
@@ -55,14 +53,12 @@ export class Geom extends CellulartModule {
     isCheat = true
     setting = WhiteSettingsBelt(this.name.toLowerCase())
 
-    geomInwindow : Inwindow        // HTMLDivElement
-    geomPreview : SVGElement        // SVGElement
-    stepCallback : number | undefined           // TimeoutID
-    shapeQueue: WorkerResultShape[] = []              // Queue
-    flags: GeomFlags = new GeomFlags()
-    counters: { created: number, sent: number } = { created: 0, sent: 0 }
-    config: { distance: number, max: number } = { distance: 1200, max: 20000 }
-    shouldClearStrokesOnMutation: boolean = true
+    private strokeSender: StrokeSender
+    private shapesGeneratedLabel: HTMLElement | null = null
+    private geomInwindow: Inwindow        // HTMLDivElement
+    private geomPreview: SVGElement        // SVGElement
+    private stepCallback: number | undefined           // TimeoutID
+    private shapeGenerationPaused: boolean = false
 
     constructor(moduleArgs: ModuleArgs) {
         super(moduleArgs, [
@@ -70,98 +66,71 @@ export class Geom extends CellulartModule {
             CellulartEventType.PHASE_CHANGE,
             CellulartEventType.LEAVE_ROUND,
         ])
-        Socket.addMessageListener('flag', (data: boolean) => {
-            this.flags.ws = data
-        })
 
         this.geomInwindow = this.initGeomWIW()
+        // this.socket = moduleArgs.socket
+        this.strokeSender = moduleArgs.strokeSender
 
         const preview = document.createElementNS(svgNS, "svg")
         setAttributes(preview, { class: "geom-svg", viewBox: "0 0 758 424", width: "758", height: "424" })
         this.geomPreview = preview
     }
     protected onphasechange(event: PhaseChangeEvent): void {
-        const { data, newPhase } = event.detail
-        this.setSendingPaused(true)
+        const { newPhase } = event.detail
+        // this.setSendingPaused(true)
         this.geomPreview.innerHTML = ''
-        if (this.shouldClearStrokesOnMutation) {
-            Socket.post('clearStrokes')
-        } else {
-            if (!(data?.previous.data)) {
-                Console.warn("Strokes need to be preserved but no strokes were patched", "Geom")
-            } else {
-                if (data?.previous.data instanceof Array) {
-                    Socket.post('setStrokeStack', data.previous.data)
-                } else {
-                    // Console.log("What kind of Frankenstein round settings are you playing with?")
-                }
-            }
-        }
 
         if (newPhase == 'draw') { 
-            this.flags.mode = true
             setParent(this.geomPreview, document.querySelector(".core")!)
-        } else {
-            this.flags.mode = false; 
-            return 
-        } 
-    }
-    protected onroundenter() {
-        this.shouldClearStrokesOnMutation = Converter.continuesIndexToBoolean(this.globalGame.keepIndex)
+        }
     }
     protected onroundleave(): void {
-        this.flags.mode = false; 
         this.geomPreview.innerHTML = ""
-        // if (oldPhase != 'start') { this.stopGeometrize() }  // Technically redundant.
     }
 
     public adjustSettings() { 
         // hide or show Geom window without stopping web worker (just like Koss)
         if (this.isOff()) {
-            this.setSendingPaused(true)
-            this.geomInwindow?.setVisibility(false);
+            // this.setSendingPaused(true)
+            this.strokeSender.pause(this.name)
+            this.geomInwindow.setVisibility(false);
         } else {
-            this.geomInwindow?.setVisibility(true);
+            this.geomInwindow.setVisibility(true);
         }
     }
 
-    private setSendingPaused(newIsPaused: boolean): void {} // Dynamically initialized
-    private stopGeometrize(): void {}                // Dynamically initialized
-    private updateLabel(which: 'total'|'sent'|'both', newValue: string) {}    // Dynamically initialized
+    // private setSendingPaused(newIsPaused: boolean): void {} // Dynamically initialized
+    // private stopGeometrize(): void {}                // Dynamically initialized
+    // private updateLabel(which: 'total'|'sent'|'both', newValue: string) {}    // Dynamically initialized
 
     private initGeomWIW(): Inwindow { // [G8]
-        const constructScreen1 = () => { 
-            const toReturn: GeomScreenData = {
-                elements: {},
-                functions: {}
-            }
-            const body = document.createElement("div")
-            setAttributes(body, { class: "geom-carpet" });
-            setParent(body, geomInwindow.body)
-            toReturn.elements.body = body
+        const geomInwindow = new Inwindow("default", { close:false, visible:false, ratio:1 });
+        geomInwindow.element.id = "geom-wiw";
 
-            const form = document.createElement("form")
-            setAttributes(form, { class: "upload-form" });
-            setParent(form, body)
-            toReturn.elements.form = form
-
-            const bridge = document.createElement("input")
-            setAttributes(bridge, { class: "upload-bridge", type: "file" });
-            setParent(bridge, form)
-            toReturn.elements.bridge = bridge
-
-            const socket = document.createElement("div")
-            setAttributes(socket, { id: "geom-socket", class: "geom-border upload-socket hover-button", style: "background-image:url(" + getResource("assets/module-assets/geom-ul.png") + ")" })
-            setParent(socket, form)
-            toReturn.elements.socket = socket
+        // Screen 1
+        const createScreen1 = () => {
+            const screen1 = constructElement({
+                type: "div",
+                class: "geom-carpet"
+            })
+            screen1.innerHTML = `
+                <form class="upload-form">
+                    <input class="upload-bridge" type="file">
+                    <div id="geom-socket" class="geom-border upload-socket hover-button" 
+                        style="background-image:url(${getResource("assets/module-assets/geom-ul.png")})">
+                    </div>
+                </form>
+            `
+            const bridge = screen1.querySelector('.upload-bridge')! as HTMLInputElement
+            const socket = screen1.querySelector('#geom-socket')! as HTMLElement
         
-            ;['dragenter'].forEach(eventName => {
+            ['dragenter'].forEach(eventName => {
                 socket.addEventListener(eventName, (e) => {
                     preventDefaults(e)
                     socket.classList.add('highlight')
                 }, false)
-            })
-            ;['dragleave', 'drop'].forEach(eventName => {
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
                 socket.addEventListener(eventName, (e) => {
                     preventDefaults(e)
                     socket.classList.remove('highlight')
@@ -169,173 +138,147 @@ export class Geom extends CellulartModule {
             })
             socket.addEventListener("click", () => { bridge.click();})
             bridge.addEventListener("change", () => { startGeometrize(bridge.files) })
-            socket.addEventListener('drop', handleDrop, false)
-
-            // return o
-
-            function handleDrop(e: DragEvent) {
+            socket.addEventListener('drop', (e: DragEvent) => {
                 const dt = e.dataTransfer
                 if (!dt) { return }
                 const files = dt.files
                 startGeometrize(files)
+            }, false)
+
+            return {
+                element: screen1
             }
-            return toReturn
         }
-        const constructScreen2 = () => {
-            const toReturn: GeomScreenData = {
-                elements: {},
-                functions: {}
-            }
-            Console.log("Constructing screen 2", 'Geom')
 
-            var configActive = false;
-
-            const iconPause = "url(" + getResource("assets/module-assets/geom-pause.png") + ")"
-            const iconPlay = "url(" + getResource("assets/module-assets/geom-play.png") + ")"
-
-            const body = document.createElement("div")
-            setAttributes(body, { class: "geom-carpet", style: "display: none;" }); setParent(body, geomInwindow.body)
-            const carpet = document.createElement("div")
-            setAttributes(carpet, { class: "geom-screen2" }); setParent(carpet, body)
-            toReturn.elements.body = body
-            const echo = document.createElement("div")
-            setAttributes(echo, { id: "geom-echo", class: "geom-border hover-button canvas-in-square", style:"grid-column: span 2; margin: 0;" }); setParent(echo, carpet)
-            toReturn.elements.echo = echo
-            const back = document.createElement("div")
-            setAttributes(back, { id: "geom-reselect", class: "geom-border hover-button", style:`background-image: url(${getResource("assets/module-assets/geom-cancel.png")})` }); setParent(back, echo)
-
-            const sendLabel = document.createElement("span")
-            setAttributes(sendLabel, { class: "cellulart-skewer geom-status" }); setParent(sendLabel, carpet)
-
-            const genSkewer = document.createElement("span")
-            setAttributes(genSkewer, { class: "cellulart-skewer geom-status" }); setParent(genSkewer, carpet)
-            const genLabel = document.createElement("span")
-            setAttributes(genLabel, { class: "cellulart-skewer", id: "geom-total" }); setParent(genLabel, genSkewer)
-            const genShowConfig = document.createElement("img")
-            setAttributes(genShowConfig, { src: getResource("assets/module-assets/geom-config.png"), id: "geom-show-config" }); setParent(genShowConfig, genSkewer)
-
-            const sendPauser = document.createElement("button") 
-            setAttributes(sendPauser, { class: "geom-border geom-tray-button hover-button" }); setParent(sendPauser, carpet)
-            const genPauser = document.createElement("button")
-            setAttributes(genPauser, { class: "geom-border geom-tray-button hover-button" }); setParent(genPauser, carpet)
-
-            const updateLabel = (which: 'total'|'sent'|'both', newValue: string) => {
-                if (which == 'total') { genLabel.textContent = newValue }
-                else if (which == 'sent') { sendLabel.textContent = newValue }
-                else if (which == 'both') { genLabel.textContent = newValue; sendLabel.textContent = newValue }
-            }
-            toReturn.functions.updateLabel = updateLabel
-
-            const setSendingPaused = (newIsPaused: boolean) => {
-                Console.log("Send " + (newIsPaused ? "pause" : "play"), 'Geom')
-                sendPauser.style.backgroundImage = newIsPaused ? iconPlay : iconPause 
-                this.flags.sendingPaused = newIsPaused
-                if (!newIsPaused) { this.trySend() }
-            }
-            toReturn.functions.setSendingPaused = setSendingPaused
-
-            const setGenerationPaused = (newIsPaused: boolean) => {
-                Console.log("Gen " + (newIsPaused ? "pause" : "play"), 'Geom')
-                genPauser.style.backgroundImage = newIsPaused ? iconPlay : iconPause
-                this.flags.generationPaused = newIsPaused
-            }
-            toReturn.functions.setGenerationPaused = setGenerationPaused
-
-            const setGeomConfigWindow = (active: boolean) => {
-                configActive = active
-                // geomScreen3 = geomScreen3 || constructScreen3()
-                geomScreen3.elements.body.style.display = active ? 'flex' : 'none';
-            }
-            toReturn.functions.setGeomConfigWindow = setGeomConfigWindow
-
-            setSendingPaused(!this.flags.mode);
-            setGenerationPaused(false);
-
-            sendPauser.addEventListener("click", () => { setSendingPaused(
-                (this.flags.mode && !this.flags.sendingPaused) 
-            )})
-            back.addEventListener("click", () => { stopGeometrize() }) // TODO put a semi-transparent negative space cancel icon instead of hover-button
-            genPauser.addEventListener("click", () => { setGenerationPaused(!this.flags.generationPaused) })
-            genShowConfig.addEventListener("click", () => { setGeomConfigWindow(!configActive) })
-
-            return toReturn
-        }
-        // TODO: Make it so that you can click anywhere in the geom screen to dismiss Screen 3.
-        const constructScreen3 = () => {
-            const toReturn: GeomScreenData = {
-                elements: {},
-                functions: {}
-            }
-            Console.log("Constructing screen 3", 'Geom')
-
-            const body = document.createElement("div")
-            setAttributes(body, { id: "geom-config" }); setParent(body, geomInwindow.body)
-            toReturn.elements.body = body
-
-            const distEntry = document.createElement("div")
-            setAttributes(distEntry, { class: "cellulart-skewer geom-3-hstack" }); setParent(distEntry, body)
-            const distIcon = document.createElement("img")
-            setAttributes(distIcon, { class: "geom-3-icon" }); setParent(distIcon, distEntry)
-            const distInput = (document.createElement("input"))
-            setAttributes(distInput, { class: "geom-3-input" }); setParent(distInput, distEntry)
-
-            const maxEntry = document.createElement("div")
-            setAttributes(maxEntry, { class: "cellulart-skewer geom-3-hstack" }); setParent(maxEntry, body)
-            const maxIcon = document.createElement("img")
-            setAttributes(maxIcon, { class: "geom-3-icon" }); setParent(maxIcon, maxEntry)
-            const maxInput = (document.createElement("input"))
-            setAttributes(maxInput, { class: "geom-3-input" }); setParent(maxInput, maxEntry)
-
-            distIcon.src = getResource("assets/module-assets/geom-3d.png")
-            distInput.value = this.config.distance.toString()
-            distInput.addEventListener("blur", () => { 
-                const newValue = +distInput.value
-                if (isNaN(newValue) || newValue < 1) { distInput.value = this.config.distance.toString(); return }
-                this.config.distance = newValue;
-                Console.log("Config dist set to " + newValue, 'Geom')
+        // Screen 2
+        const createScreen2 = (dataURL: string) => {
+            const screen2 = constructElement({
+                type: 'div',
+                class: 'geom-carpet',
             })
-            maxIcon.src = getResource("assets/module-assets/geom-3m.png")
-            maxInput.value = this.config.max.toString()
-            maxInput.addEventListener("blur", () => { 
-                const newValue = +maxInput.value
-                if (isNaN(newValue) || newValue < 1) { maxInput.value = this.config.max.toString(); return }
-                if (newValue < this.counters.created) { maxInput.value = this.counters.created.toString(); /* return; */}
-                this.config.max = newValue;
-                Console.log("Config max set to " + newValue, 'Geom')
-            })
+            const iconPause = `url(${getResource("assets/module-assets/geom-pause.png")})`
+            const iconPlay = `url(${getResource("assets/module-assets/geom-play.png")})`
+            screen2.innerHTML = `
+                <div class="geom-screen2">
+                    <div id="geom-echo" class="geom-border hover-button canvas-in-square" style="background-image: url(${dataURL})">
+                        <div id="geom-reselect" class="geom-border hover-button" style="background-image: url(${getResource("assets/module-assets/geom-cancel.png")})"></div>
+                    </div>
+                    <span id="geom-send-label" class="cellulart-skewer geom-status">0</span>
+                    <span id="geom-gen-label" class="cellulart-skewer geom-status">0</span>
+                    <button id="geom-send-pauser" class="geom-border geom-tray-button hover-button" style="background-image: ${iconPlay};"></button>
+                    <button id="geom-gen-pauser" class="geom-border geom-tray-button hover-button" style="background-image: ${iconPause};"></button>
+                </div>
+            `
 
-            return toReturn
+            const screen2Back = screen2.querySelector('#geom-reselect') as HTMLElement
+            // const genShowConfig = screen2.querySelector('#geom-show-config') as HTMLElement
+            const screen2SendLabel = screen2.querySelector('#geom-send-label') as HTMLElement
+            const screen2GenLabel = screen2.querySelector('#geom-gen-label') as HTMLElement
+            const screen2SendBtn = screen2.querySelector('#geom-send-pauser') as HTMLElement
+            const screen2GenBtn = screen2.querySelector('#geom-gen-pauser') as HTMLElement
+
+            const abortController = new AbortController()
+            let shapesSentCount = 0
+
+            screen2Back.addEventListener(
+                "click", 
+                stopGeometrize, 
+                { signal: abortController.signal }
+            ) // TODO use an SVG for this button
+            screen2SendBtn.addEventListener(
+                "click", 
+                () => { 
+                    if (this.globalGame.currentPhase != "draw") {
+                        Console.log("Not the right phase - send blocked", "Geom")
+                        return 
+                    }
+                    if (this.strokeSender.isPaused) {
+                        // this.strokeSender.unpause(this.name)
+                        this.strokeSender.resumeQueue(this.name)
+                    } else {
+                        this.strokeSender.pause(this.name)
+                    } 
+                },
+                { signal: abortController.signal }
+            )
+            this.strokeSender.addEventListener(
+                "queuestatechange", 
+                (event: Event) => {
+                    const { queue, paused } = (event as QueueStateChangeEvent).detail
+                    const newIsPaused = queue != this.name || paused === true
+
+                    Console.log("Send " + (newIsPaused ? "pause" : "play"), 'Geom')
+                    screen2SendBtn.style.backgroundImage = newIsPaused ? iconPlay : iconPause 
+                },
+                { signal: abortController.signal }
+            )
+            screen2GenBtn.addEventListener(
+                "click", 
+                () => { 
+                    const newIsPaused = !this.shapeGenerationPaused
+                    this.shapeGenerationPaused = newIsPaused
+
+                    Console.log("Gen " + (newIsPaused ? "pause" : "play"), 'Geom')
+                    screen2GenBtn.style.backgroundImage = newIsPaused ? iconPlay : iconPause
+                },
+                { signal: abortController.signal }
+            )
+
+            // Listen for the strokeSent event, check that the fromQueue == this.name, then:
+            this.strokeSender.addEventListener(
+                'strokesend', 
+                (e: Event) => {
+                    const { queue, stroke }  = (e as StrokeSendEvent).detail
+                    if (queue != this.name) { 
+                        return 
+                    }
+                    
+                    const shapeAsSVG = this.formatShapeSVG((stroke as GeomStroke).original)
+                    if (!shapeAsSVG) {
+                        Console.warn("Failed to create svg from stroke", "Geom");
+                        return;
+                    }
+                    this.geomPreview.appendChild(shapeAsSVG)
+                    screen2SendLabel.textContent = (++shapesSentCount).toString()
+                },
+                { signal: abortController.signal })
+
+            this.shapesGeneratedLabel = screen2GenLabel
+
+            return {
+                element: screen2,
+                abort: abortController
+            }
         }
-        const geomInwindow = new Inwindow("default", { close:false, visible:false, ratio:1 })
-        setAttributes(geomInwindow.element, { "id":"geom-wiw" })
 
-        const geomScreen1 = constructScreen1()
-        const geomScreen2 = constructScreen2()
-        const geomScreen3 = constructScreen3()
+        let currentScreen: HTMLElement = createScreen1().element
+        let abortController: AbortController | null = null
+        geomInwindow.body.appendChild(currentScreen)
 
         const stopGeometrize = () => {  // TODO this init can be lazier
-            geomScreen1.elements.body.style.display = 'flex';
-            geomScreen2.elements.body.style.display = 'none'; // TODO lazy init
-            geomScreen3.elements.body.style.display = 'none';
-            // other stopping stuff
-            geomScreen2.functions.setSendingPaused(true) 
+            currentScreen.remove()
+            abortController?.abort()
+            abortController = null
+
+            this.strokeSender.clearQueue(this.name)
             clearTimeout(this.stepCallback)
+
+            currentScreen = createScreen1().element
+            geomInwindow.body.appendChild(currentScreen)
         }
         const startGeometrize = (files: FileList | null) => { // [G1]
+            currentScreen.remove()
+
             if (!files) { return }
             const item = files.item(0)
             if (!item) { return }
 
             const dataURL = URL.createObjectURL(item)
-            geomScreen1.elements.body.style.display = 'none';
-            geomScreen2.elements.body.style.display = 'flex';
-            geomScreen2.elements.echo.style.backgroundImage = "url(" + dataURL + ")"
 
-            geomScreen2.functions.setGenerationPaused(false)
-            geomScreen2.functions.updateLabel('both', 0)
-            this.counters = { created:0, sent:0 }
-            this.shapeQueue = [];
-            this.flags.queue = false;
+            const screen2 = createScreen2(dataURL)
+            currentScreen = screen2.element
+            abortController = screen2.abort
+            geomInwindow.body.appendChild(currentScreen)
 
             const img = new Image();
             img.src = dataURL;
@@ -344,14 +287,10 @@ export class Geom extends CellulartModule {
             };
         }
 
-        this.setSendingPaused = (newState: boolean) => { geomScreen2.functions.setSendingPaused(newState) }
-        this.stopGeometrize = stopGeometrize
-        this.updateLabel = (which: 'total'|'sent'|'both', newValue: string) => { geomScreen2.functions.updateLabel(which, newValue) }
-
         return geomInwindow 
     }
     async geometrize(img: HTMLImageElement) {
-        const resizedDimensions = view_fit(758, 424, img.naturalWidth, img.naturalHeight) 
+        const resizedDimensions = viewFit(758, 424, img.naturalWidth, img.naturalHeight) 
         const canvas = document.createElement("canvas")
         canvas.width = resizedDimensions.x; canvas.height = resizedDimensions.y;
         const context = canvas.getContext("2d")!;
@@ -365,158 +304,112 @@ export class Geom extends CellulartModule {
             step()
         })
 
-        // function view_clamp(maxx, maxy, elementx, elementy) {
-        //     const ratiox = maxx / elementx
-        //     const ratioy = maxy / elementy
-        //     if (ratiox > 1 && ratioy > 1) { 
-        //         return { margin: { x: maxx - elementx, y: maxy - elementy }, x:elementx, y:elementy } 
-        //     } else if (ratiox < ratioy) {
-        //         const resizedy = Math.floor(elementy * ratiox)
-        //         return { margin: { x:0, y:maxy - resizedy }, x: maxx, y:resizedy }
-        //     } else {
-        //         const resizedx = Math.floor(elementx * ratioy)
-        //         return { margin: { x:maxx - resizedx, y:0 }, x: resizedx, y:maxy }
-        //     }
-        // }
-        function view_fit(minx: number, miny: number, elementx: number, elementy: number) {
-            const ratiox = elementx / minx;
-            const ratioy = elementy / miny
-        
-            if (ratiox < ratioy) {
-                const resizedy = Math.ceil(elementy / ratiox);
-                return { margin: { x: 0, y: miny - resizedy }, x: minx, y: resizedy };
-            } else {
-                const resizedx = Math.ceil(elementx / ratioy);
-                return { margin: { x: minx - resizedx, y: 0 }, x: resizedx,  y: miny };
-            }
-        }
-        // function view_cover(minx, miny, elementx, elementy) {
-        //     const ratiox = elementx / minx;
-        //     const ratioy = elementy / miny
-        
-        //     if (ratiox > 1 && ratioy > 1) {
-        //         return { margin: { x: minx - elementx, y: miny - elementy }, x:elementx, y:elementy }
-        //     } else if (ratiox < ratioy) {
-        //         const resizedy = Math.ceil(elementy / ratiox);
-        //         return { margin: { x: 0, y: miny - resizedy }, x: minx, y: resizedy };
-        //     } else {
-        //         const resizedx = Math.ceil(elementx / ratioy);
-        //         return { margin: { x: minx - resizedx, y: 0 }, x: resizedx,  y: miny };
-        //     }
-        // }
         const step = async() => {
             // TODO: Step consistently overshoots the config max by 1 and config distance
-            if (this.flags.generationPaused || this.counters.created >= this.config.max || this.counters.created - this.counters.sent >= this.config.distance) { 
+            if (this.shapeGenerationPaused) { // || this.counters.created >= this.config.max || this.counters.created - this.counters.sent >= this.config.distance) { 
                 await this.queryGW(2)
-                this.stepCallback = window.setTimeout(step, 250); 
+                this.stepCallback = window.setTimeout(step, 125); 
                 return 
             }
             const shape = await this.queryGW("step")
-            if (shape === undefined) { Console.warn("Mysterious error, no shape was produced; terminating", 'Geom'); return }     
+            if (shape === undefined) { 
+                Console.warn("Mysterious error, no shape was produced; terminating", 'Geom'); 
+                return;
+            }     
             Console.log(shape, 'Worker')       
             this.queueShape(shape)
             step() 
         }
     }
     private queueShape(shape: WorkerResultShape) {
-        this.counters.created += 1
-        this.shapeQueue.push(shape)
-        this.flags.queue = true
-        this.updateLabel('total', this.counters.created.toString())
-    
-        window.setTimeout(() => { this.trySend() }, 0) // Maybe an overcomplication
-    }
-    private trySend() {
-        const gartic_format = (shape: WorkerResultShape) => {
-            const raw = shape.raw
-            const type = ((x: number) => {
-                if (x == ShapeTypes.RECTANGLE) { return 6 }
-                if (x == ShapeTypes.ELLIPSE) { return 7 }
-            })(shape.type)
-            if (!type) { 
-                Console.warn(`Unknown shape type ${type}`, "Geom"); return
-            }
-            const color = (function(){
-                const signed = shape.color
-                const unsigned = signed > 0 ? signed : signed + 0xFFFFFFFF + 1
-                const colora = unsigned.toString(16).padStart(8, '0')
-                return colora.slice(0,6)
-            })()
-    
-            const coords = ((type):number[]|undefined => {
-                if (type == ShapeTypes.RECTANGLE) {
-                    return raw
-                }
-                else if (type == ShapeTypes.ELLIPSE) {
-                    return [raw[0] - raw[2], raw[1] - raw[3], raw[0] + raw[2], raw[1] + raw[3]]
-                }
-            })(shape.type)
-            if (!coords) {
-                Console.warn(`Unknown shape type: ${type}`, "Geom")
-                return // else if LINE
-            }
-    
-            return { fst: `42[2,7,{"t":${this.globalGame.currentTurn - 1},"d":1,"v":[${type},`,
-                    snd: `,["#${color}",2,"0.5"],[${coords[0]},${coords[1]}],[${coords[2]},${coords[3]}]]}]`
-                }
-        }
-        const svg_format = (shape: WorkerResultShape) => {
-            const raw = shape.raw
-            const type = ((x: number) => {
-                if (x == ShapeTypes.RECTANGLE) { return 'rect' }
-                if (x == ShapeTypes.ELLIPSE) { return 'ellipse' }
-            })(shape.type)
-            if (!type) { 
-                Console.warn(`Unknown shape type ${type}`, "Geom"); return
-            }
-            const color = "#" + (function(){
-                const signed = shape.color
-                const unsigned = signed > 0 ? signed : signed + 0xFFFFFFFF + 1
-                const colora = unsigned.toString(16).padStart(8, '0')
-                return colora.slice(0,6)
-            })()
-    
-            const coords = ((type):{[key:string]:number}|undefined => {
-                if (type == ShapeTypes.RECTANGLE) {
-                    return { x: raw[0], y: raw[1], width: raw[2] - raw[0], height: raw[3] - raw[1] }
-                }
-                else if (type == ShapeTypes.ELLIPSE) {
-                    return { cx: raw[0], cy: raw[1], rx: raw[2], ry: raw[3]}
-                }
-            })(shape.type)
-            if (!coords) {
-                Console.warn(`Unknown shape type: ${type}`, "Geom")
-                return// else if LINE
-            }
-    
-            const ns = document.createElementNS(svgNS, type)
-            setAttributes(ns, coords as any)  // !DANGER: This is a suppressed type warning
-            setAttributes(ns, { ...coords, fill: color, "fill-opacity": "0.5" })
-            return ns
+        // this.counters.created += 1
+        // this.shapeQueue.push(shape)
+        // this.flags.queue = true
+        // this.updateLabel('total', this.counters.created.toString())
+        const shapeAsGarticStroke: CellulartStroke | void = this.formatShapeGartic(shape)
+        if (!shapeAsGarticStroke) { 
+            return 
         }
 
-        // console.log(this.flags)
-
-        if(this.flags.notClearToSend()) { return }
-        this.flags.interval = false
-        window.setTimeout(() => { this.flags.interval = true; this.trySend() }, 125)
-    
-        const shape = this.shapeQueue.shift()!  // !DANGER: Empty queue suppression
-        if(this.shapeQueue.length == 0) { this.flags.queue = false }
-        const packet = gartic_format(shape)
-        if (!packet) { return }
-        const svg = svg_format(shape)
-        if (!svg) { return }
-    
-        Socket.post('sendGeomShape', packet)
-        this.counters.sent += 1
-        this.geomPreview.appendChild(svg)
-        this.updateLabel('sent', this.counters.sent.toString())
+        if (this.shapesGeneratedLabel) {
+            this.shapesGeneratedLabel.textContent = (Number(this.shapesGeneratedLabel.textContent) + 1).toString()
+        }
+        this.strokeSender.enqueueStroke(this.name, shapeAsGarticStroke)
     }
     async queryGW(purpose: any, data: any = undefined) {
         const message = (data === undefined) ? { function: purpose } : { function: purpose, data: data } 
         const response = await chrome.runtime.sendMessage(message);
         Console.log(response, 'Worker') 
         return response
+    }
+
+    private formatShapeGartic (shape: WorkerResultShape): GeomStroke | void {
+        const raw = shape.raw
+        const type = ((x: number) => {
+            if (x == ShapeTypes.RECTANGLE) { return 6 }
+            if (x == ShapeTypes.ELLIPSE) { return 7 }
+        })(shape.type)
+        if (!type) { 
+            Console.warn(`Unknown shape type ${type}`, "Geom"); return
+        }
+        const color = (function(){
+            const signed = shape.color
+            const unsigned = signed > 0 ? signed : signed + 0xFFFFFFFF + 1
+            const colora = unsigned.toString(16).padStart(8, '0')
+            return colora.slice(0,6)
+        })()
+
+        const coords = ((type):number[]|undefined => {
+            if (type == ShapeTypes.RECTANGLE) {
+                return raw
+            }
+            else if (type == ShapeTypes.ELLIPSE) {
+                return [raw[0] - raw[2], raw[1] - raw[3], raw[0] + raw[2], raw[1] + raw[3]]
+            }
+        })(shape.type)
+        if (!coords) {
+            Console.warn(`Unknown shape type: ${type}`, "Geom")
+            return // else if LINE
+        }
+
+        return { 
+            beforeN: `42[2,7,{"t":${this.globalGame.currentTurn - 1},"d":1,"v":[${type},`,
+            afterN: `,["#${color}",2,"0.5"],[${coords[0]},${coords[1]}],[${coords[2]},${coords[3]}]]}]`,
+            original: shape
+        }
+    }
+    private formatShapeSVG (shape: WorkerResultShape): SVGElement | void {
+        const raw = shape.raw
+        const type = ((x: number) => {
+            if (x == ShapeTypes.RECTANGLE) { return 'rect' }
+            if (x == ShapeTypes.ELLIPSE) { return 'ellipse' }
+        })(shape.type)
+        if (!type) { 
+            Console.warn(`Unknown shape type ${type}`, "Geom"); return
+        }
+        const color = "#" + (function(){
+            const signed = shape.color
+            const unsigned = signed > 0 ? signed : signed + 0xFFFFFFFF + 1
+            const colora = unsigned.toString(16).padStart(8, '0')
+            return colora.slice(0,6)
+        })()
+
+        const coords = ((type):{[key:string]:number}|undefined => {
+            if (type == ShapeTypes.RECTANGLE) {
+                return { x: raw[0], y: raw[1], width: raw[2] - raw[0], height: raw[3] - raw[1] }
+            }
+            else if (type == ShapeTypes.ELLIPSE) {
+                return { cx: raw[0], cy: raw[1], rx: raw[2], ry: raw[3]}
+            }
+        })(shape.type)
+        if (!coords) {
+            Console.warn(`Unknown shape type: ${type}`, "Geom")
+            return// else if LINE
+        }
+
+        const ns = document.createElementNS(svgNS, type)
+        setAttributes(ns, coords as any)  // !DANGER: This is a suppressed type warning
+        setAttributes(ns, { ...coords, fill: color, "fill-opacity": "0.5" })
+        return ns
     }
 }
