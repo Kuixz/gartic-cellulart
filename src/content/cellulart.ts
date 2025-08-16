@@ -1,4 +1,3 @@
-// const dogSrc: string = 'https://media.tenor.com/fej4_qoxdHYAAAAM/cute-puppy.gif'
 import { 
     Phase, Console, Converter, GarticXHRData, 
     Keybinder, SHAuth,
@@ -55,6 +54,7 @@ class Controller {
             game: this.game, 
             socket: this.socket,
             strokeSender: this.strokeSender,
+            shelf: shelf,
         }, modules, metamodules)
     }
     onlobbyenter() {

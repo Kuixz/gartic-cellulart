@@ -1,8 +1,15 @@
+const main = document.querySelector("div");
+const subtitle = document.querySelector("h2");
+
 document.addEventListener('DOMContentLoaded', function () {
     const input = document.querySelector("input")
     const label = document.querySelector("label")
     mail("status", function(response) {
-        if (response.open) { closeChannel("Already open!") }
+        if (response.open) { 
+            closeChannel("Already open!") 
+        } else {
+            openChannel()
+        }
     })
     // closeChannel("Not on Gartic")
     document.querySelector("form").addEventListener("submit", function(e) {
@@ -20,11 +27,11 @@ async function mail(message, rsvp) {
     })
 }
 
+function openChannel() {
+    main.style.display = "initial";
+    subtitle.textContent = "";
+}
 function closeChannel(blurb) {
-    const subtitle = document.createElement("h2");
-    subtitle.textContent = blurb;
-    
-    const main = document.getElementById("main");
-    main.insertAdjacentElement("afterEnd", subtitle); 
     main.remove();
+    subtitle.textContent = blurb;
 }

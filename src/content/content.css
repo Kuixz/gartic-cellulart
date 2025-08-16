@@ -50,6 +50,7 @@ div.canvas-square-lower-tray {
     max-height: 100%;
     object-fit: contain;
     aspect-ratio: 1;
+    margin: auto;
 }
 
 .cellulart-stack {
@@ -127,6 +128,7 @@ div.window-in-window {
         border-radius: 0px 0px 4px 4px;
         display: flex;
         justify-content: center;
+        font-size: 13cqw;
         /* position: relative; */
     }
     img.wiw-img {
@@ -184,7 +186,6 @@ div.window-in-window {
 
     .strokesender-label {
         justify-content: center; 
-        font-size: 13cqw;
     }
 }
 
@@ -401,7 +402,7 @@ div#scry-indicator-label {
     }
     .akasha-tray {
         width: 100%;
-        margin: 6% 0%;
+        margin: 6% 0 10%;
         gap: 6%;
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
