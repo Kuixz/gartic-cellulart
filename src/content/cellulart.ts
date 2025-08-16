@@ -1,4 +1,3 @@
-// const dogSrc: string = 'https://media.tenor.com/fej4_qoxdHYAAAAM/cute-puppy.gif'
 import { 
     Phase, Console, Converter, GarticXHRData, 
     Keybinder, SHAuth,
