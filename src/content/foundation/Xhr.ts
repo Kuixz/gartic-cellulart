@@ -1,15 +1,15 @@
 import { Console } from "./Console";
 
 const Xhr = {
-    name: 'XHR',
-    handlers: [{ filter:'log', handle:(data: string) => { Console.log(data, 'XHR') }}] as {filter:string, handle:(data?:any) => void}[],
+    name: 'Xhr',
+    handlers: [{ filter:'log', handle:(data: string) => { Console.log(data, 'Xhr') }}] as {filter:string, handle:(data?:any) => void}[],
 
     init() {
         window.addEventListener('message', (event) => {
-            if (event.source !== window || event.data.direction !== 'fromXHR') { return; }
+            if (event.source !== window || event.data.direction !== 'fromXhr') { return; }
             const purp = event.data.purpose
             const data = event.data.data
-            Console.log(`incoming (${purp}, ${JSON.stringify(data)})`, 'XHR')
+            Console.log(`incoming (${purp}, ${JSON.stringify(data)})`, 'Xhr')
             Xhr.handle(purp, data)
             // Xhr.handlers.forEach(handler => { 
             //     if (handler.filter == purp) { handler.handle(data) }

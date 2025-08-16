@@ -241,7 +241,7 @@ class Observer {
         Console.log(`Transitioned to ${newPhase}`, "Observer")
 
         // Handle transitions
-        if (oldPhase == "start")                         { this.onlobbyenter() }
+        if (oldPhase == "start")                         { this.onlobbyenter(); }
         if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.onroundenter(); }
 
         if (!outOfGame(newPhase))                        { this.onphasechange(oldPhase, transitionData, newPhase) }
@@ -285,9 +285,11 @@ class Observer {
             newPhase = 'write'
         }
 
-        console.log(newPhase)
+        // console.log(newPhase)
         if (!outOfGame(newPhase)) {
             this.recordObserverTransition([newPhase, currentTurn])
+        } else {
+            this.executePhaseTransition(null, newPhase)
         }
         // console.log('content fired')
     })
@@ -386,10 +388,10 @@ class Observer {
                 }
                 break;
             }
-            case EMessagePurpose.GALLERY_END: {
-                this.executePhaseTransition(null, 'lobby')
-                break;
-            }
+            // case EMessagePurpose.GALLERY_END: {
+            //     this.executePhaseTransition(null, 'lobby')
+            //     break;
+            // }
             case EMessagePurpose.ROUND_END: {
                 this.executePhaseTransition(null, 'book')
                 break;

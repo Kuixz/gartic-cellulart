@@ -17,7 +17,7 @@ class Debug extends Metamodule {
     constructor(modules: CellulartModule[]) {
         super(modules)
 
-        const debugWIW = new Inwindow("default", { visible:false, close:false, ratio:0.2, maxGrowFactor: 2 })
+        const debugWIW = new Inwindow("default", { visible:false, close:false, ratio:5, maxGrowFactor: 2 })
         debugWIW.body.classList.add("debug-body");
         const iconSelect = document.createElement("div")
         iconSelect.classList.add('debug-scroll-window')

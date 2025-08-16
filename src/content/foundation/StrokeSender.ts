@@ -242,6 +242,7 @@ export class StrokeSender extends EventListening(EventTarget) {
                 "enqueuestroke", 
                 (_: Event) => { 
                     genLabel.textContent = (++shapesGeneratedCount).toString()
+                    this.trySend()
                 }
             )
         }
@@ -309,37 +310,27 @@ export class StrokeSender extends EventListening(EventTarget) {
 
     // 4. Throttling logic and send
     private trySend() {
-        // ... all flag checks as before ...
         if (
             this.socketReady &&
             this.phaseReady &&
             this.throttleReady &&
             !this.paused
         ) {
-            if (!this.currentQueue || this.currentQueue.length == 0) {
+            if (!this.currentQueue) {
                 return
             } 
 
-            // const queue = this.queues.get(this.currentQueue)
-            // if (!queue || queue?.length === 0) {
-            //     this.stop()
-            //     return
-            // }
-
-            const stroke = this.currentQueue.dequeueStroke()!
-            // if (!stroke) { 
-            //     this.stop()
-            //     return  
-            // }
-
+            const stroke = this.currentQueue.dequeueStroke()
+            if (!stroke) {
+                return
+            }
+            
             this.socket.post('sendStroke', stroke);
             this.throttleReady = false;
 
             setTimeout(() => {
                 this.throttleReady = true;
-                if (this.currentQueue && this.currentQueue.length > 0) {
-                    this.trySend()
-                }
+                this.trySend()
             }, 125);
         }
     }

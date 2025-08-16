@@ -32,7 +32,7 @@ export class Scry extends CellulartModule { // [F2]
             CellulartEventType.LEAVE_ROUND,
         ])
 
-        const scryWIW = new Inwindow("default", { close: false, ratio: 0.2, maxGrowFactor: 2 })
+        const scryWIW = new Inwindow("default", { close: false, ratio: 5, maxGrowFactor: 2 })
         scryWIW.element.style.overflow = "visible";
         scryWIW.body.classList.add("scry-body")
         this.scryWIW = scryWIW

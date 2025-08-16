@@ -1,6 +1,15 @@
 
-import { AlbumChangeEvent, CellulartEventType, constructElement, GarticStroke, getResource, PhaseChangeEvent, RedSettingsBelt } from "../foundation";
+import { AlbumChangeEvent, CellulartEventType, constructElement, GarticStroke, getResource, Inwindow, PhaseChangeEvent, RedSettingsBelt } from "../foundation";
 import { CellulartModule, ModuleArgs } from "./CellulartModule";
+
+function cloneCanvas(oldCanvas: HTMLCanvasElement) {
+  const newCanvas = document.createElement('canvas');
+  const context = newCanvas.getContext('2d')!;
+  newCanvas.width = oldCanvas.width;
+  newCanvas.height = oldCanvas.height;
+  context.drawImage(oldCanvas, 0, 0);
+  return newCanvas;
+}
 
  /* ----------------------------------------------------------------------
   *                                 Akasha 
@@ -15,6 +24,7 @@ export class Akasha extends CellulartModule {
   public setting = RedSettingsBelt(this.name)
   public isCheat = true
 
+  private inwindow: Inwindow
   private activeDownloadButtons: HTMLElement[] = []
   private records: { dataURL: string, strokes: GarticStroke[] }[] = []
 
@@ -24,6 +34,8 @@ export class Akasha extends CellulartModule {
         CellulartEventType.ALBUM_CHANGE,
         CellulartEventType.TIMELINE_CHANGE,
     ])
+
+    this.inwindow = this.constructInwindow()
   }
 
   protected onphasechange(event: PhaseChangeEvent): void {
@@ -40,7 +52,6 @@ export class Akasha extends CellulartModule {
     const newButton = this.createDownloadButton(canvas as HTMLCanvasElement, data.previous.data)
     turnCount.appendChild(newButton)
   }
-
   protected onalbumchange(event: AlbumChangeEvent): void {
     // console.log(event)
 
@@ -54,12 +65,13 @@ export class Akasha extends CellulartModule {
     const newButton = this.createDownloadButton(canvas, data)
     avatar.appendChild(newButton)
   }
-
   protected ontimelinechange(): void {
     this.activeDownloadButtons = []
   }
 
   protected adjustSettings(): void {
+    this.inwindow.setVisibility(this.isOn())
+
     if (this.isOn()) {
       for (const elem of this.activeDownloadButtons) {
         elem.style.visibility = "initial"
@@ -71,6 +83,26 @@ export class Akasha extends CellulartModule {
     }
   }
 
+  private constructInwindow(): Inwindow {
+    const inwindow = new Inwindow("default", {
+      height: 300, 
+      ratio: 0.5,
+      close: false,
+      shaded: true,
+      maxGrowFactor: 2,
+    })
+    inwindow.body.classList.add("akasha-layout")
+    inwindow.body.innerHTML = `
+      <div class="akasha-album"></div>
+      <div class="akasha-tray">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    `
+
+    return inwindow
+  }
   private createDownloadButton(canvas: HTMLCanvasElement, data: GarticStroke[]): HTMLElement {
     const newButton = constructElement({
       type: "div",
@@ -86,11 +118,8 @@ export class Akasha extends CellulartModule {
     newButton.addEventListener(
       'click', 
       () => {
-        this.records.push({
-          dataURL: canvas.toDataURL(),
-          strokes: data
-        })
-        console.log(this.records)
+        this.downloadCanvas(canvas, data)
+        // console.log(this.records)
       },
       { once: true }
     )
@@ -98,6 +127,17 @@ export class Akasha extends CellulartModule {
     this.activeDownloadButtons.push(newButton)
 
     return newButton
+  }
+
+  private downloadCanvas(canvas: HTMLCanvasElement, strokes: GarticStroke[]) {
+    this.records.push({
+      dataURL: canvas.toDataURL(),
+      strokes: strokes
+    })
+
+    const newCanvas = cloneCanvas(canvas)
+    newCanvas.classList.add("akasha-entry")
+    this.inwindow.body.querySelector(".akasha-album")!.appendChild(newCanvas)
   }
 }
 
