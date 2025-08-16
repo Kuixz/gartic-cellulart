@@ -122,19 +122,11 @@ div.window-in-window {
 
 /* Timer */
 
-#clocksticles {
+.timer-timer {
     position: absolute;
-    width: 100px;
-    height: 120px;
-    top: 0px;
-    right: 0px
-}
-#timerHolder {
-    position: absolute;
-    bottom: 0px;
-    width: 100px
-}
-#timer {
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
     font-size: 27px;
     text-align: center;
     margin: auto;

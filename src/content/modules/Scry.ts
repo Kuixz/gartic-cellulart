@@ -1,11 +1,13 @@
 import { 
-    Console, Phase, WhiteSettingsBelt, 
-    globalGame, 
+    BaseGame,
+    Console, 
+    WhiteSettingsBelt, 
+    CellulartEventType, PhaseChangeEvent,
     Socket, 
     GarticUser,
     setParent,
     Inwindow,
-    GarticXHRData, TransitionData
+    GarticXHRData
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 
@@ -13,9 +15,8 @@ import { CellulartModule } from "./CellulartModule"
   *                                 Scry 
   * ---------------------------------------------------------------------- */
 /** Scry keeps track of who exactly has or hasn't submitted their work
-  * so you know who to throw peanuts at.
-  * ---------------------------------------------------------------------- */
-class Scry extends CellulartModule { // [F2]
+  * so you know who to throw peanuts at.                                   */
+export class Scry extends CellulartModule { // [F2]
     name = "Scry"
     setting = WhiteSettingsBelt("Scry")
 
@@ -24,8 +25,13 @@ class Scry extends CellulartModule { // [F2]
     indicatorTray: HTMLDivElement  
     indicators: Record<number, HTMLElement> = {}
 
-    constructor() { 
-        super() 
+    constructor(globalGame: BaseGame) {
+        super(globalGame, [
+            CellulartEventType.ENTER_ROUND,
+            CellulartEventType.PHASE_CHANGE,
+            CellulartEventType.RECONNECT,
+            CellulartEventType.LEAVE_ROUND,
+        ])
 
         const scryWIW = new Inwindow("default", { close: false, ratio: 0.2, maxGrowFactor: 2 })
         scryWIW.element.style.overflow = "visible";
@@ -54,15 +60,10 @@ class Scry extends CellulartModule { // [F2]
             }
         })
     }
-    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase): void {
-        if (["book", "start"].includes(newPhase)) { return }
-        if (oldPhase == "memory" && newPhase != "memory") { return }
-        this.resetIndicators()
-    }
-    roundStart(): void {
-        Console.log(`Constructing Scry with ${globalGame.players.length} players`, "Scry")
+    protected onroundenter(): void {
+        Console.log(`Constructing Scry with ${this.globalGame.players.length} players`, "Scry")
         this.indicators = {}
-        for (const user of globalGame.players) {
+        for (const user of this.globalGame.players) {
             if (!user.id) { continue }
 
             const userDiv = document.createElement('div')
@@ -90,7 +91,13 @@ class Scry extends CellulartModule { // [F2]
         //     user
         // })
     }
-    patchReconnect(data: GarticXHRData): void {
+    protected onphasechange(event: PhaseChangeEvent): void {
+        const { oldPhase, newPhase } = event.detail
+        if (["book", "start"].includes(newPhase)) { return }
+        if (oldPhase == "memory" && newPhase != "memory") { return }
+        this.resetIndicators()
+    }
+    protected onreconnect(data: GarticXHRData): void {
         for (const user of data.users) {
             if (!user.id) { continue }
             if (!user.ready) { continue }
@@ -99,10 +106,11 @@ class Scry extends CellulartModule { // [F2]
             indicator.style.backgroundColor = "lime"
         }
     }
-    roundEnd(oldPhase: Phase): void {
+    protected onroundleave(): void {
         this.clearIndicators()
     }
-    adjustSettings(): void {
+
+    public adjustSettings(): void {
         if (this.isOff()) {
             this.scryWIW.setVisibility(false)
         } else if (this.isOn()) {
@@ -110,18 +118,18 @@ class Scry extends CellulartModule { // [F2]
         }
     }
 
-    resetIndicators() {
+    private resetIndicators() {
         for (const indicator of Object.values(this.indicators)) {
             indicator.style.backgroundColor = "red"
         }
     }
-    clearIndicators() {
+    private clearIndicators() {
         for (const indicator of Object.values(this.indicators)) {
             indicator.remove()
         }
         this.indicators = {}
     }
-    updateCompletion(user: GarticUser, done: boolean) {
+    private updateCompletion(user: GarticUser, done: boolean) {
         Console.log(`${user.nick} is ${done ? "done" : "not done"}`, "Scry")
 
         if (!user.id) { return }
@@ -130,5 +138,3 @@ class Scry extends CellulartModule { // [F2]
         userDiv.style.backgroundColor = done ? "lime" : "red"
     }
 }
-
-export { Scry }

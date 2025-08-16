@@ -1,9 +1,13 @@
 import * as gifenc from "gifenc"
 
-import { Phase, WhiteSettingsBelt, Console, Converter, Inwindow, Setting,
-    globalGame, getModuleAsset, setAttributes, configChildTrunk,
-    setParent,
-    TransitionData
+import { 
+    BaseGame,
+    Console, 
+    WhiteSettingsBelt, 
+    PhaseChangeEvent,
+    Converter, Inwindow, Setting,
+    getModuleAsset, setAttributes, configChildTrunk, setParent,
+    CellulartEventType,
 } from "../foundation"
 import { CellulartModule } from "./CellulartModule"
 import { createButton } from "../components"
@@ -42,7 +46,7 @@ class GarticCompositor {
         }
     }
     
-    drawInteraction(slide: Element, side: Side) {
+    public drawInteraction(slide: Element, side: Side) {
         const canvases = slide.querySelectorAll('canvas')
         if (canvases.length > 0) { 
             for (const canvas of canvases) {
@@ -53,13 +57,13 @@ class GarticCompositor {
         }
     }
 
-    drawDrawing(drawing: CanvasImageSource, side: Side) {
+    public drawDrawing(drawing: CanvasImageSource, side: Side) {
         console.log(arguments)
         // console.log(side == "L" ? 33 : 825)
         this.context.drawImage(drawing, (side == "L" ? 33 : 825), 203);
     }
 
-    drawPrompt(prompt: string | null, side: Side) {
+    public drawPrompt(prompt: string | null, side: Side) {
         const startingx = (side == "L" ? 33 : 825)
         this.context.strokeStyle = "#180454";
         this.context.lineWidth = 10;
@@ -74,7 +78,7 @@ class GarticCompositor {
         this.drawText(prompt, (side == "L" ? 412 : 1204), 423, 60, 748, "M", "#180454");
     }
 
-    drawTurnsCounter(elapsed: number, total: number) {
+    public drawTurnsCounter(elapsed: number, total: number) {
         // console.log(elapsed); console.log(total)
         this.context.lineWidth = 15;
         
@@ -95,7 +99,7 @@ class GarticCompositor {
         }
     }
 
-    drawText(
+    public drawText(
         text: string | null, 
         x: number, 
         y: number, 
@@ -134,7 +138,7 @@ class GarticCompositor {
         this.context.fillStyle = internalColor;
         this.context.fillText(text, startingx, y);
     }
-    drawName(name: string, side: Side) {
+    public drawName(name: string, side: Side) {
         var fontSize = 60;
         this.context.font = fontSize + 'px Black';
         var textLength = this.context.measureText(name).width;
@@ -157,7 +161,7 @@ class GarticCompositor {
         this.context.fillStyle = "#6be4c2";
         this.context.fillText(name, startingx, 186);
     }
-    drawPFP(pfpURL: string, side: Side): "complete"|HTMLImageElement { // todo: An attempt was made to repair tainted canvasses, verify
+    public drawPFP(pfpURL: string, side: Side): "complete"|HTMLImageElement { // todo: An attempt was made to repair tainted canvasses, verify
         const pfp = new Image(); 
         if (pfpURL.includes('custom-avatars-for-gartic-phone')) {
             Console.warn("SillyV's custom avatars extension doesn't work with Spotlight due to CORS reasons. Please ask SillyV to enable CORS on his S3 buckets.", "Spotlight")
@@ -188,45 +192,46 @@ class GarticCompositor {
   * ---------------------------------------------------------------------- */
 /** Spotlight condenses your performance for the current round into a gif. 
   * The most spaghetti, convoluted module, second longest at 300 lines.
-  * And it's not even particularly useful.   
-  * Down for maintenance.                              
-  * ---------------------------------------------------------------------- */
-class Spotlight extends CellulartModule { // [S1]
+  * And it's not even particularly useful.                                 */
+export class Spotlight extends CellulartModule { // [S1]
     name = "Spotlight"
     setting = WhiteSettingsBelt(this.name.toLowerCase())
     // Spotlight variables
-    username : string = ''
-    fallback : number = 0
-    compositedFrameDatas : Indexable<Uint8ClampedArray | undefined> = []
-    bg : HTMLImageElement                  // HTMLImageElement [S1]
+    fallback: number = 0
+    compositedFrameDatas: Indexable<Uint8ClampedArray | undefined> = []
+    bg: HTMLImageElement                  // HTMLImageElement [S1]
     canbase: HTMLCanvasElement | undefined // HTMLCanvasElement
     
-    constructor() {
-        super()
+    constructor(globalGame: BaseGame) {
+        super(globalGame, [
+            CellulartEventType.ENTER_ROUND,
+            CellulartEventType.PHASE_CHANGE,
+            CellulartEventType.LEAVE_ROUND,
+        ])
 
         const i = new Image()
         i.src = getModuleAsset("spotlight-base.png");
         this.bg = i
     }
-    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
+    protected onroundenter(): void {
+        this.fallback = Converter.flowIndexToFallback(this.globalGame.flowIndex)
+    }
+    protected onphasechange(event: PhaseChangeEvent): void {
+        const { oldPhase, newPhase } = event.detail
         if (oldPhase == 'start') { return }
         if (newPhase != 'book') { return }
 
-        Console.log(globalGame.host, 'Spotlight')
-        Console.log(this.username, 'Spotlight')
+        Console.log(this.globalGame.host, 'Spotlight')
+        Console.log(this.globalGame.user.nick, 'Spotlight')
         // if (oldPhase == "start") {
         //     // In case you had to reload in the middle of visualization
         //     this.username = (document.querySelector(".users") ?? document.querySelector(".players")).querySelector("i").parentNode.nextSibling.textContent
         // }
         this.beginCompilation()
     }
-    roundStart(): void {
-        this.fallback = Converter.flowIndexToFallback(globalGame.flowIndex)
-        this.username = globalGame.user.nick
-    }
-    roundEnd(oldPhase: Phase) {
-        if (oldPhase != 'book') { return }
-        if( this.isSetTo('off') || length(this.compositedFrameDatas) == 0 ) { return }
+    protected onroundleave() {
+        if (this.globalGame.currentPhase != "book") { return }
+        if (this.isSetTo('off') || length(this.compositedFrameDatas) == 0 ) { return }
 
         const snapshotFrameData = this.compositedFrameDatas
 
@@ -239,9 +244,9 @@ class Spotlight extends CellulartModule { // [S1]
         
         this.compositedFrameDatas = []
     }
-    adjustSettings() {}  // Changing Spotlight settings isn't immediately visible.
-    menuStep(): Setting {
-        if (globalGame.currentPhase == "book") {  // || isNonempty(this.compositedFrameDatas)) { 
+    
+    public menuStep(): Setting {
+        if (this.globalGame.currentPhase == "book") {  // || isNonempty(this.compositedFrameDatas)) { 
             Console.warn("Changing Spotlight settings mid-album visualization has disastrous consequences - action blocked", 'Spotlight') 
             return this.setting.current
         }
@@ -249,18 +254,18 @@ class Spotlight extends CellulartModule { // [S1]
         return super.menuStep()
     }
 
-    beginCompilation() {
-        if (globalGame.currentPhase != "book") { return }
+    private beginCompilation() {
+        if (this.globalGame.currentPhase != "book") { return }
         if (this.isSetTo("off")) { return }
 
         this.compositeBackgrounds();
-        globalGame.turns > 0 
-            ? this.compositedFrameDatas = new Array(globalGame.turns - 1) 
+        this.globalGame.turnCount > 0 
+            ? this.compositedFrameDatas = new Array(this.globalGame.turnCount - 1) 
             : this.compositedFrameDatas = {}
         this.attachBookObserver();
     }
     // These four determine when things should fire.
-    attachBookObserver() { // [S2]
+    private attachBookObserver() { // [S2]
         var frame = document.querySelector(".timeline")//.previousSibling//.parentElement;
         if (!frame) {
             setTimeout(this.attachBookObserver, 500);
@@ -269,12 +274,12 @@ class Spotlight extends CellulartModule { // [S1]
         this.bookObserver.observe(frame, configChildTrunk);// { characterData: true });
         Console.log("Attached book observer", "Spotlight")
     }
-    bookObserver = new MutationObserver((records) => {
+    private bookObserver = new MutationObserver((records) => {
         Console.log("book obse fired; attaching timeline obse", "Spotlight"); 
         this.attachTimelineObserver(); 
         this.bookObserver.disconnect();
     })
-    attachTimelineObserver() {
+    private attachTimelineObserver() {
         var frame = document.querySelector(".timeline > * > *")  // .childNodes[0].childNodes[0];
         if (!frame) {
             setTimeout(this.attachTimelineObserver, 500);
@@ -282,7 +287,7 @@ class Spotlight extends CellulartModule { // [S1]
         }
         this.timelineObserver.observe(frame, configChildTrunk);
     }
-    timelineObserver: MutationObserver = new MutationObserver((records) => { // Catch errors when the NEXT button shows up / the next round begins to load
+    private timelineObserver: MutationObserver = new MutationObserver((records) => { // Catch errors when the NEXT button shows up / the next round begins to load
         // console.log("timeline obse fired")
         // console.log(records)
 
@@ -295,22 +300,22 @@ class Spotlight extends CellulartModule { // [S1]
     })
 
     // These functions manage the compositing of timelines into ImageDatas.
-    compositeBackgrounds() {
+    private compositeBackgrounds() {
         if (this.isSetTo('off')) { return }
         Console.log("Forming background", "Spotlight")
         const canvas = new GarticCompositor(this.bg)
-        canvas.drawText("HOSTED BY " + globalGame.host.toUpperCase(), 1206, 82, 50, 400, "M", "white")
+        canvas.drawText("HOSTED BY " + this.globalGame.host.toUpperCase(), 1206, 82, 50, 400, "M", "white")
         if (this.isSetTo("on")) {
-            canvas.drawName(this.username.toUpperCase(), "R") 
+            canvas.drawName(this.globalGame.user.nick.toUpperCase(), "R") 
             // this.drawPFP(context, '/images/avatar/38.svg', "R") 
-            canvas.drawPFP(globalGame.user.avatar, "R")
+            canvas.drawPFP(this.globalGame.user.avatar, "R")
             // TODO TODO TODO 
         } else {
             Console.warn("Spotlight setting not recognized", 'Spotlight')
         }
         this.canbase = canvas.canvas;
     }
-    writeResponseFrames() {
+    private writeResponseFrames() {
         const timeline = document.querySelector(".timeline")
         if (!timeline) { Console.warn("Could not find timeline", "Spotlight"); return }
 
@@ -324,7 +329,7 @@ class Spotlight extends CellulartModule { // [S1]
             this.compositeResponseFrame(Array.from(slides), indices.key, indices.prev)
         }
     }
-    determineResponseIndices(slides: Element[]) {
+    private determineResponseIndices(slides: Element[]) {
         const indexOfPrevSlide = (key:number):number => {
             var i = this.fallback > 0 ? key - 1 : 0; 
             /* console.log(modeParameters[game.mode]); console.log(modeParameters[game.mode]["fallback"]); console.log(slideNum); console.log(keySlideNum); console.log(keySlide) */ // console.log(prevIndex); console.log(slides);
@@ -337,14 +342,14 @@ class Spotlight extends CellulartModule { // [S1]
 
         var toReturn = []
         for (var keyIndex = 1; keyIndex < slides.length; keyIndex++) {
-            if (this.findUsername(slides[keyIndex]) != this.username) { continue }
+            if (this.findUsername(slides[keyIndex]) != this.globalGame.user.nick) { continue }
             var prevIndex = indexOfPrevSlide(keyIndex)
             // if (keyIndex == prevIndex)
             toReturn.push({ key:keyIndex, prev: prevIndex })
         }
         return toReturn
     }
-    compositeResponseFrame(slides: Element[], keyIndex: number, prevIndex: number) {  
+    private compositeResponseFrame(slides: Element[], keyIndex: number, prevIndex: number) {  
         // TODO incorrectly grabbing the same image twice, wtf?
         // todo: What to do if the one being spotlighted has an EMPTY?
         // TODO: Some rounds might loop back to the same person multiple times. (Fixed?)
@@ -372,7 +377,7 @@ class Spotlight extends CellulartModule { // [S1]
         const bottleneck = canvas.drawPFP(prevAvatar, side.other)  // This smells !!!
         canvas.drawInteraction(prevSlide, side.other)
         canvas.drawInteraction(keySlide, side.key)
-        canvas.drawTurnsCounter(keyIndex, globalGame.turns - 1)
+        canvas.drawTurnsCounter(keyIndex, this.globalGame.turnCount - 1)
         // TODO being on a different tab causes image grabs to fail
     
         // Console.log("Almost", 'Spotlight')
@@ -388,10 +393,10 @@ class Spotlight extends CellulartModule { // [S1]
             Console.log('Success (Onload)', 'Spotlight')
         }
     }  // [S3]
-    findUsername(element: Element): string {
+    private findUsername(element: Element): string {
         return (element.querySelector(".nick") ?? element.querySelector("span"))?.textContent ?? "missingno"
     }
-    findAvatar(element: Element): string {
+    private findAvatar(element: Element): string {
         const avatarElement = element.querySelector('.avatar > *')
         if (!avatarElement) {
             Console.warn("Could not find avatar in this element", "Spotlight")
@@ -400,8 +405,8 @@ class Spotlight extends CellulartModule { // [S1]
         return getComputedStyle(avatarElement).backgroundImage
     }
     // Compiles an array of ImageData into a GIF.
-    compileToGif(compositedFrameDatas: (Uint8ClampedArray | undefined)[]|{[key:number]:(Uint8ClampedArray|undefined)}) {
-        if (globalGame.turns < 2) { 
+    private compileToGif(compositedFrameDatas: (Uint8ClampedArray | undefined)[]|{[key:number]:(Uint8ClampedArray|undefined)}) {
+        if (this.globalGame.turnCount < 2) { 
             Console.log("Game is too short to form GIF. Cancelling", "Spotlight")
             return
         }  // TODO: Move this check. (?)
@@ -435,7 +440,7 @@ class Spotlight extends CellulartModule { // [S1]
         const today = new Date();
         const day = today.getDate() + "-" + (today.getMonth() + 1) + '-' + today.getFullYear()
         const time = today.getHours() + ":" + today.getMinutes()
-        const filename = "Spotlight " + this.username + " " + day + " " + time + ".gif"
+        const filename = "Spotlight " + this.globalGame.user.nick + " " + day + " " + time + ".gif"
         const blob = buffer instanceof Blob ? buffer : new Blob([buffer], { type: 'image/gif' });
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement("a");  // Memory leak?
@@ -450,5 +455,3 @@ class Spotlight extends CellulartModule { // [S1]
     //     _window.document.write('<iframe src="' + intend.toDataURL() + '" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>');
     // }
 }
-
-export { Spotlight }

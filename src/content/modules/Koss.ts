@@ -1,14 +1,19 @@
 import { CellulartModule } from "./CellulartModule";
-import { Console, DEFAULTINWINDOWRATIO, DOMLOADINGALLOWANCE, globalGame, Inwindow, Phase, RedSettingsBelt, setAttributes, TransitionData } from "../foundation";
+import { 
+    Console, 
+    RedSettingsBelt, 
+    BaseGame, CellulartEventType, PhaseChangeEvent, 
+    DEFAULTINWINDOWRATIO, DOMLOADINGALLOWANCE, Inwindow, 
+    constructElement
+} from "../foundation";
 
  /* ----------------------------------------------------------------------
   *                                  Koss 
   * ---------------------------------------------------------------------- */
 /** Knock-Off Screenshot (Koss), self-explanatory:
   * automatically takes a screenshot of the image you're supposed to 
-  * memorize. The lightest module, being only 70 lines long.                    
-  * ---------------------------------------------------------------------- */
-class Koss extends CellulartModule { // [K1]
+  * memorize. The lightest module, being only 70 lines long.               */
+export class Koss extends CellulartModule { // [K1]
     name = "Koss"
     setting = RedSettingsBelt(this.name.toLowerCase())
     // KOSS variables
@@ -16,22 +21,28 @@ class Koss extends CellulartModule { // [K1]
     kossImage: HTMLElement    // HTMLImageElement
     kossCanvas: HTMLElement | undefined   // HTMLCanvasElement
 
-    constructor() {
-        super()
+    constructor(globalGame: BaseGame) {
+        super(globalGame, [
+            CellulartEventType.PHASE_CHANGE,
+            CellulartEventType.LEAVE_ROUND
+        ])
 
         const inwindow = new Inwindow("default", { close: false, ratio: DEFAULTINWINDOWRATIO })
         inwindow.body.style.position = 'relative';  // TODO: Too many dots
         this.kossInwindow = inwindow;
 
-        const image = new Image()
-        setAttributes(image, { style: "position: absolute", class:"wiw-img" })
-        this.kossImage = image
+        this.kossImage = constructElement({
+            type: 'img',
+            class: 'wiw-img',
+            style: 'position: absolute',
+        })
     }
-    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) { 
-        // ssView.childNodes[1].appendChild(kossImage);
+
+    protected onphasechange(event: PhaseChangeEvent): void {
+        const { newPhase } = event.detail
         const wiwBody = this.kossInwindow.body
         
-        if (wiwBody.firstChild) { wiwBody.removeChild(wiwBody.firstChild) }
+        wiwBody.firstChild?.remove()
         if (newPhase == "memory") {
             this.discardCanvas()
             setTimeout(() => { 
@@ -41,12 +52,12 @@ class Koss extends CellulartModule { // [K1]
         }
         this.tryPlace()
     }
-    roundStart() {}
-    roundEnd() {
+    protected onroundleave() {
         // this.kossImage.src = "";
         this.discardCanvas()
     }
-    adjustSettings() {
+
+    public adjustSettings() {
         // alert(current)
         if (this.isOff()) {
             this.kossInwindow.setVisibility(false);
@@ -59,10 +70,10 @@ class Koss extends CellulartModule { // [K1]
         this.tryPlace()
     }
 
-    canPlace(): boolean {
-        return globalGame.currentPhase == "draw"
+    private canPlace(): boolean {
+        return this.globalGame.currentPhase == "draw"
     }
-    tryPlace() {
+    private tryPlace() {
         if (!this.canPlace()) { return }
         if (!this.kossCanvas) { return }
 
@@ -86,13 +97,9 @@ class Koss extends CellulartModule { // [K1]
             Console.log("Koss image underlaid", 'Koss')
         }
     }
-    discardCanvas() {
+    private discardCanvas() {
         if (!this.kossCanvas) { return }
         this.kossCanvas.remove();
         this.kossCanvas = undefined;
     }
 }
-
-// const KossInstance = new Koss()
-
-export { Koss }

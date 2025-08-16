@@ -21,7 +21,8 @@ export type GarticUser = {
 
     ready?: boolean
 }
-export type GarticXHRData = {
+
+export interface GarticXHRData {
     animationConfigs: {speed: number, loop: number} 
     bookAutomatic:    boolean 
     bookNum:          number
@@ -64,7 +65,7 @@ export enum EMessagePurpose {
     GALLERY_END = 20,
     ROUND_END = 24,
     CHANGE_SETTINGS_PRESET = 26,
-    APPLY_SETTINGS_PRESET = 27,
+    CHANGE_SETTINGS_DEFAULT = 27,
 }
 export enum EMode {
     NORMAL = 1,

@@ -1,41 +1,64 @@
-// declare global {
-//     interface Element {
-//         setAttributes(attrs: [string, string][]): this
-//         attachTo(parent: HTMLElement): this
-//     }
-// }
-// HTMLElement.prototype.setAttributes = function(attrs: [string, string][]): typeof this { 
-//     for (const [attr, value] of attrs) { 
-//         this.setAttribute(attr, value); break;
-//     }
-//     return this
-// }
-// HTMLElement.prototype.attachTo = function(parent: HTMLElement): typeof this { 
-//     parent.appendChild(this)
-//     return this
-// }
-const setAttributes = function(node: Element, attrs: { [attr:string]:string }): typeof node { 
+export const setAttributes = function(node: Element, attrs: { [attr:string]:string }): typeof node { 
     for (const [attr, value] of Object.entries(attrs)) { 
         node.setAttribute(attr, value);
     }
     return node
 }
-const setParent = function(node: Element, parent: HTMLElement): typeof node { 
+export const setParent = function(node: Element, parent: HTMLElement): typeof node { 
     parent.appendChild(node)
     return node
 }
 
-const clamp = (min: number, n: number, max: number) => Math.min(Math.max(min, n), max)
-function preventDefaults (e: Event) { e.preventDefault(); e.stopPropagation() }
+export const clamp = (min: number, n: number, max: number) => Math.min(Math.max(min, n), max)
+export function preventDefaults (e: Event) { e.preventDefault(); e.stopPropagation() }
 
-const getResource = (local: string) => {  // TODO package these three in an Asset interface (to make procedural / tinting later easy)
+export const getResource = (local: string) => {  // TODO package these three in an Asset interface (to make procedural / tinting later easy)
     return chrome.runtime.getURL(local)
 }
-const getMenuIcon = (local: string) => {
+export const getMenuIcon = (local: string) => {
     return chrome.runtime.getURL(`assets/menu-icons/${local}`)
 }
-const getModuleAsset = (local: string) => {
+export const getModuleAsset = (local: string) => {
     return chrome.runtime.getURL(`assets/module-assets/${local}`)
 }
 
-export { clamp, preventDefaults, getResource, getMenuIcon, getModuleAsset, setAttributes, setParent }
+export type ElementDefinition = {
+    type: string,
+    class?: string,
+    style?: string,
+    textContent?: string,
+    reference?: string,
+    properties?: { [key: string]: string },
+    eventListeners?: { [key: string]: EventListener },
+
+    children?: Iterable<ElementDefinition | HTMLElement>
+}
+
+export function constructElement(
+    def: ElementDefinition, referenceRecord?: Record<string, HTMLElement>
+): HTMLElement {
+    const elem = document.createElement(def.type)
+    if (def.class) { elem.className = def.class }
+    if (def.style) { elem.style.cssText = def.style }
+    if (def.textContent) { elem.textContent = def.textContent }
+    if (def.reference && referenceRecord) { referenceRecord[def.reference] = elem }
+    if (def.properties) {
+        for (const [k, v] of Object.entries(def.properties)) {
+            if (k in elem) { (elem as Record<string, any>)[k] = v }
+        }
+    }
+    if (def.eventListeners) {
+        for (const [k,v] of Object.entries(def.eventListeners)) {
+            elem.addEventListener(k, v)
+        }
+    }
+    if (def.children) {
+        for (const childDef of def.children) {
+            const child = childDef instanceof HTMLElement ? childDef : constructElement(childDef, referenceRecord)
+            elem.appendChild(child)
+        }
+    }
+
+    return elem
+}
+

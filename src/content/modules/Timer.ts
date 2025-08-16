@@ -1,7 +1,10 @@
 import { 
-    Phase, Console, setAttributes, setParent,
-    WhiteSettingsBelt, Converter, globalGame, SpeedParameters, speedParameterDefaults, DOMUNLOADINGALLOWANCE, 
-    GarticXHRData, TransitionData
+    BaseGame,
+    Console, 
+    WhiteSettingsBelt, 
+    Phase, CellulartEventType, GarticXHRData, PhaseChangeEvent,
+    Converter, SpeedParameters, speedParameterDefaults, DOMUNLOADINGALLOWANCE, 
+    constructElement,
 } from "../foundation";
 import { CellulartModule } from "./CellulartModule";
 
@@ -10,56 +13,59 @@ enum Count {
     Down = -1
 }
 
-/* ----------------------------------------------------------------------
+/*  ----------------------------------------------------------------------
   *                                 Timer 
   * ---------------------------------------------------------------------- */
 /** Timer adds a digital timer displaying time remaining (or elapsed) 
-  * in the top right corner, just under the analog clock.              
-  * ---------------------------------------------------------------------- */
-class Timer extends CellulartModule {
+  * in the top right corner, just under the analog clock.                  */
+export class Timer extends CellulartModule {
     name = "Timer"
     setting = WhiteSettingsBelt(this.name.toLowerCase(), true)
 
     // Timer variables 
-    display : HTMLDivElement | undefined // HTMLDivElement
-    countdown: number | undefined        // timeoutID
+    display: HTMLElement // HTMLDivElement
+    countdownID: number | undefined        // timeoutID
     required: number = 0
     elapsed: number = 0
     parameters: SpeedParameters = speedParameterDefaults
-    decay: number = 0              // used by Timer
+    decay: number = 0 
 
-    constructor() { // Empty.
-        super()
+    constructor(globalGame: BaseGame) { 
+        super(globalGame, [
+            CellulartEventType.ENTER_ROUND,
+            CellulartEventType.PHASE_CHANGE,
+            CellulartEventType.RECONNECT,
+        ])
+        this.display = constructElement({
+            type: "div",
+            class: "timer-timer",
+            style: `visibility:${this.isOff() ? "hidden" : "visible"}`
+        })
     }  
-    // TODO: Elements normally aren't actually destroyed when they're removed from DOM. 
-    // Maybe this.display still exists between transitions? If so we can avoid the costly thing.
-    // But is it even possible, given that we pluck the clock and stick it in the holder?
-    
-    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase): void {
+
+    protected onroundenter(): void {
+        const parameters = Converter.speedIndexToParameters(this.globalGame.speedIndex)
+        this.decay = parameters.decayFunction(this.globalGame.turnCount)
+        this.parameters = { ...parameters }
+    }
+    protected onphasechange(event: PhaseChangeEvent): void {
+        const { oldPhase, newPhase } = event.detail
         if (newPhase == "book") { return }
         setTimeout(this.placeTimer.bind(this), DOMUNLOADINGALLOWANCE)
 
         // If we changed from a phase that warrants a reset in the timer, reset the timer.
-        if (oldPhase == "memory" && newPhase != "memory") { return } // !["lobby", "write", "draw", "first"].includes(phase) && newPhase != "memory") { return }
+        if (oldPhase == "memory" && newPhase != "memory") { return } 
         this.clearTimer() 
         setTimeout(this.startTimer.bind(this), DOMUNLOADINGALLOWANCE, newPhase)
     }
-    roundStart(): void {
-        // const data = dict.custom
-        const parameters = Converter.speedIndexToParameters(globalGame.speedIndex)
-        this.decay = parameters.decayFunction(globalGame.turns)
-        // delete parameters.turns
-        Object.assign(this.parameters, parameters)  // TODO: unsafe and unscalable
-    }
-    patchReconnect(data: GarticXHRData): void {
+    protected onreconnect(data: GarticXHRData): void {
         if (!data.elapsedBase) { return }
         if (!data.elapsedTime) { return }
         const elapsed = data.timeStarted ? data.elapsedTime : data.elapsedBase
         this.elapsed = Math.ceil(elapsed / 1000)
     }
-    roundEnd(): void {} // Empty.
-    adjustSettings(): void {
-        if (this.display == undefined) { return }
+
+    public adjustSettings(): void {
         if (this.isOn()) { 
             this.display.style.visibility = "visible" 
         } else { 
@@ -67,34 +73,20 @@ class Timer extends CellulartModule {
         }
     }
 
-    placeTimer() {  // [T3]
+    private placeTimer() {  // [T3]
         // const p = document.querySelector("p.jsx-3561292207"); if (p) { p.remove() }
-        const clock = document.querySelector(".time") 
+        const clock = document.querySelector(".time")
         if (!clock) { Console.warn("Could not find clock", "Timer"); return }
 
-        const clockFrame = document.createElement("div")
-        setAttributes(clockFrame, { id: "clocksticles" })
-        clock.insertAdjacentElement("beforebegin", clockFrame) // These two lines
-        clockFrame.appendChild(clock)                          // finesse the clock into its holder.
+        clock.appendChild(this.display)
 
-        const timerDisplay = document.createElement("div")
-        setAttributes(timerDisplay, { id: "timerHolder" })
-        setParent(timerDisplay, clockFrame)
-
-        // console.log(this.setting.current)
-        // console.log(this.isSetTo('off'))
-        const display = document.createElement("div")
-        setAttributes(display, { id: "timer", style: `visibility:${this.isOff() ? "hidden" : "visible"}` })
-        setParent(display, timerDisplay)
-        this.display = display
-
-        const p = clock.querySelector('p'); if (p) { p.style.visibility = "hidden" }
+        const p = clock.querySelector('p'); if (p) { p.remove() }
     }
-    clearTimer() {
+    private clearTimer() {
         this.elapsed = 0
-        clearTimeout(this.countdown)
+        clearTimeout(this.countdownID)
     }
-    startTimer(newPhase: Phase) {
+    private startTimer(newPhase: Phase) {
         // console.log(this);
         const clock = document.querySelector(".time")
         if (!clock) { Console.warn("Could not find clock", "Timer"); return }
@@ -115,7 +107,7 @@ class Timer extends CellulartModule {
         this.interpolate(1); 
         // }
     }
-    getSecondsForPhase(newPhase: Phase): number {
+    private getSecondsForPhase(newPhase: Phase): number {
         Console.log("I think this phase is " + newPhase, 'Timer');
 
         const step = document.querySelector(".step")
@@ -142,22 +134,19 @@ class Timer extends CellulartModule {
         }
         return Math.floor(toReturn)
     }
-    tick(increaseStep: Count) {
-        const display = this.display ?? document.querySelector("#timer")
-        if (!display) { Console.warn("Houston we've lost our clock", "Timer"); return }
-
+    private tick(increaseStep: Count) {
         const seconds = increaseStep == Count.Down ? (this.required - this.elapsed) : (this.elapsed)
         const h = String(Math.floor(seconds / 3600)) + ":"
         const m = String(Math.floor(seconds / 60)) + ":"
         var s = String(seconds % 60);
         if (s.length < 2) { s = 0 + s }
-        display.textContent = h == "0:" ? m + s : h + m + s
+        this.display.textContent = h == "0:" ? m + s : h + m + s
 
         if ((increaseStep == Count.Down && seconds <= 0) || !this.display) { Console.log("Countdown ended", 'Timer'); return }
         this.elapsed += 1
-        this.countdown = window.setTimeout(this.tick.bind(this), 1000, increaseStep)
+        this.countdownID = window.setTimeout(this.tick.bind(this), 1000, increaseStep)
     }
-    interpolate(times: number) {
+    private interpolate(times: number) {
         if (this.decay != 0) {
             Console.log("Interpolating regressive/progressive timer", 'Timer')
             this.parameters.write = (this.parameters.write - 8) * (this.decay ** times) + 8
@@ -165,5 +154,3 @@ class Timer extends CellulartModule {
         } 
     }
 }
-
-export { Timer }
