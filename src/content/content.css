@@ -402,7 +402,7 @@ div#scry-indicator-label {
     }
     .akasha-tray {
         width: 100%;
-        margin: 6% 0%;
+        margin: 6% 0 10%;
         gap: 6%;
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
