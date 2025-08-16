@@ -1,11 +1,12 @@
 import * as gifenc from "gifenc"
 
+import { getModuleAsset } from "../components"
 import { 
     Console, 
     WhiteSettingsBelt, 
     PhaseChangeEvent,
     Converter, Inwindow, Setting,
-    getModuleAsset, setAttributes, setParent,
+    setAttributes, setParent,
     CellulartEventType,
     AlbumChangeEvent,
 } from "../foundation"

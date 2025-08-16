@@ -1,4 +1,6 @@
-import { Console, DefaultSettings, getResource, setAttributes, Setting } from "../foundation"
+import { getResource } from "./Assets"
+import { createIconHTML } from "./Icon"
+import { Console, DefaultSettings, setAttributes, Setting } from "../foundation"
 import { ModuleLike } from "../modules"
 
 function updateButtonTexture(button: HTMLElement, setting: Setting) {
@@ -56,9 +58,7 @@ function createModuleButton (mod: ModuleLike): HTMLElement {
 function createButton (svgID: string, onclick: () => Setting | undefined): HTMLElement {
     const item = document.createElement("div")
     setAttributes(item, { class: "controller-button-outer" })
-    item.innerHTML = `
-        <div class="controller-button-inner" style="clip-path: url(#cellulart-${svgID}-svg)"></div>
-    `
+    item.innerHTML = createIconHTML(`cellulart-${svgID}-svg`, { type: "div" });
 
     item.addEventListener("click", function() { 
         const newSetting = onclick()
@@ -72,10 +72,6 @@ function createButton (svgID: string, onclick: () => Setting | undefined): HTMLE
 fetch(getResource("assets/menu-svgs.html")).then(r => r.text()).then(html => {
     document.body.insertAdjacentHTML('beforeend', html);
     Console.log("Menu SVGs added", "Controller")
-});
-fetch(getResource("assets/module-assets.html")).then(r => r.text()).then(html => {
-    document.body.insertAdjacentHTML('beforeend', html);
-    Console.log("Module assets", "Controller")
 });
 
 export { createButton, createModuleButton }

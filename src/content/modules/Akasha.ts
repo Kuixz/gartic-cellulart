@@ -1,5 +1,13 @@
 
-import { AlbumChangeEvent, CellulartEventType, constructElement, GarticStroke, getResource, Inwindow, PhaseChangeEvent, RedSettingsBelt } from "../foundation";
+import { createIconHTML, getModuleAsset } from "../components";
+import { 
+  Console,
+  RedSettingsBelt, 
+  PhaseChangeEvent, AlbumChangeEvent, CellulartEventType, 
+  Inwindow, constructElement, 
+  GarticStroke, StrokeSender,
+  formatTime,
+} from "../foundation";
 import { CellulartModule, ModuleArgs } from "./CellulartModule";
 
 function cloneCanvas(oldCanvas: HTMLCanvasElement) {
@@ -9,6 +17,97 @@ function cloneCanvas(oldCanvas: HTMLCanvasElement) {
   newCanvas.height = oldCanvas.height;
   context.drawImage(oldCanvas, 0, 0);
   return newCanvas;
+}
+
+type AkashicRecord = { 
+  element: HTMLElement, 
+  dataURL: string, 
+  strokes: GarticStroke[] 
+}
+
+const versionToInterpreterMap: Map<string, (match1: string, match2: string) => AkashicRecord> = new Map([
+  ["1.1.0", (match1, match2) => {
+    const img = new Image()
+    img.src = match1
+    img.classList.add("akasha-entry", "theme-border", "hover-button")
+
+    const strokes = Object.values(JSON.parse(match2)) as GarticStroke[]
+    for (const stroke of strokes) {
+      if (stroke[0] == 8) {
+        stroke.push(0)
+      }
+    }
+
+    return {
+      element: img,
+      dataURL: match1,
+      strokes: strokes
+    }
+  }]
+])
+async function parseRecords(fileList: FileList | null): Promise<AkashicRecord[]> {
+  if (!fileList || fileList.length === 0) {
+    // console.log("No files provided.");
+    return [];
+  }
+
+  // Iterate through each file in the FileList
+  const newRecords = Array.from(fileList).map((file) => {
+    return new Promise((resolve: (value: null | AkashicRecord) => void) => {
+      const reader = new FileReader();
+
+      // When the file is successfully read
+      reader.onload = (event) => {
+        const fileContent = event.target?.result;
+        if (typeof fileContent !== 'string') { 
+          resolve(null)
+          return
+        }
+
+        const matchVersion = fileContent.match(/\|version\|:(.*?)\:\|version\|/);
+        if (!matchVersion) {
+          Console.warn(`File: ${file.name} - No match found for |1|.`, "Akasha");
+          resolve(null)
+          return
+        }
+        Console.log(`File: ${file.name} using encoding version ${matchVersion[1]}`, "Akasha")
+
+        // Find portion between "|1|:" and ":|1|"
+        const match1 = fileContent.match(/\|1\|:(.*?)\:\|1\|/);
+        if (!match1) {
+          Console.warn(`File: ${file.name} - No match found for |1|.`, "Akasha");
+          resolve(null)
+          return
+        }
+
+        // Find portion between "|2|:" and ":|2|"
+        const match2 = fileContent.match(/\|2\|:(.*?)\:\|2\|/);
+        if (!match2) {
+          Console.warn(`File: ${file.name} - No match found for |2|.`, "Akasha");
+          resolve(null)
+          return
+        }
+
+        let versionInterpreter = versionToInterpreterMap.get(matchVersion[1])
+        if (!versionInterpreter) {
+          Console.warn("Saved record version doesn't match any interpreter. Defaulting to 1.1.0")
+          versionInterpreter = versionToInterpreterMap.get("1.1.0")!
+        }
+        resolve(versionInterpreter(match1[1], match2[1]))
+      };
+
+      // Handle file reading errors
+      reader.onerror = () => {
+        Console.warn(`Error reading file: ${file.name}`, "Akasha");
+        resolve(null)
+      };
+
+      // Read the file as text
+      reader.readAsText(file);
+    });
+  });
+
+  return Promise.all(newRecords).then((arr) => arr.filter((x) => x !== null))
 }
 
  /* ----------------------------------------------------------------------
@@ -25,8 +124,13 @@ export class Akasha extends CellulartModule {
   public isCheat = true
 
   private inwindow: Inwindow
+  private strokeSender: StrokeSender
   private activeDownloadButtons: HTMLElement[] = []
-  private records: { dataURL: string, strokes: GarticStroke[] }[] = []
+  private records: Set<AkashicRecord> = new Set()
+  private underlaidRecords: Set<AkashicRecord> = new Set()
+  private activeRecord: AkashicRecord | null = null
+  private eta!: HTMLElement
+  private loadingScreen: HTMLElement
 
   constructor(moduleArgs: ModuleArgs) {
     super(moduleArgs, [
@@ -35,10 +139,20 @@ export class Akasha extends CellulartModule {
         CellulartEventType.TIMELINE_CHANGE,
     ])
 
+    this.strokeSender = moduleArgs.strokeSender
     this.inwindow = this.constructInwindow()
+    this.loadingScreen = constructElement({
+      type: "img",
+      class: "akasha-loading",
+    })
+
+    document.documentElement.style.setProperty("--akasha-loading-url", `url(${getModuleAsset('akasha-loading.svg')})`)
   }
 
   protected onphasechange(event: PhaseChangeEvent): void {
+    this.activeDownloadButtons = []
+    this.underlaidRecords.clear()
+
     const { data, newPhase } = event.detail
     if (newPhase != 'memory') {
       return
@@ -91,15 +205,65 @@ export class Akasha extends CellulartModule {
       shaded: true,
       maxGrowFactor: 2,
     })
-    inwindow.body.classList.add("akasha-layout")
-    inwindow.body.innerHTML = `
+    const body = inwindow.body
+    body.classList.add("akasha-layout")
+    body.innerHTML = `
       <div class="akasha-album"></div>
       <div class="akasha-tray">
-        <span></span>
-        <span></span>
-        <span></span>
+        <span class="square">
+          <button class="akasha-tray-button theme-border hover-button">
+            ${createIconHTML("cellulart-akasha-upload", { type: "div" })}
+          </button>
+        </span>
+        <span class="cellulart-skewer wiw-regular" style="grid-column: span 2;"></span>
+        <span class="square">
+          <button class="akasha-tray-button theme-border hover-button">
+            ${createIconHTML("cellulart-save", { type: "div" })}
+          </button>
+        </span>
+        <span class="square">
+          <button class="akasha-tray-button theme-border hover-button">
+            ${createIconHTML("cellulart-upload", { type: "div" })}
+          </button>
+          <input type="file" hidden>
+        </span>
+        <span class="square">
+          <button class="akasha-tray-button theme-border hover-button">
+            ${createIconHTML("cellulart-delete", { type: "div" })}
+          </button>
+        </span>
       </div>
     `
+
+    const [ drawBtn, saveBtn, uploadBtn, deleteBtn ] = body.querySelectorAll("button")
+    const uploadInput = body.querySelector('input')!
+
+    drawBtn.addEventListener(
+      'click',
+      () => { 
+        this.uploadActiveRecord() 
+      }
+    )
+    uploadBtn.addEventListener(
+      'click',
+      () => {
+        uploadInput.click()
+      }
+    )
+    uploadInput.addEventListener(
+      'change',
+      () => {
+        this.parseRecords(uploadInput.files)
+      }
+    )
+    deleteBtn.addEventListener(
+      'click',
+      () => { 
+        this.deleteActiveRecord()
+      }
+    )
+
+    this.eta = body.querySelector(".cellulart-skewer")!
 
     return inwindow
   }
@@ -108,36 +272,126 @@ export class Akasha extends CellulartModule {
       type: "div",
       class: "akasha-button-outer hover-button",
       style: `visibility: ${this.isOn() ? "initial" : "hidden"}`,
-      children: [{
-        type: "div",
-        class: "akasha-button-inner",
-        style: `clip-path: url(#cellulart-akasha-download)`,
-      }]
     })
+    newButton.innerHTML = createIconHTML("cellulart-akasha-download", { type: "div" })
 
     newButton.addEventListener(
       'click', 
       () => {
         this.downloadCanvas(canvas, data)
         // console.log(this.records)
-      },
-      { once: true }
+      }
     )
 
     this.activeDownloadButtons.push(newButton)
 
     return newButton
   }
-
   private downloadCanvas(canvas: HTMLCanvasElement, strokes: GarticStroke[]) {
-    this.records.push({
+    const newCanvas = cloneCanvas(canvas)
+    newCanvas.classList.add("akasha-entry", "theme-border", "hover-button")
+
+    this.addRecord({
+      element: newCanvas,
       dataURL: canvas.toDataURL(),
       strokes: strokes
     })
+  }
+  private addRecord(newRecord: AkashicRecord) {
+    newRecord.element.addEventListener(
+      "click",
+      () => { this.focusRecord(newRecord) }
+    )
 
-    const newCanvas = cloneCanvas(canvas)
-    newCanvas.classList.add("akasha-entry")
-    this.inwindow.body.querySelector(".akasha-album")!.appendChild(newCanvas)
+    this.records.add(newRecord)
+    this.inwindow.body.querySelector(".akasha-album")!.appendChild(newRecord.element)
+  }
+
+  private focusRecord(record: AkashicRecord) {
+    if (this.activeRecord == record) {
+      record.element.classList.remove("highlight")
+      this.activeRecord = null
+      this.eta.textContent = ""
+      return
+    } 
+    
+    if (this.activeRecord) {
+      this.activeRecord.element.classList.remove("highlight")
+    } 
+
+    this.activeRecord = record
+    this.eta.textContent = `⏲: ${formatTime(Math.ceil(record.strokes.length / 8))}`
+    record.element.classList.add("highlight")
+  }
+  private deleteActiveRecord() {
+    if (!this.activeRecord) { 
+      return 
+    }
+
+    this.records.delete(this.activeRecord)
+    this.activeRecord.element.remove()
+    this.eta.textContent = ""
+  }
+  private async parseRecords(files: FileList | null) {
+    for (const record of await parseRecords(files)) {
+      this.addRecord(record)
+    }
+  }
+  private uploadActiveRecord() {
+    if (!this.activeRecord) { 
+      return 
+    }
+    
+    const record = this.activeRecord
+    const { buffer } = this.strokeSender.createSendingInwindow(
+      record.dataURL,
+      structuredClone(record.strokes) // Deep copy
+    )
+    let strokesSent = 0;
+    const strokesTotal = record.strokes.length;
+
+    buffer.addEventListener(
+      "setstrokesending", 
+      (event: Event) => {
+        const paused = (event as CustomEvent<boolean>).detail
+
+        const drawContainer = document.body.querySelector(".drawingContainer") as HTMLElement
+        if (!drawContainer) {
+          Console.log("Couldn't preview drawing: couldn't find container", "Akasha")
+          return
+        }
+
+        this.whileSendingBlockStrokes(paused && strokesSent < strokesTotal, drawContainer)
+        this.showUploadingRecordPreview(record, drawContainer)
+      }
+    )
+    buffer.addEventListener(
+      "dequeuestroke",
+      () => {
+        if ((++strokesSent) == strokesTotal) {
+          this.whileSendingBlockStrokes(true)
+        }
+      }
+    )
+  }
+  private showUploadingRecordPreview(record: AkashicRecord, drawContainer: HTMLElement) {
+    if (this.underlaidRecords.has(record)) { 
+      return
+    }
+
+    const img = new Image()
+    img.classList.add('underlaid-img')
+    img.src = record.dataURL
+    drawContainer.insertAdjacentElement("beforebegin", img)
+
+    this.underlaidRecords.add(record)
+  }
+  private whileSendingBlockStrokes(safeToDraw: boolean, drawContainer?: HTMLElement) {
+    // console.log(visible)
+    if (safeToDraw) {
+      this.loadingScreen.remove()
+    } else {
+      drawContainer!.insertAdjacentElement("afterend", this.loadingScreen)
+    } 
   }
 }
-

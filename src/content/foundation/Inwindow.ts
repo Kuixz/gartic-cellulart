@@ -12,8 +12,8 @@ const Default = {
     InwindowNode: document.createElement("div")
 }
 
-window.addEventListener("resize", () => {
-    Default.Width = document.body.clientWidth;
+document.body.addEventListener("resize", () => {
+    Default.Width = document.body.clientWidth / 7;
 });
 
 setAttributes(Default.InwindowNode, { style: "visibility: hidden", class: "window-in-window" })

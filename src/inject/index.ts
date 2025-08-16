@@ -1,4 +1,4 @@
-import { Stroke } from "../content/foundation";
+import { OutboundGarticStroke } from "../content/foundation";
 import { CrossCommand } from "../shared/Endpoint";
 
 abstract class Interceptor {
@@ -159,13 +159,12 @@ class SocketInterceptor extends Interceptor {
         this.post("flag", true)
     }
     currentWSOpen() { return this.currentWS && this.currentWS.readyState === this.currentWS.OPEN }
-    sendStroke(data: Stroke) {
+    sendStroke(data: OutboundGarticStroke) {
         if (!data) { return }
         if (!this.currentWSOpen()) { this.onDisconnect(data); return }
     
-        this.strokeCount += 1
-        const toSend = data.beforeN + this.strokeCount + data.afterN;
-        this.currentWS!.expressSend(toSend);
+        data.v[1] = ++this.strokeCount;
+        this.currentWS!.expressSend("42" + JSON.stringify([2,7,data]));
         // this.post('log', "Sent: " + toSend);
     }
     onDisconnect(data: any) {  // Type alert suppressed

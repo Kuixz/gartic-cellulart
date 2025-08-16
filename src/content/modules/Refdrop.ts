@@ -1,12 +1,12 @@
 
-
+import { getModuleAsset } from "../components"
 import { 
     Console, 
     RedSettingsBelt, 
     CellulartEventType, PhaseChangeEvent,
     Inwindow, 
     Keybind, 
-    setAttributes, setParent, getModuleAsset, preventDefaults, clamp, 
+    setAttributes, setParent, preventDefaults, clamp, 
 } from "../foundation"
 import { ModuleArgs, CellulartModule } from "./CellulartModule"
 
@@ -40,7 +40,7 @@ export class Refdrop extends CellulartModule { // [R1]
         ])
 
         const refImage = document.createElement("img")
-        setAttributes(refImage, { class: "bounded", id: "ref-img" })
+        setAttributes(refImage, { class: "underlaid-img", style: "transform: translate(-50%,-50%);" })
         this.refImage = refImage
 
         const refUpload = document.createElement("div")

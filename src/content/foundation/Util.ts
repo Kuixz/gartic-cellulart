@@ -11,15 +11,15 @@ export const setParent = function(node: Element, parent: HTMLElement): typeof no
 
 export const clamp = (min: number, n: number, max: number) => Math.min(Math.max(min, n), max)
 export function preventDefaults (e: Event) { e.preventDefault(); e.stopPropagation() }
-
-export const getResource = (local: string) => {  // TODO package these three in an Asset interface (to make procedural / tinting later easy)
-    return chrome.runtime.getURL(local)
-}
-export const getMenuIcon = (local: string) => {
-    return chrome.runtime.getURL(`assets/menu-icons/${local}`)
-}
-export const getModuleAsset = (local: string) => {
-    return chrome.runtime.getURL(`assets/module-assets/${local}`)
+export function formatTime(seconds: number): string {
+    const s = seconds % 60
+    const m = Math.floor(seconds / 60)
+    const h = Math.floor(m / 60) 
+    if (h == 0) {
+        return `${m}:${s.toString().padStart(2, '0')}`
+    } else {
+        return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
+    }
 }
 
 export type ElementDefinition = {

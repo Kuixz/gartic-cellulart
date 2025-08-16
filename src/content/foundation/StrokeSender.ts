@@ -1,13 +1,12 @@
+import { createIconHTML } from "../components";
 import { Console } from "./Console";
-import { Converter } from "./Converter";
+import { Converter, GarticStroke, OutboundGarticStroke } from "./Converter";
 import { BaseGame, CellulartEventType, EventListening, PhaseChangeEvent } from "./Global";
 import { Inwindow, InwindowOptions } from "./Inwindow";
 import { Socket } from "./Socket";
-import { getResource } from "./Util";
 
-export interface Stroke { beforeN: string; afterN: string };
 export class StrokeBuffer extends EventTarget {
-    private queue: Stroke[] = []
+    private queue: GarticStroke[] = []
 
     constructor(private abortController: AbortController) {
         super()
@@ -21,27 +20,35 @@ export class StrokeBuffer extends EventTarget {
         this.dispatchEvent(new Event('close'))
     }
 
-    public enqueueStroke(stroke: Stroke) {
+    public enqueueStroke(stroke: GarticStroke) {
         this.queue.push(stroke)
         this.dispatchEvent(new CustomEvent("enqueuestroke", {
             detail: stroke
         }))
     }
 
-    public dequeueStroke(): Stroke | undefined {
+    public dequeueStroke(): GarticStroke | undefined {
         const stroke = this.queue.shift() 
-        this.dispatchEvent(new CustomEvent("dequeuestroke", {
-            detail: stroke
-        }))
+        if (stroke) {
+            this.dispatchEvent(new CustomEvent("dequeuestroke", {
+                detail: stroke
+            }))
+        }
         return stroke
     }
 
-    public setStrokes(strokes: Stroke[]) {
+    public setStrokes(strokes: GarticStroke[]) {
         this.queue = strokes
     }
 
-    public setStrokeGeneration(paused: boolean): void {
+    public setStrokeGenerationPaused(paused: boolean): void {
         this.dispatchEvent(new CustomEvent("setstrokegeneration", {
+            detail: paused
+        }))
+    }
+
+    public setStrokeSendingPaused(paused: boolean): void {
+        this.dispatchEvent(new CustomEvent("setstrokesending", {
             detail: paused
         }))
     }
@@ -51,15 +58,7 @@ export class StrokeBuffer extends EventTarget {
     }
 }
 
-export interface QueueStateChangeEvent extends CustomEvent {
-    detail: {
-        queue: StrokeBuffer,
-        paused: boolean
-    }
-}
-
-
-export class StrokeSender extends EventListening(EventTarget) {
+export class StrokeSender extends EventListening() {
     // private queues: Set<StrokeBuffer> = new Set()
     private currentQueue: StrokeBuffer | null = null;
 
@@ -94,7 +93,7 @@ export class StrokeSender extends EventListening(EventTarget) {
         }
 
         this.phaseReady = newPhase == 'draw'
-        this.ifActivePause()
+        this.pause(this.currentQueue)
         
         if (this.shouldClearStrokesOnMutation) {
             this.socket.post('clearStrokes')
@@ -113,14 +112,14 @@ export class StrokeSender extends EventListening(EventTarget) {
 
     public createSendingInwindow(
         dataURL: string,
-        fixedQueue?: Stroke[],
+        fixedQueue?: GarticStroke[],
         options?: InwindowOptions
     ): {
         inwindow: Inwindow,
         buffer: StrokeBuffer,
     } {
         // Pause
-        this.ifActivePause()
+        this.pause(this.currentQueue)
         
         // Create queue buffer
         const abortController = new AbortController()
@@ -134,27 +133,28 @@ export class StrokeSender extends EventListening(EventTarget) {
             ratio:1,
             ...options,
         }
-        console.log(combinedOptions)
+        // console.log(combinedOptions)
         const inwindow = new Inwindow("default", combinedOptions);
         const body = inwindow.body
 
-        const iconPause = `url(${getResource("assets/module-assets/geom-pause.png")})`
-        const iconPlay = `url(${getResource("assets/module-assets/geom-play.png")})`
+        const iconPause = createIconHTML("cellulart-pause", { type: "div" })
+        const iconPlay = createIconHTML("cellulart-play", { type: "div" })
         body.innerHTML = `
             <div class="strokesender-layout">
                 <div class="theme-border strokesender-preview canvas-in-square" style="background-image: url(${dataURL})"></div>
-                <span class="cellulart-skewer strokesender-label send">0</span>
-                <span class="cellulart-skewer strokesender-label gen">0</span>
-                <button class="theme-border hover-button strokesender-button send" style="background-image: ${iconPlay};"></button>
-                <button class="theme-border hover-button strokesender-button gen" style="background-image: ${iconPause};"></button>
+                <span class="cellulart-skewer strokesender-label wiw-emphasis">0</span>
+                <span class="cellulart-skewer strokesender-label wiw-regular">0</span>
+                <button class="theme-border hover-button strokesender-button send">${iconPlay}</button>
+                <button class="theme-border hover-button strokesender-button gen">${iconPause}</button>
             </div>
         `
 
         // Attach event listeners
-        const sendLabel = body.querySelector('.strokesender-label.send') as HTMLElement
-        const genLabel = body.querySelector('.strokesender-label.gen') as HTMLElement
+        const sendLabel = body.querySelector('.strokesender-label.wiw-emphasis') as HTMLElement
+        const genLabel = body.querySelector('.strokesender-label.wiw-regular') as HTMLElement
         const sendBtn = body.querySelector('.strokesender-button.send') as HTMLElement
         const genBtn = body.querySelector('.strokesender-button.gen') as HTMLElement
+        // const [ _, sendLabel, genLabel, sendBtn, genBtn ] = body.firstElementChild!.children
 
         const abort = new AbortController()
         let shapesSentCount = 0
@@ -193,16 +193,14 @@ export class StrokeSender extends EventListening(EventTarget) {
             },
             { signal: abort.signal }
         );
-        this.addEventListener(
-            "queuestatechange", 
+        buffer.addEventListener(
+            "setstrokesending", 
             (event: Event) => {
-                const { queue, paused } = (event as QueueStateChangeEvent).detail
-                const newIsPaused = queue != buffer || paused === true
+                const newIsPaused = (event as CustomEvent<boolean>).detail
 
-                Console.log("Send " + (newIsPaused ? "pause" : "play"), 'Geom')
-                sendBtn.style.backgroundImage = newIsPaused ? iconPlay : iconPause 
-            },
-            { signal: abort.signal }
+                Console.log("Send " + (newIsPaused ? "pause" : "play"), 'StrokeSender')
+                sendBtn.innerHTML = newIsPaused ? iconPlay : iconPause 
+            }
         )
 
         // Send label
@@ -231,8 +229,8 @@ export class StrokeSender extends EventListening(EventTarget) {
                     shapeGenerationPaused = newIsPaused
 
                     console.log("Gen " + (newIsPaused ? "pause" : "play"))
-                    genBtn.style.backgroundImage = newIsPaused ? iconPlay : iconPause
-                    buffer.setStrokeGeneration(newIsPaused)
+                    genBtn.innerHTML = newIsPaused ? iconPlay : iconPause
+                    buffer.setStrokeGenerationPaused(newIsPaused)
                 },
                 { signal: abort.signal }
             )
@@ -268,44 +266,32 @@ export class StrokeSender extends EventListening(EventTarget) {
 
     private removeQueue(buffer: StrokeBuffer) {
         if (this.currentQueue == buffer) {
-            this.stop()
+            buffer.setStrokeSendingPaused(true)
+            this.currentQueue = null
+            this.paused = true
             // Possible race condition with trySend. Look carefully later
         }
         // this.queues.delete(buffer)
-        this.dispatchQueueStateChangeEvent()
     }
     // 5. Manual pause/resume control
-    private ifActivePause() {
-        if (!this.paused) {
-            this.paused = true
-            this.dispatchQueueStateChangeEvent()
-        }
-    }
-    private pause(buffer: StrokeBuffer) { 
-        if (this.currentQueue != buffer) { 
+    private pause(buffer: StrokeBuffer | null) { 
+        if (this.paused || buffer == null || this.currentQueue != buffer) { 
             return
         }
         this.paused = true; 
-        this.dispatchQueueStateChangeEvent()
+        buffer.setStrokeSendingPaused(true)
     }
     private resumeQueue(buffer: StrokeBuffer) {
+        if (!this.paused && this.currentQueue == buffer) { 
+            return
+        }
+        if (this.currentQueue != buffer) {
+            this.currentQueue?.setStrokeSendingPaused(true)
+        }
         this.currentQueue = buffer
         this.paused = false
-        this.dispatchQueueStateChangeEvent()
+        buffer.setStrokeSendingPaused(false)
         this.trySend()
-    }
-    private dispatchQueueStateChangeEvent() {
-        this.dispatchEvent(new CustomEvent('queuestatechange', {
-            detail: {
-                queue: this.currentQueue,
-                paused: this.paused
-            }
-        }) as QueueStateChangeEvent)
-    }
-
-    private stop() {
-        this.currentQueue = null
-        this.paused = true
     }
 
     // 4. Throttling logic and send
@@ -325,7 +311,11 @@ export class StrokeSender extends EventListening(EventTarget) {
                 return
             }
             
-            this.socket.post('sendStroke', stroke);
+            this.socket.post('sendStroke', {
+                t: this.globalGame.currentTurn - 1,
+                d: 1,
+                v: stroke
+            } as OutboundGarticStroke);
             this.throttleReady = false;
 
             setTimeout(() => {
