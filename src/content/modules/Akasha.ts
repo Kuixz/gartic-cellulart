@@ -440,6 +440,12 @@ export class Akasha extends CellulartModule {
         }
       }
     )
+    buffer.addEventListener(
+      "close",
+      () => {
+        this.whileSendingBlockStrokes(true)
+      }
+    )
   }
   private showUploadingRecordPreview(record: AkashicRecord, drawContainer: HTMLElement) {
     if (this.underlaidRecords.has(record)) { 
