@@ -1,10 +1,10 @@
 // const dogSrc: string = 'https://media.tenor.com/fej4_qoxdHYAAAAM/cute-puppy.gif'
 import { 
     Phase, Console, Converter, GarticXHRData, 
-    Keybinder, Keybind, SHAuth,
+    Keybinder, SHAuth,
     Socket, Xhr,
     // IAuth, SHAuth as SHAuth, 
-    IShelf, Shelf,
+    Shelf,
     setAttributes, setParent, configChildTrunk,
     GarticUser,
     modeParameterDefaults,
@@ -16,14 +16,15 @@ import {
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry } from "./modules"
 import { Red, Debug } from "./metamodules"
 import { 
-    ModuleLike, CellulartModule, Metamodule,
+    ModuleArgs, CellulartModule, Metamodule,
     ModuleChamber, MetaChamber
 } from "./modules/CellulartModule"
 import { createButton, createModuleButton } from "./components"
 
 class Controller { 
     // static name: Controller
-    game: BaseGame
+    public game: BaseGame
+    public socket: Socket
     menu: HTMLElement | undefined // [C1]
     liveModules: CellulartModule[] = []
     liveMetamodules: Metamodule[] = []
@@ -31,43 +32,44 @@ class Controller {
     auth: SHAuth /*IAuth*/ // = new SHAuth(new Shelf())
 
     constructor(
-        game: BaseGame,
         modules: ModuleChamber, 
         metamodules: MetaChamber,
     ) {
-        this.game = game;
+        this.game = new BaseGame();
+        this.socket = new Socket(this.game);
 
-        Socket.init()
         Xhr.init()
         Keybinder.init()
 
         this.auth = new SHAuth(new Shelf())
         this.initPopupAuth()
 
-        this.createMenu(modules, metamodules)
+        this.createMenu({ 
+            game: this.game, 
+            socket: this.socket 
+        }, modules, metamodules)
     }
-    enterLobby() {
+    onlobbyenter() {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ENTER_LOBBY))
     }
-    roundStart() {
+    onroundenter() {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ENTER_ROUND))
     }
-    mutation(oldPhase: Phase, data: TransitionData | null, newPhase: Phase) {
+    onphasechange(oldPhase: Phase, data: TransitionData | null, newPhase: Phase) {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.PHASE_CHANGE, { 
             detail: { oldPhase, data, newPhase } 
         }))
     }
-    patchReconnect(data: GarticXHRData) {
+    onreconnect(data: GarticXHRData) {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.RECONNECT, { detail: data }))
     }
-    albumChange(data: AlbumChangeData) {
+    onalbumchange(data: AlbumChangeData) {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ALBUM_CHANGE, { detail: data }))
     }
-    roundEnd() {
-        Socket.roundEnd()
+    onroundleave() {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_ROUND))
     }
-    exitLobby() {
+    onlobbyleave() {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.LEAVE_LOBBY))
     }
 
@@ -85,6 +87,7 @@ class Controller {
     unhide() {}
     async createMenu(  // TODO separate into two functions: initialize ([], [], []) and createMenu([], [])
         // auxmodules: AuxChamber,
+        moduleArgs: ModuleArgs,
         modules: ModuleChamber, 
         metamodules: MetaChamber,
     ){  // TODO don't initalize all immediately, maybe? because some people will never use the RED mode
@@ -109,7 +112,7 @@ class Controller {
             },
         ))
         modules.forEach((modTemplate: typeof CellulartModule) => { 
-            const mod = new (modTemplate as new(globalGame: BaseGame) => CellulartModule)(this.game)
+            const mod = new (modTemplate as new(moduleArgs: ModuleArgs) => CellulartModule)(moduleArgs)
             this.liveModules.push(mod)
 
             const newButton = createModuleButton(mod)
@@ -157,25 +160,24 @@ class Controller {
 
 class Observer { 
     // static name: string = "Observer"
-    game: BaseGame
     content: Element | undefined
+    targetBook : Element | null = null
     controller: Controller
     onEntryXHR: GarticXHRData | undefined
     transitionData: TransitionData | null = null;
     
-    constructor(game: BaseGame, controller: Controller) {
-        this.game = game
+    constructor(controller: Controller) {
         this.controller = controller;
-        Socket.addMessageListener('socketIncoming', this.deduceSettingsFromSocket.bind(this))
+        this.controller.socket.addEventListener('socketIncoming', this.deduceSettingsFromSocket.bind(this))
         Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR.bind(this))
     }
     executePhaseTransition(newPhase: Phase): void {
         // Set variables
-        const oldPhase = this.game.currentPhase
-        this.game.currentPhase = newPhase
+        const oldPhase = this.controller.game.currentPhase
+        this.controller.game.currentPhase = newPhase
         Console.log(`Transitioned to ${newPhase}`, "Observer")
 
-        this.game.currentTurn = (() => {
+        this.controller.game.currentTurn = (() => {
             if (["first", "draw", "write", "memory", "mod"].includes(newPhase)) {
                 const step = document.querySelector(".step")
                 if (!step) { Console.warn("Could not find turn counter", "Observer"); return -1 }
@@ -193,49 +195,51 @@ class Observer {
         const outOfGame = (phase: Phase) => phase == "start" || phase == "lobby"
 
         // Handle transitions
-        if (oldPhase == "start")                         { this.enterLobby() }
-        if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.roundStart(); }
+        if (oldPhase == "start")                         { this.onlobbyenter() }
+        if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.onroundenter(); }
 
-        if (!outOfGame(newPhase))                        { this.mutation(oldPhase, this.transitionData, newPhase) }
-        if (oldPhase == "start" && !outOfGame(newPhase))  { this.patchReconnect(); } // Bypassing lobby phase means a reconnection.
+        if (!outOfGame(newPhase))                        { this.onphasechange(oldPhase, this.transitionData, newPhase) }
+        if (oldPhase == "start" && !outOfGame(newPhase))  { this.onreconnect(); } // Bypassing lobby phase means a reconnection.
         
         // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
-        if (!outOfGame(oldPhase) && outOfGame(newPhase))  { this.roundEnd(); }  
-        if (newPhase == "start")                         { this.exitLobby(); } 
+        if (!outOfGame(oldPhase) && outOfGame(newPhase))  { this.onroundleave(); }  
+        if (newPhase == "start")                         { this.onlobbyleave(); } 
 
         if (newPhase == "waiting")                       { this.waiting(); } 
 
         this.transitionData = null;
     }
-    enterLobby() {
-        this.controller.enterLobby() 
+    onlobbyenter() {
+        this.controller.onlobbyenter() 
     }
-    roundStart() {
-        this.controller.roundStart()
+    onroundenter() {
+        this.controller.onroundenter()
     }
-    patchReconnect() {
+    onreconnect() {
         if (this.onEntryXHR === undefined) { 
             Console.warn("Trying to patch data for reconnection but no XHR data found")
             return 
         }
         // Expected to patch Socket stroke data here as well
-        this.controller.patchReconnect(this.onEntryXHR)
+        this.controller.onreconnect(this.onEntryXHR)
         delete this.onEntryXHR
     }
-    mutation(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
-        this.controller.mutation(oldPhase, transitionData, newPhase)
+    onphasechange(oldPhase: Phase, transitionData: TransitionData | null, newPhase: Phase) {
+        this.controller.onphasechange(oldPhase, transitionData, newPhase)
     }
-    roundEnd() {
-        this.controller.roundEnd() 
+    onalbumchange(element: HTMLElement, data: any) {
+        this.controller.onalbumchange({ element, data })
     }
-    exitLobby() {
-        this.controller.exitLobby() 
+    onroundleave() {
+        this.targetBook = null
+        this.controller.onroundleave() 
+    }
+    onlobbyleave() {
+        this.controller.onlobbyleave() 
     }
 
     waiting() { Console.log("Waiting", "Observer") } // [C4]
-    // reconnect() {
-        
-    // },
+
     contentObserver: MutationObserver = new MutationObserver((records) => {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
         if(records[0].addedNodes.length <= 0) { return; }
@@ -243,11 +247,10 @@ class Observer {
         const newPhaseElement = this.content?.firstChild?.firstChild
         if (!newPhaseElement) { Console.warn("Cannot find element to read game phase from", "Observer"); return }
 
-        const newPhaseString = (newPhaseElement as Element).classList.item(1)
-        if (!newPhaseString) { Console.warn("Cannot read game phase from selected element"); return }
+        const newPhase = (newPhaseElement as Element).classList.item(1) as Phase
+        if (!newPhase) { Console.warn("Cannot read game phase from selected element"); return }
 
-        this.executePhaseTransition(newPhaseString as Phase)
-
+        this.executePhaseTransition(newPhase)
         // console.log('content fired')
     })
     observe(selector: string) {
@@ -271,40 +274,40 @@ class Observer {
     deduceSettingsFromXHR(data: GarticXHRData) {
         Console.log(`Deducing from XHR ${JSON.stringify(data)}`, "Observer")
 
-        this.game.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
-        this.game.user = data.user
-        this.game.user.avatar = "https://garticphone.com/images/avatar/" + data.user.avatar + ".svg"
+        this.controller.game.host = data.users.find((x: GarticUser) => x.owner === true)!.nick
+        this.controller.game.user = data.user
+        this.controller.game.user.avatar = "https://garticphone.com/images/avatar/" + data.user.avatar + ".svg"
 
-        this.game.players = data.users
-        for (const player of this.game.players) {
+        this.controller.game.players = data.users
+        for (const player of this.controller.game.players) {
             player.avatar = "https://garticphone.com/images/avatar/" + player.avatar + ".svg"
         }
-        this.game.turnsIndex = data.configs.turns
-        this.game.flowIndex = data.configs.first
-        this.game.speedIndex = data.configs.speed
-        this.game.keepIndex = data.configs.keep
+        this.controller.game.turnsIndex = data.configs.turns
+        this.controller.game.flowIndex = data.configs.first
+        this.controller.game.speedIndex = data.configs.speed
+        this.controller.game.keepIndex = data.configs.keep
 
         if (data.screen != 1) {  // Bad solution to this two-systems thing we have going on. 
             this.onEntryXHR = data
         }
     }
-    deduceSettingsFromSocket(data: [2, EMessagePurpose, any]) {  
-        const [ _, messageType, messageData ] = data
+    deduceSettingsFromSocket(event: Event) {  
+        const { detail: [ _, messageType, messageData ] } = event as CustomEvent
 
         switch (messageType) {
             case EMessagePurpose.USER_JOIN: {  // New user joins
                 const newUser = messageData as GarticUser
                 newUser.avatar = "https://garticphone.com/images/avatar/" + newUser.avatar + ".svg"
-                this.game.players.push(newUser)
+                this.controller.game.players.push(newUser)
                 break;
             }
             case EMessagePurpose.USER_LEAVE: {  // Existing user leaves
-                const index = this.game.players.findIndex((user) => user.id === messageData.userLeft)
+                const index = this.controller.game.players.findIndex((user) => user.id === messageData.userLeft)
                 if (index == -1) {
                     Console.warn(`Could not remove user: no user with id ${messageData.userLeft} found`, "Observer")
                     break
                 }
-                this.game.players.splice(index, 1)
+                this.controller.game.players.splice(index, 1)
                 break;
             }
             case EMessagePurpose.TURN_TRANSITION: {
@@ -319,20 +322,24 @@ class Observer {
                 this.patchTransitionData(messageData)
                 break;
             }
+            case EMessagePurpose.GALLERY_SHOW_TURN: {
+                if ((messageData.data === undefined) && (messageData.user !== undefined)) { return }
+                this.onalbumchange(this.getMostRecentExhibit(), messageData.data)
+            }
             case EMessagePurpose.CHANGE_SETTINGS_CUSTOM: {  // Custom settings changed
                 for (const key in messageData) {
                     switch (key) {
                         case 'turns': 
-                            this.game.turnsIndex = messageData[key]
+                            this.controller.game.turnsIndex = messageData[key]
                             break
                         case 'speed': 
-                            this.game.speedIndex = messageData[key]
+                            this.controller.game.speedIndex = messageData[key]
                             break
                         case 'flow': 
-                            this.game.flowIndex = messageData[key]
+                            this.controller.game.flowIndex = messageData[key]
                             break
                         case 'keep': 
-                            this.game.keepIndex = messageData[key]
+                            this.controller.game.keepIndex = messageData[key]
                             break
                     }
                 }
@@ -340,23 +347,32 @@ class Observer {
             }
             case EMessagePurpose.CHANGE_SETTINGS_PRESET: {  // Default settings changed
                 const modeParameters = Converter.modeIndexToParameters(messageData)
-                this.game.turnsIndex = modeParameters.turns
-                this.game.speedIndex = modeParameters.speed
-                this.game.flowIndex = modeParameters.flow
-                this.game.keepIndex = modeParameters.keep
+                this.controller.game.turnsIndex = modeParameters.turns
+                this.controller.game.speedIndex = modeParameters.speed
+                this.controller.game.flowIndex = modeParameters.flow
+                this.controller.game.keepIndex = modeParameters.keep
                 break;
             }
             case EMessagePurpose.CHANGE_SETTINGS_DEFAULT: {  // Return to normal settings when changing tabs
                 const modeParameters = modeParameterDefaults
-                this.game.turnsIndex = modeParameters.turns
-                this.game.speedIndex = modeParameters.speed
-                this.game.flowIndex = modeParameters.flow
-                this.game.keepIndex = modeParameters.keep
+                this.controller.game.turnsIndex = modeParameters.turns
+                this.controller.game.speedIndex = modeParameters.speed
+                this.controller.game.flowIndex = modeParameters.flow
+                this.controller.game.keepIndex = modeParameters.keep
                 break;
             }
         }
     }
-    patchTransitionData(data: any) {
+
+    private getMostRecentExhibit(): HTMLElement {
+        if (this.targetBook === null) {
+            this.targetBook = document.querySelector('.timeline .scrollElements')
+        }
+
+        const children = this.targetBook!.children
+        return children[children.length - 1] as HTMLElement
+    }
+    private patchTransitionData(data: any) {
         this.transitionData = data
     }
 }
@@ -366,8 +382,8 @@ function main() {
     const metamodules = [Red, Debug]
 
     const game = new BaseGame()
-    const controller = new Controller(game, modules, metamodules)
-    const observer = new Observer(game, controller)
+    const controller = new Controller(modules, metamodules)
+    const observer = new Observer(controller)
     observer.observe("#content")
 
     // document.querySelector(".side").remove() // lol

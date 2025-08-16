@@ -3,7 +3,7 @@ import { Console } from "./Console"
 export type Phase = "start" | "lobby" | "draw" | "write" | "memory" | "book" | "first" | "mod" | "waiting"
 export type TransitionData = { turnNum: number, screen: number, previous: any }
 
-type GarticStroke = [number, number, [string, number, number], ...[number, number]]
+export type GarticStroke = [number, number, [string, number, number], ...[number, number]]
 export type GarticUser = {
     nick:   string
     avatar: string
@@ -63,6 +63,7 @@ export enum EMessagePurpose {
     DECLARE_DONE = 15,
     CHANGE_SETTINGS_CUSTOM = 18,
     GALLERY_END = 20,
+    GALLERY_START = 23,
     ROUND_END = 24,
     CHANGE_SETTINGS_PRESET = 26,
     CHANGE_SETTINGS_DEFAULT = 27,

@@ -1,15 +1,14 @@
 import { 
-    BaseGame,
     Console, 
     WhiteSettingsBelt, 
     CellulartEventType, PhaseChangeEvent,
-    Socket, 
     GarticUser,
     setParent,
     Inwindow,
-    GarticXHRData
+    GarticXHRData,
+    EMessagePurpose
 } from "../foundation"
-import { CellulartModule } from "./CellulartModule"
+import { ModuleArgs, CellulartModule } from "./CellulartModule"
 
 /* ----------------------------------------------------------------------
   *                                 Scry 
@@ -25,8 +24,8 @@ export class Scry extends CellulartModule { // [F2]
     indicatorTray: HTMLDivElement  
     indicators: Record<number, HTMLElement> = {}
 
-    constructor(globalGame: BaseGame) {
-        super(globalGame, [
+    constructor(moduleArgs: ModuleArgs) {
+        super(moduleArgs, [
             CellulartEventType.ENTER_ROUND,
             CellulartEventType.PHASE_CHANGE,
             CellulartEventType.RECONNECT,
@@ -47,12 +46,11 @@ export class Scry extends CellulartModule { // [F2]
         setParent(indicatorTray, scryWIW.body)
         this.indicatorTray = indicatorTray
 
-        Socket.addMessageListener("lobbySettings", (data: [number, number, any]) => {
-            const messageType = data[1]
-            const messageData = data[2]
+        moduleArgs.socket.addEventListener("socketIncoming", (event: Event) => {
+            const { detail: [ _, messageType, messageData ] } = event as CustomEvent
 
-            if (messageType != 15) { return }
-            const player = globalGame.players.find((user) => user.id === messageData.user)
+            if (messageType != EMessagePurpose.DECLARE_DONE) { return }
+            const player = this.globalGame.players.find((user) => user.id === messageData.user)
             if (player) {
                 this.updateCompletion(player, messageData.ready)
             } else {
