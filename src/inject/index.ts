@@ -63,31 +63,28 @@ class SocketInterceptor extends Interceptor {
     strokeCount: number = 0
 
     proxy() {
-        const registerWS = this.registerWS.bind(this)
-        const interceptOutgoing = this.interceptOutgoing.bind(this)
+        const registerWS = this.registerWS.bind(this);
+        const interceptOutgoing = this.interceptOutgoing.bind(this);       
+        const wsSend = window.WebSocket.prototype.send;
 
-        class M extends WebSocket {
-            constructor(url: string | URL, protocols?: string | string[]) {
-                super(url, protocols)
-                registerWS(this)
-            }
-
-            public send(data: Sendable): void {
-                const modifiedData = interceptOutgoing(data.toString())
-                if (!modifiedData) { 
-                    console.log("short circuit")
-                    return
-                }
-
-                super.send(modifiedData)
-            }
-
-            public expressSend(data: Sendable): void {
-                super.send(data)
-            }
+        window.WebSocket.prototype.expressSend = function() {
+            return wsSend.apply(this, arguments as any); 
         }
-        window.WebSocket = M
+        window.WebSocket.prototype.send = function(data) {
+            registerWS(this)
+
+            const modifiedData = interceptOutgoing(data.toString())
+            if (!modifiedData) { 
+                console.log("short circuit")
+                return
+            }
+            const args = arguments
+            args[0] = modifiedData
     
+            return wsSend.apply(this, args as any);
+        }; 
+
+
         console.log("[Cellulart] WebSocket proxified")
     }
     private onroundleave() {
@@ -146,7 +143,7 @@ class SocketInterceptor extends Interceptor {
     }
     private registerWS(ws: WebSocket) {
         // console.log(this)
-        // if (this.currentWSOpen()) { return }
+        if (this.currentWSOpen()) { return }
         this.currentWS = ws
         ws.addEventListener(
             'message', 
