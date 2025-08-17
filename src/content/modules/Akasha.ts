@@ -179,32 +179,25 @@ export class Akasha extends CellulartModule {
 
   private inwindow: Inwindow
   private strokeSender: StrokeSender
-  private activeDownloadButtons: HTMLElement[] = []
   private records: Set<AkashicRecord> = new Set()
   private underlaidRecords: Set<AkashicRecord> = new Set()
   private activeRecord: AkashicRecord | null = null
   private eta!: HTMLElement
-  private loadingScreen: HTMLElement
 
   constructor(moduleArgs: ModuleArgs) {
     super(moduleArgs, [
-        CellulartEventType.PHASE_CHANGE,
-        CellulartEventType.ALBUM_CHANGE,
-        CellulartEventType.TIMELINE_CHANGE,
+      CellulartEventType.PHASE_CHANGE,
+      CellulartEventType.ALBUM_CHANGE,
+      CellulartEventType.TIMELINE_CHANGE,
     ])
 
     this.strokeSender = moduleArgs.strokeSender
     this.inwindow = this.constructInwindow()
-    this.loadingScreen = constructElement({
-      type: "img",
-      class: "akasha-loading",
-    })
 
     document.documentElement.style.setProperty("--akasha-loading-url", `url(${getModuleAsset('akasha-loading.svg')})`)
   }
 
   protected onphasechange(event: PhaseChangeEvent): void {
-    this.activeDownloadButtons = []
     this.underlaidRecords.clear()
 
     const { data, newPhase } = event.detail
@@ -233,22 +226,14 @@ export class Akasha extends CellulartModule {
     const newButton = this.createDownloadButton(canvas, data)
     avatar.appendChild(newButton)
   }
-  protected ontimelinechange(): void {
-    this.activeDownloadButtons = []
-  }
 
   protected adjustSettings(): void {
     this.inwindow.setVisibility(this.isOn())
 
-    if (this.isOn()) {
-      for (const elem of this.activeDownloadButtons) {
-        elem.style.visibility = "initial"
-      }
-    } else {
-      for (const elem of this.activeDownloadButtons) {
-        elem.style.visibility = "hidden"
-      }
-    }
+    document.documentElement.style.setProperty(
+      "--akasha-button-visibility", 
+      this.isOn() ? "initial" : "hidden"
+    )
   }
 
   private constructInwindow(): Inwindow {
@@ -331,7 +316,6 @@ export class Akasha extends CellulartModule {
     const newButton = constructElement({
       type: "div",
       class: "akasha-button-outer hover-button",
-      style: `visibility: ${this.isOn() ? "initial" : "hidden"}`,
     })
     newButton.innerHTML = createIconHTML("cellulart-akasha-download", { type: "div" })
 
@@ -342,8 +326,6 @@ export class Akasha extends CellulartModule {
         // console.log(this.records)
       }
     )
-
-    this.activeDownloadButtons.push(newButton)
 
     return newButton
   }

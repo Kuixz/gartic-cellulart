@@ -1,6 +1,6 @@
-/* :root {
-    --akasha-loading-url: ;
-} */
+:root {
+    --akasha-button-visibility: hidden;
+}
 
 /* Multi-module */
 
@@ -387,6 +387,7 @@ div#scry-indicator-label {
     border-radius: 20%;
 
     cursor: pointer;
+    visibility: var(--akasha-button-visibility);
 
     >div.akasha-button-inner {
         width: 100%; 
