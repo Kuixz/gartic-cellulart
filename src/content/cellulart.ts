@@ -11,7 +11,8 @@ import {
     BaseGame,
     AlbumChangeData,
     CellulartEventType,
-    StrokeSender
+    StrokeSender,
+    PhaseChangeEvent
 } from "./foundation"
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry, Akasha } from "./modules"
 import { Red, Debug } from "./metamodules"
@@ -64,13 +65,10 @@ class Controller {
     onroundenter() {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ENTER_ROUND))
     }
-    onphasechange(oldPhase: Phase, data: TransitionData | GarticXHRData | null, newPhase: Phase) {
+    onphasechange(isReconnection: boolean, oldPhase: Phase, data: TransitionData | GarticXHRData | null, newPhase: Phase) {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.PHASE_CHANGE, { 
-            detail: { oldPhase, data, newPhase } 
-        }))
-    }
-    onreconnect(data: GarticXHRData) {
-        this.game.dispatchEvent(new CustomEvent(CellulartEventType.RECONNECT, { detail: data }))
+            detail: { isReconnection, oldPhase, data, newPhase }
+        }) as PhaseChangeEvent)
     }
     onalbumchange(data: AlbumChangeData) {
         this.game.dispatchEvent(new CustomEvent(CellulartEventType.ALBUM_CHANGE, { detail: data }))
@@ -238,14 +236,10 @@ class Observer {
         // this.entryXHR = data
         this.executePhaseTransition(data, "lobby")
 
-        // If not entering to the lobby (1), immediately analyze the DOM and transition again
+        // If not entering to the lobby,
+        // record this XHR transition as though it came from the Socket.
         if (data.screen !== 1) {
-            const newPhaseAndTurn = this.deducePhaseFromDOM()
-            if (newPhaseAndTurn === undefined) {
-                Console.warn("Failed to determine phase from DOM in reconnection transition", "Observer")
-                return
-            }
-            this.executePhaseTransition(data, newPhaseAndTurn[0])
+            this.recordSocketTransition(data)
         }
     }
     private deduceSettingsFromSocket(event: Event) {  
@@ -408,9 +402,10 @@ class Observer {
         if (oldPhase == "start")                         { this.onlobbyenter(); }
         if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.onroundenter(); }
 
-        if (!outOfGame(newPhase))                        { this.onphasechange(oldPhase, transitionData, newPhase) }
-        // if (oldPhase == "start" && participating(newPhase)) { this.onreconnect(transitionData); } // Bypassing lobby phase means a reconnection.
-        // if (oldPhase == "start" && newPhase == "waiting"){ this.waiting(); } // TODO: Overlaps with phasechange?
+        if (!outOfGame(newPhase)) { 
+            const isReconnection = transitionData !== null && "users" in transitionData
+            this.onphasechange(isReconnection, oldPhase, transitionData, newPhase) 
+        }
         
         // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
         if (!outOfGame(oldPhase) && outOfGame(newPhase)) { this.onroundleave(); }  
@@ -423,11 +418,8 @@ class Observer {
     protected onroundenter() {
         this.controller.onroundenter()
     }
-    protected onreconnect(entryXHR: GarticXHRData) {
-        this.controller.onreconnect(entryXHR)
-    }
-    protected onphasechange(oldPhase: Phase, transitionData: TransitionData | GarticXHRData | null, newPhase: Phase) {
-        this.controller.onphasechange(oldPhase, transitionData, newPhase)
+    protected onphasechange(isReconnection: boolean, oldPhase: Phase, transitionData: TransitionData | GarticXHRData | null, newPhase: Phase) {
+        this.controller.onphasechange(isReconnection, oldPhase, transitionData, newPhase)
     }
     protected onalbumchange(element: HTMLElement, data: any) {
         this.controller.onalbumchange({ element, data })
