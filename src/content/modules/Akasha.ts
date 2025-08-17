@@ -428,7 +428,7 @@ export class Akasha extends CellulartModule {
           return
         }
 
-        this.whileSendingBlockStrokes(paused && strokesSent < strokesTotal, drawContainer)
+        this.whileSendingBlockStrokes(paused || strokesSent == strokesTotal, drawContainer)
         this.showUploadingRecordPreview(record, drawContainer)
       }
     )
