@@ -204,7 +204,7 @@ export class Akasha extends CellulartModule {
     if (newPhase != 'memory') {
       return
     }
-    if (!(data.previous.data instanceof Array)) {
+    if (!(data.previous) || !(data.previous.data instanceof Array)) {
       return
     }
 

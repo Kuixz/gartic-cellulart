@@ -99,7 +99,7 @@ export class StrokeSender extends EventListening() {
         if (this.shouldClearStrokesOnMutation) {
             this.socket.post('clearStrokes')
         } else {
-            if (data.previous.data === undefined) {
+            if (data.previous === undefined || data.previous.data === undefined) {
                 Console.warn("Strokes need to be preserved but no strokes were patched", "StrokeSender")
             } else {
                 if (data.previous.data instanceof Array) {
