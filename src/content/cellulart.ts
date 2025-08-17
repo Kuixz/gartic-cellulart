@@ -181,72 +181,6 @@ class Observer {
         this.controller.socket.addEventListener('socketIncoming', this.deduceSettingsFromSocket.bind(this))
         Xhr.addMessageListener('lobbySettings', this.deduceSettingsFromXHR.bind(this))
     }
-    protected onlobbyenter() {
-        this.controller.onlobbyenter() 
-    }
-    protected onroundenter() {
-        this.controller.onroundenter()
-    }
-    protected onreconnect(entryXHR: GarticXHRData) {
-        this.controller.onreconnect(entryXHR)
-    }
-    protected onphasechange(oldPhase: Phase, transitionData: TransitionData | GarticXHRData | null, newPhase: Phase) {
-        this.controller.onphasechange(oldPhase, transitionData, newPhase)
-    }
-    protected onalbumchange(element: HTMLElement, data: any) {
-        this.controller.onalbumchange({ element, data })
-    }
-    protected ontimelinechange() {
-        this.controller.ontimelinechange()
-    }
-    protected onroundleave() {
-        this.targetBook = null
-        this.controller.onroundleave() 
-    }
-    protected onlobbyleave() {
-        this.controller.onlobbyleave() 
-    }
-
-    private observerTransition: [Phase, number] | null = null;
-    private socketTransition: TransitionData | null = null;
-    private recordObserverTransition(observerTransition: [Phase, number]) {
-        this.observerTransition = observerTransition
-        this.attemptPhaseTransition()
-    }
-    private recordSocketTransition(socketTransition: TransitionData) {
-        this.socketTransition = socketTransition
-        this.attemptPhaseTransition()
-    }
-    private attemptPhaseTransition() {
-        if (
-            this.observerTransition 
-            && this.socketTransition
-            && this.socketTransition.turnNum + 1 == this.observerTransition[1]
-        ) {
-            this.executePhaseTransition(this.socketTransition, this.observerTransition[0])
-        }
-    }
-    private executePhaseTransition(transitionData: null, newPhase: "start" | "waiting" | "book"): void
-    private executePhaseTransition(transitionData: GarticXHRData | null, newPhase: "lobby"): void
-    private executePhaseTransition(transitionData: TransitionData, newPhase: Phase): void
-    private executePhaseTransition(transitionData: GarticXHRData | TransitionData | null, newPhase: Phase): void {
-        // Set variables
-        const oldPhase = this.controller.game.currentPhase
-        this.controller.game.currentPhase = newPhase
-        Console.log(`Transitioned to ${newPhase}`, "Observer")
-
-        // Handle transitions
-        if (oldPhase == "start")                         { this.onlobbyenter(); }
-        if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.onroundenter(); }
-
-        if (!outOfGame(newPhase))                        { this.onphasechange(oldPhase, transitionData, newPhase) }
-        // if (oldPhase == "start" && participating(newPhase)) { this.onreconnect(transitionData); } // Bypassing lobby phase means a reconnection.
-        // if (oldPhase == "start" && newPhase == "waiting"){ this.waiting(); } // TODO: Overlaps with phasechange?
-        
-        // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
-        if (!outOfGame(oldPhase) && outOfGame(newPhase)) { this.onroundleave(); }  
-        if (newPhase == "start")                         { this.onlobbyleave(); } 
-    }
 
     contentObserver: MutationObserver = new MutationObserver((records) => {
         // The observer fires twice per phase change: once the fade effect starts and once when the fade effect stops. Hence:
@@ -441,6 +375,74 @@ class Observer {
         return [newPhase, currentTurn]
     }
 
+
+    private observerTransition: [Phase, number] | null = null;
+    private socketTransition: TransitionData | null = null;
+    private recordObserverTransition(observerTransition: [Phase, number]) {
+        this.observerTransition = observerTransition
+        this.attemptPhaseTransition()
+    }
+    private recordSocketTransition(socketTransition: TransitionData) {
+        this.socketTransition = socketTransition
+        this.attemptPhaseTransition()
+    }
+    private attemptPhaseTransition() {
+        if (
+            this.observerTransition 
+            && this.socketTransition
+            && this.socketTransition.turnNum + 1 == this.observerTransition[1]
+        ) {
+            this.executePhaseTransition(this.socketTransition, this.observerTransition[0])
+        }
+    }
+    private executePhaseTransition(transitionData: null, newPhase: "start" | "waiting" | "book"): void
+    private executePhaseTransition(transitionData: GarticXHRData | null, newPhase: "lobby"): void
+    private executePhaseTransition(transitionData: TransitionData, newPhase: Phase): void
+    private executePhaseTransition(transitionData: GarticXHRData | TransitionData | null, newPhase: Phase): void {
+        // Set variables
+        const oldPhase = this.controller.game.currentPhase
+        this.controller.game.currentPhase = newPhase
+        Console.log(`Transitioned to ${newPhase}`, "Observer")
+
+        // Handle transitions
+        if (oldPhase == "start")                         { this.onlobbyenter(); }
+        if (outOfGame(oldPhase) && !outOfGame(newPhase)) { this.onroundenter(); }
+
+        if (!outOfGame(newPhase))                        { this.onphasechange(oldPhase, transitionData, newPhase) }
+        // if (oldPhase == "start" && participating(newPhase)) { this.onreconnect(transitionData); } // Bypassing lobby phase means a reconnection.
+        // if (oldPhase == "start" && newPhase == "waiting"){ this.waiting(); } // TODO: Overlaps with phasechange?
+        
+        // TODO IIRC there was at least one module that relied on backToLobby being called on first enter. Check it
+        if (!outOfGame(oldPhase) && outOfGame(newPhase)) { this.onroundleave(); }  
+        if (newPhase == "start")                         { this.onlobbyleave(); } 
+    }
+
+    protected onlobbyenter() {
+        this.controller.onlobbyenter() 
+    }
+    protected onroundenter() {
+        this.controller.onroundenter()
+    }
+    protected onreconnect(entryXHR: GarticXHRData) {
+        this.controller.onreconnect(entryXHR)
+    }
+    protected onphasechange(oldPhase: Phase, transitionData: TransitionData | GarticXHRData | null, newPhase: Phase) {
+        this.controller.onphasechange(oldPhase, transitionData, newPhase)
+    }
+    protected onalbumchange(element: HTMLElement, data: any) {
+        this.controller.onalbumchange({ element, data })
+    }
+    protected ontimelinechange() {
+        this.controller.ontimelinechange()
+    }
+    protected onroundleave() {
+        this.targetBook = null
+        this.controller.onroundleave() 
+    }
+    protected onlobbyleave() {
+        this.controller.onlobbyleave() 
+    }
+    
     private getMostRecentExhibit(): HTMLElement {
         if (this.targetBook === null) {
             this.targetBook = document.querySelector('.timeline .scrollElements')
