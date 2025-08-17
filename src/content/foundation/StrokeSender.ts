@@ -31,7 +31,7 @@ export class StrokeBuffer extends EventTarget {
     this.dispatchEvent(
       new CustomEvent("enqueuestroke", {
         detail: stroke,
-      }),
+      })
     );
   }
 
@@ -41,7 +41,7 @@ export class StrokeBuffer extends EventTarget {
       this.dispatchEvent(
         new CustomEvent("dequeuestroke", {
           detail: stroke,
-        }),
+        })
       );
     }
     return stroke;
@@ -55,7 +55,7 @@ export class StrokeBuffer extends EventTarget {
     this.dispatchEvent(
       new CustomEvent("setstrokegeneration", {
         detail: paused,
-      }),
+      })
     );
   }
 
@@ -63,13 +63,13 @@ export class StrokeBuffer extends EventTarget {
     this.dispatchEvent(
       new CustomEvent("setstrokesending", {
         detail: paused,
-      }),
+      })
     );
   }
 
   public addEventListener(
     type: string,
-    callback: EventListenerOrEventListenerObject | null,
+    callback: EventListenerOrEventListenerObject | null
   ): void {
     super.addEventListener(type, callback, {
       signal: this.abortController.signal,
@@ -89,7 +89,7 @@ export class StrokeSender extends EventListening() {
 
   constructor(
     private socket: Socket,
-    private globalGame: BaseGame,
+    private globalGame: BaseGame
   ) {
     super();
 
@@ -105,7 +105,7 @@ export class StrokeSender extends EventListening() {
 
   protected onroundenter() {
     this.shouldClearStrokesOnMutation = Converter.continuesIndexToBoolean(
-      this.globalGame.keepIndex,
+      this.globalGame.keepIndex
     );
   }
 
@@ -132,7 +132,7 @@ export class StrokeSender extends EventListening() {
       if (data.previous === undefined || data.previous.data === undefined) {
         Console.warn(
           "Strokes need to be preserved but no strokes were patched",
-          "StrokeSender",
+          "StrokeSender"
         );
       } else {
         if (data.previous.data instanceof Array) {
@@ -147,7 +147,7 @@ export class StrokeSender extends EventListening() {
   public createSendingInwindow(
     dataURL: string,
     fixedQueue?: GarticStroke[],
-    options?: InwindowOptions,
+    options?: InwindowOptions
   ): {
     inwindow: Inwindow;
     buffer: StrokeBuffer;
@@ -185,20 +185,21 @@ export class StrokeSender extends EventListening() {
 
     // Attach event listeners
     const sendLabel = body.querySelector(
-      ".strokesender-label.wiw-emphasis",
+      ".strokesender-label.wiw-emphasis"
     ) as HTMLElement;
     const genLabel = body.querySelector(
-      ".strokesender-label.wiw-regular",
+      ".strokesender-label.wiw-regular"
     ) as HTMLElement;
     const sendBtn = body.querySelector(
-      ".strokesender-button.send",
+      ".strokesender-button.send"
     ) as HTMLElement;
     const genBtn = body.querySelector(
-      ".strokesender-button.gen",
+      ".strokesender-button.gen"
     ) as HTMLElement;
     // const [ _, sendLabel, genLabel, sendBtn, genBtn ] = body.firstElementChild!.children
 
     const abort = new AbortController();
+    const shapesTotal: number | null = fixedQueue ? fixedQueue.length : null;
     let shapesSentCount = 0;
 
     // Close window: Close channel
@@ -207,7 +208,7 @@ export class StrokeSender extends EventListening() {
       () => {
         buffer.close();
       },
-      { signal: abort.signal },
+      { signal: abort.signal }
     );
     buffer.addEventListener("close", () => {
       this.removeQueue(buffer);
@@ -231,7 +232,7 @@ export class StrokeSender extends EventListening() {
           this.pause(buffer);
         }
       },
-      { signal: abort.signal },
+      { signal: abort.signal }
     );
     buffer.addEventListener("setstrokesending", (event: Event) => {
       const newIsPaused = (event as CustomEvent<boolean>).detail;
@@ -239,8 +240,7 @@ export class StrokeSender extends EventListening() {
       // Console.log("Send " + (newIsPaused ? "pause" : "play"), 'StrokeSender')
       sendBtn.innerHTML = newIsPaused ? iconPlay : iconPause;
 
-      const shouldAllowStrokes =
-        newIsPaused || (fixedQueue && fixedQueue.length == shapesSentCount);
+      const shouldAllowStrokes = newIsPaused || shapesTotal == shapesSentCount;
       this.whileSendingBlockStrokes(shouldAllowStrokes === true);
     });
 
@@ -248,7 +248,7 @@ export class StrokeSender extends EventListening() {
     buffer.addEventListener("dequeuestroke", (_: Event) => {
       // const stroke = (e as CustomEvent<Stroke>).detail
       sendLabel.textContent = (++shapesSentCount).toString();
-      if (fixedQueue && fixedQueue.length == shapesSentCount) {
+      if (shapesTotal == shapesSentCount) {
         this.whileSendingBlockStrokes(true);
       }
     });
@@ -273,7 +273,7 @@ export class StrokeSender extends EventListening() {
           genBtn.innerHTML = newIsPaused ? iconPlay : iconPause;
           buffer.setStrokeGenerationPaused(newIsPaused);
         },
-        { signal: abort.signal },
+        { signal: abort.signal }
       );
 
       // Generate label
@@ -352,12 +352,12 @@ export class StrokeSender extends EventListening() {
 
   private whileSendingBlockStrokes(safeToDraw: boolean) {
     const drawContainer = document.body.querySelector(
-      ".drawingContainer",
+      ".drawingContainer"
     ) as HTMLElement;
     if (!drawContainer) {
       Console.log(
         "Couldn't block strokes: couldn't find canvas",
-        "Strokesender",
+        "Strokesender"
       );
       return;
     }
@@ -374,7 +374,7 @@ export class StrokeSender extends EventListening() {
         constructElement({
           type: "img",
           class: "strokesender-loading",
-        }),
+        })
       );
     }
   }
