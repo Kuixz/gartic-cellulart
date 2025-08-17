@@ -4,6 +4,7 @@ import { Converter, GarticStroke, OutboundGarticStroke } from "./Converter";
 import { BaseGame, CellulartEventType, EventListening, PhaseChangeEvent } from "./Global";
 import { Inwindow, InwindowOptions } from "./Inwindow";
 import { Socket } from "./Socket";
+import { constructElement } from "./Util";
 
 export class StrokeBuffer extends EventTarget {
     private queue: GarticStroke[] = []
@@ -172,6 +173,7 @@ export class StrokeSender extends EventListening() {
             () => { 
                 this.removeQueue(buffer)
                 abort.abort() 
+                this.whileSendingBlockStrokes(true)
                 inwindow.element.remove() 
             }
         )
@@ -181,10 +183,10 @@ export class StrokeSender extends EventListening() {
             "click", 
             () => { 
                 if (this.globalGame.currentPhase != "draw") {
-                    Console.log("Not the right phase - send blocked", "Geom")
+                    Console.log("Not the right phase - send blocked", "StrokeSender")
                     return 
                 }
-                if (this.isPaused) {
+                if (this.paused) {
                     // this.strokeSender.unpause(this.name)
                     this.resumeQueue(buffer)
                 } else {
@@ -198,8 +200,11 @@ export class StrokeSender extends EventListening() {
             (event: Event) => {
                 const newIsPaused = (event as CustomEvent<boolean>).detail
 
-                Console.log("Send " + (newIsPaused ? "pause" : "play"), 'StrokeSender')
+                // Console.log("Send " + (newIsPaused ? "pause" : "play"), 'StrokeSender')
                 sendBtn.innerHTML = newIsPaused ? iconPlay : iconPause 
+
+                const shouldAllowStrokes = newIsPaused || (fixedQueue && fixedQueue.length == shapesSentCount)
+                this.whileSendingBlockStrokes(shouldAllowStrokes === true)
             }
         )
 
@@ -209,6 +214,9 @@ export class StrokeSender extends EventListening() {
             (_: Event) => {
                 // const stroke = (e as CustomEvent<Stroke>).detail
                 sendLabel.textContent = (++shapesSentCount).toString()
+                if (fixedQueue && fixedQueue.length == shapesSentCount) {
+                    this.whileSendingBlockStrokes(true)
+                }
             }
         )
 
@@ -228,7 +236,7 @@ export class StrokeSender extends EventListening() {
                     const newIsPaused = !shapeGenerationPaused
                     shapeGenerationPaused = newIsPaused
 
-                    console.log("Gen " + (newIsPaused ? "pause" : "play"))
+                    // console.log("Gen " + (newIsPaused ? "pause" : "play"))
                     genBtn.innerHTML = newIsPaused ? iconPlay : iconPause
                     buffer.setStrokeGenerationPaused(newIsPaused)
                 },
@@ -250,19 +258,6 @@ export class StrokeSender extends EventListening() {
             buffer,
         }
     }
-
-    // 2. Queue management
-    // private enqueueStroke(queueID: string, stroke: Stroke) {
-    //     if (!this.queues.has(queueID)) {
-    //         this.queues.set(queueID, []);
-    //     }
-    //     this.queues.get(queueID)!.push(stroke);
-    //     this.trySend();
-    // }
-    // private enqueueStrokes(queueID: string, strokes: Stroke[]) {
-    //     this.queues.set(queueID, strokes);
-    //     this.trySend();
-    // }
 
     private removeQueue(buffer: StrokeBuffer) {
         if (this.currentQueue == buffer) {
@@ -325,7 +320,26 @@ export class StrokeSender extends EventListening() {
         }
     }
 
-    get isPaused() {
-        return this.paused
+    private whileSendingBlockStrokes(safeToDraw: boolean) {
+        const drawContainer = document.body.querySelector(".drawingContainer") as HTMLElement
+        if (!drawContainer) {
+          Console.log("Couldn't block strokes: couldn't find canvas", "Strokesender")
+          return
+        }
+
+        const loadingScreen = document.body.querySelector(".strokesender-loading")
+
+        if (safeToDraw) {
+            loadingScreen?.remove()
+        } else if (loadingScreen) {
+            return
+        } else {
+            drawContainer.insertAdjacentElement("afterend", 
+                constructElement({
+                    type: "img",
+                    class: "strokesender-loading",
+                })
+            )
+        } 
     }
 }

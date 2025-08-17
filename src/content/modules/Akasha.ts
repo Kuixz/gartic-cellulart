@@ -414,41 +414,22 @@ export class Akasha extends CellulartModule {
       record.dataURL,
       structuredClone(record.strokes) // Deep copy
     )
-    let strokesSent = 0;
-    const strokesTotal = record.strokes.length;
 
     buffer.addEventListener(
       "setstrokesending", 
       (event: Event) => {
-        const paused = (event as CustomEvent<boolean>).detail
-
-        const drawContainer = document.body.querySelector(".drawingContainer") as HTMLElement
-        if (!drawContainer) {
-          Console.log("Couldn't preview drawing: couldn't find container", "Akasha")
-          return
-        }
-
-        this.whileSendingBlockStrokes(paused || strokesSent == strokesTotal, drawContainer)
-        this.showUploadingRecordPreview(record, drawContainer)
-      }
-    )
-    buffer.addEventListener(
-      "dequeuestroke",
-      () => {
-        if ((++strokesSent) == strokesTotal) {
-          this.whileSendingBlockStrokes(true)
-        }
-      }
-    )
-    buffer.addEventListener(
-      "close",
-      () => {
-        this.whileSendingBlockStrokes(true)
+        this.showUploadingRecordPreview(record)
       }
     )
   }
-  private showUploadingRecordPreview(record: AkashicRecord, drawContainer: HTMLElement) {
+  private showUploadingRecordPreview(record: AkashicRecord) {
     if (this.underlaidRecords.has(record)) { 
+      return
+    }
+
+    const drawContainer = document.body.querySelector(".drawingContainer") as HTMLElement
+    if (!drawContainer) {
+      Console.log("Couldn't preview drawing: couldn't find container", "Akasha")
       return
     }
 
@@ -458,13 +439,5 @@ export class Akasha extends CellulartModule {
     drawContainer.insertAdjacentElement("beforebegin", img)
 
     this.underlaidRecords.add(record)
-  }
-  private whileSendingBlockStrokes(safeToDraw: boolean, drawContainer?: HTMLElement) {
-    // console.log(visible)
-    if (safeToDraw) {
-      this.loadingScreen.remove()
-    } else {
-      drawContainer!.insertAdjacentElement("afterend", this.loadingScreen)
-    } 
   }
 }
