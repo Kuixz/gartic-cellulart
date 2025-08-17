@@ -28,7 +28,6 @@ export class Scry extends CellulartModule { // [F2]
         super(moduleArgs, [
             CellulartEventType.ENTER_ROUND,
             CellulartEventType.PHASE_CHANGE,
-            CellulartEventType.RECONNECT,
             CellulartEventType.LEAVE_ROUND,
         ])
 

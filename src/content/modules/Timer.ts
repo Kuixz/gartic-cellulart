@@ -34,7 +34,6 @@ export class Timer extends CellulartModule {
         super(moduleArgs, [
             CellulartEventType.ENTER_ROUND,
             CellulartEventType.PHASE_CHANGE,
-            CellulartEventType.RECONNECT,
         ])
         this.display = constructElement({
             type: "div",
