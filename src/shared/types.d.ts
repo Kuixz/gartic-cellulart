@@ -1,49 +1,42 @@
-
-type Maybe<T> = T | undefined
-
+type Maybe<T> = T | undefined;
 
 type GeomRawImage = {
-    width: number;
-    height: number;
-    data: any
-}
+  width: number;
+  height: number;
+  data: any;
+};
 
 const isGeomRawImage = (value: any): value is GeomRawShape => {
-    return (
-        value 
-        && typeof value.width === "number" 
-        && typeof value.height === "number" 
-    )
-}
+  return (
+    value && typeof value.width === "number" && typeof value.height === "number"
+  );
+};
 
 Object.defineProperty(isGeomRawImage, Symbol.hasInstance, {
-    value(instance) {
-        return isGeomRawImage(instance);
-    },
-})
-
+  value(instance) {
+    return isGeomRawImage(instance);
+  },
+});
 
 type GeomRawShape = {
-    type: number;
-    raw: number[];
-    svg: string;
-    color: number;
-}
+  type: number;
+  raw: number[];
+  svg: string;
+  color: number;
+};
 
 const isGeomRawShape = (value: any): value is GeomRawShape => {
-    return (
-        value 
-        && typeof value.type === "number" 
-        && Array.isArray(value.raw)
-        && typeof value.svg === "string" 
-        && typeof value.color === "number"
-    )
-}
+  return (
+    value &&
+    typeof value.type === "number" &&
+    Array.isArray(value.raw) &&
+    typeof value.svg === "string" &&
+    typeof value.color === "number"
+  );
+};
 
 Object.defineProperty(isGeomRawShape, Symbol.hasInstance, {
-    value(instance) {
-        return isGeomRawShape(instance);
-    },
-})
-
-
+  value(instance) {
+    return isGeomRawShape(instance);
+  },
+});

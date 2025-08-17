@@ -1,3 +1,2 @@
-
-export * from "./Red"
-export * from "./Debug"
+export * from "./Red";
+export * from "./Debug";

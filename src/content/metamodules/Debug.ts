@@ -3,53 +3,58 @@ import { WhiteSettingsBelt, Inwindow, Console, setParent } from "../foundation";
 import { CellulartModule, Metamodule } from "../modules";
 
 /* ----------------------------------------------------------------------
-  *                                 Debug 
-  * ---------------------------------------------------------------------- */
+ *                                 Debug
+ * ---------------------------------------------------------------------- */
 /** Debug routes or blocks console messages.
-  * Works closely with Console; the two should be merged into one.
-  * ---------------------------------------------------------------------- */
+ * Works closely with Console; the two should be merged into one.
+ * ---------------------------------------------------------------------- */
 class Debug extends Metamodule {
-    name = "Debug"
-    setting = WhiteSettingsBelt(this.name.toLowerCase())   
+  name = "Debug";
+  setting = WhiteSettingsBelt(this.name.toLowerCase());
 
-    debugWIW : Inwindow
+  debugWIW: Inwindow;
 
-    constructor(modules: CellulartModule[]) {
-        super(modules)
+  constructor(modules: CellulartModule[]) {
+    super(modules);
 
-        const debugWIW = new Inwindow("default", { visible:false, close:false, ratio:5, maxGrowFactor: 2 })
-        debugWIW.body.classList.add("debug-body");
-        const iconSelect = document.createElement("div")
-        iconSelect.classList.add('debug-scroll-window')
-        setParent(iconSelect, debugWIW.body)
+    const debugWIW = new Inwindow("default", {
+      visible: false,
+      close: false,
+      ratio: 5,
+      maxGrowFactor: 2,
+    });
+    debugWIW.body.classList.add("debug-body");
+    const iconSelect = document.createElement("div");
+    iconSelect.classList.add("debug-scroll-window");
+    setParent(iconSelect, debugWIW.body);
 
-        // const preactivated = [ Observer ]
-        modules.map(mod => mod.name).concat(["Socket", "Xhr", "Worker", "Observer"]).forEach((mod) => {
-            const modButton = createButton(
-                mod.toLowerCase(),
-                function() { 
-                    modButton.classList.toggle("debug-selected")
-                    Console.toggle(mod) 
-                    return undefined
-                },
-            )
+    // const preactivated = [ Observer ]
+    modules
+      .map((mod) => mod.name)
+      .concat(["Socket", "Xhr", "Worker", "Observer"])
+      .forEach((mod) => {
+        const modButton = createButton(mod.toLowerCase(), function () {
+          modButton.classList.toggle("debug-selected");
+          Console.toggle(mod);
+          return undefined;
+        });
 
-            modButton.classList.add("debug-button")
+        modButton.classList.add("debug-button");
 
-            if (Console.enabledLoggingFor.has(mod)) { 
-                modButton.classList.add("debug-selected")
-            }
+        if (Console.enabledLoggingFor.has(mod)) {
+          modButton.classList.add("debug-selected");
+        }
 
-            setParent(modButton, iconSelect)
-        }) 
+        setParent(modButton, iconSelect);
+      });
 
-        this.debugWIW = debugWIW;
-    }
-    adjustSettings() {
-        this.debugWIW.setVisibility(this.isOn())
-    }
+    this.debugWIW = debugWIW;
+  }
+  adjustSettings() {
+    this.debugWIW.setVisibility(this.isOn());
+  }
 
-    // TODO: Hide Red modules while not authenticated.
+  // TODO: Hide Red modules while not authenticated.
 }
 
-export { Debug }
+export { Debug };
