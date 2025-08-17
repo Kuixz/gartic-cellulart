@@ -11,27 +11,31 @@ export enum CellulartEventType {
     ENTER_LOBBY = 'lobbyenter',
     ENTER_ROUND = 'roundenter',
     PHASE_CHANGE = 'phasechange',
-    RECONNECT = 'reconnect',
     ALBUM_CHANGE = 'albumchange',
     TIMELINE_CHANGE = 'timelinechange',
     LEAVE_ROUND = 'roundleave',
     LEAVE_LOBBY = 'lobbyleave',
 }
 
-export interface PhaseChangeData {
+export type PhaseChangeData = 
+  | {
+    isReconnection: false,
     oldPhase: Phase,
     data: TransitionData,
     newPhase: Phase,
-}
+  }
+  | {
+    isReconnection: true,
+    oldPhase: Phase,
+    data: GarticXHRData,
+    newPhase: Phase,
+  }
 export interface AlbumChangeData {
     element: Element,
     data: GarticData,
 } 
 export interface PhaseChangeEvent extends CustomEvent {
     detail: PhaseChangeData
-}
-export interface ReconnectEvent extends CustomEvent {
-    detail: GarticXHRData
 }
 export interface AlbumChangeEvent extends CustomEvent {
     detail: AlbumChangeData

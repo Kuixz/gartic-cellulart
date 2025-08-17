@@ -14,15 +14,15 @@ class Console { // Only print certain messages
     log(message: string, modName?: string) {
         if (!this.shouldLog || !this.enabledLoggingFor.has(modName)) { return }
         const msg = `[${modName}] ${message}`
-        this.onprint(msg)
+        // this.onprint(msg)
         console.log(msg)
     }
     warn(message: string, modName?: string) {
         const msg = `[${modName}] ${message}`
-        this.onprint(msg)
+        // this.onprint(msg)
         console.warn(msg)
     }
-    onprint(message: string) {} // Dynamically set
+    // onprint(message: string) {} // Dynamically set
 }
 
 const ConsoleInstance = new Console()

@@ -314,14 +314,23 @@ export class Geom extends CellulartModule {
         if (!type) { 
             Console.warn(`Unknown shape type ${type}`, "Geom"); return
         }
-        const color = `${v[2][0]}80`;
+        const color = `${v[2][0]}`;
 
         const coords = ((x: number) => {
             if (x == 6) {
-                return { x: raw[0], y: raw[1], width: raw[2] - raw[0], height: raw[3] - raw[1] }
+                return { 
+                    x: raw[0], 
+                    y: raw[1], 
+                    width: raw[2] - raw[0], 
+                    height: raw[3] - raw[1] }
             }
             else if (x == 7) {
-                return { cx: raw[0] + raw[2], cy: raw[1] + raw[3], rx: raw[2], ry: raw[3]}
+                return { 
+                    cx: (raw[0] + raw[2]) / 2, 
+                    cy: (raw[1] + raw[3]) / 2, 
+                    rx: Math.abs((raw[0] - raw[2]) / 2), 
+                    ry: Math.abs((raw[1] - raw[3]) / 2),
+                }
             }
         })(rawType)
         if (!coords) {

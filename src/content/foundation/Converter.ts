@@ -4,7 +4,7 @@ export type Phase = "start" | "lobby" | "draw" | "write" | "memory" | "book" | "
 export interface TransitionData { 
     turnNum: number, 
     screen: number, 
-    previous: {
+    previous?: {
         user: GarticUser,
         data: GarticData
     } 

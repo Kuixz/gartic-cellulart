@@ -17,10 +17,10 @@ class Socket extends EventListening(EventTarget) {
         })
     }
     protected onroundleave() {
-        this.post("roundEnd")
+        this.post("onroundleave")
     }
     protected onlobbyleave(){
-        this.post("exitLobby")
+        this.post("onlobbyleave")
     }
     public post(purp: string, data?: any) {
         Console.log(`outgoing (${purp}, ${data})`, 'Socket')

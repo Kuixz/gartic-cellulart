@@ -71,11 +71,19 @@ export class CellulartModule extends EventListening(ModuleLike) { // [F2]
     protected onlobbyenter() {}
     protected onroundenter() {}
     protected onphasechange(event: PhaseChangeEvent) {}
-    protected onreconnect(event: GarticXHRData) {}
     protected onalbumchange(event: AlbumChangeEvent) {}
     protected ontimelinechange() {}
     protected onroundleave() {}
     protected onlobbyleave() {}
+    // The calling order is as follows.
+    // onlobbyenter, ...(
+    //   onroundenter,
+    //   ...onphasechange[],
+    //   onphasechange (to book),
+    //    ...(ontimelinechange, ...onalbumchange[])[], (going back to previous timelines notwithstanding)
+    //   onroundleave 
+    // )[],
+    // onlobbyleave
 
     // This function makes required changes when switching between settings. 
     // To be overridden by each (controllable) module.
