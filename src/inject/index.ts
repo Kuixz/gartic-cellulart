@@ -26,7 +26,7 @@ abstract class Interceptor {
       } catch (e) {
         this.post(
           "log",
-          `${this.name} error executing ${purp}(${JSON.stringify(data)}): ${e}`,
+          `${this.name} error executing ${purp}(${JSON.stringify(data)}): ${e}`
         );
       }
     });
@@ -47,7 +47,7 @@ abstract class Interceptor {
         purpose: purpose,
         data: data,
       },
-      "*",
+      "*"
     );
   }
 }
@@ -166,7 +166,7 @@ class SocketInterceptor extends Interceptor {
   }
   private registerWS(ws: WebSocket) {
     // console.log(this)
-    if (this.currentWSOpen()) {
+    if (this.currentWS == ws) {
       return;
     }
     this.currentWS = ws;
@@ -175,7 +175,7 @@ class SocketInterceptor extends Interceptor {
       (event) => {
         this.readIncoming(event.data);
       },
-      { capture: true },
+      { capture: true }
     );
     this.post("flag", true);
   }
@@ -231,7 +231,7 @@ class XHRInterceptor extends Interceptor {
     const interceptIncoming = this.interceptIncoming;
     const originalGet = Object.getOwnPropertyDescriptor(
       XMLHttpRequest.prototype,
-      "responseText",
+      "responseText"
     )!.get! as () => string;
 
     Object.defineProperty(XMLHttpRequest.prototype, "responseText", {
