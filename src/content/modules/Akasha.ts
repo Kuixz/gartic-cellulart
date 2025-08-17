@@ -44,7 +44,11 @@ const versionToInterpreterMap: Map<
       const strokes = Object.values(JSON.parse(match2)) as GarticStroke[];
       for (const stroke of strokes) {
         if (stroke[0] == 8) {
-          stroke.push(0);
+          var endRectangleIndex = 7
+          while (stroke.length >= endRectangleIndex) {
+            stroke.splice(endRectangleIndex, 0, 0)
+            endRectangleIndex += 5
+          }
         }
       }
 
