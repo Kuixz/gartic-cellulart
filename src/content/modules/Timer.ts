@@ -29,12 +29,11 @@ export class Timer extends CellulartModule {
   setting = WhiteSettingsBelt(this.name.toLowerCase(), true);
 
   // Timer variables
-  display: HTMLElement; // HTMLDivElement
-  countdownID: number | undefined; // timeoutID
-  required: number = 0;
-  elapsed: number = 0;
-  parameters: SpeedParameters = speedParameterDefaults;
-  decay: number = 0;
+  private display: HTMLElement; // HTMLDivElement
+  private countdownID: number | undefined; // timeoutID
+  private required: number = 0;
+  private elapsed: number = 0;
+  private parameters: SpeedParameters = speedParameterDefaults;
 
   constructor(moduleArgs: ModuleArgs) {
     super(moduleArgs, [
@@ -50,10 +49,9 @@ export class Timer extends CellulartModule {
 
   protected onroundenter(): void {
     const parameters = Converter.speedIndexToParameters(
-      this.globalGame.speedIndex,
+      this.globalGame.speedIndex
     );
-    this.decay = parameters.decayFunction(this.globalGame.turnCount);
-    this.parameters = { ...parameters };
+    this.parameters = { ...parameters }; // deep copy
   }
   protected onphasechange(event: PhaseChangeEvent): void {
     const { isReconnection, oldPhase, data, newPhase } = event.detail;
@@ -131,9 +129,6 @@ export class Timer extends CellulartModule {
         this.tick(Count.Down);
       }
     }
-    // if (game.parameters["timerCurve"] != 0) {
-    this.interpolate(1);
-    // }
   }
   private getSecondsForPhase(newPhase: Phase): number {
     Console.log("I think this phase is " + newPhase, "Timer");
@@ -160,21 +155,32 @@ export class Timer extends CellulartModule {
         ) {
           toReturn = 150 * this.parameters.firstMultiplier; // Bad premature optimization replacing this.draw with flat 150
         } else {
-          toReturn = this.parameters.draw;
+          toReturn = this.parameters.draw(
+            this.globalGame.turnCount,
+            this.globalGame.currentTurn
+          );
         }
         break;
       case "write":
-        toReturn = this.parameters.write;
+        toReturn = this.parameters.write(
+          this.globalGame.turnCount,
+          this.globalGame.currentTurn
+        );
         break;
       case "first":
-        toReturn = this.parameters.write * this.parameters.firstMultiplier;
+        toReturn =
+          this.parameters.firstMultiplier *
+          this.parameters.write(
+            this.globalGame.turnCount,
+            this.globalGame.currentTurn
+          );
         break;
       case "mod":
         return 25; // 10 // [T2]
       default:
         Console.warn(
           "Could not determine duration of phase " + newPhase,
-          "Timer",
+          "Timer"
         );
         return 0;
     }
@@ -193,16 +199,7 @@ export class Timer extends CellulartModule {
     this.countdownID = window.setTimeout(
       this.tick.bind(this),
       1000,
-      increaseStep,
+      increaseStep
     );
-  }
-  private interpolate(times: number) {
-    if (this.decay != 0) {
-      Console.log("Interpolating regressive/progressive timer", "Timer");
-      this.parameters.write =
-        (this.parameters.write - 8) * this.decay ** times + 8;
-      this.parameters.draw =
-        (this.parameters.draw - 30) * this.decay ** times + 30;
-    }
   }
 }
