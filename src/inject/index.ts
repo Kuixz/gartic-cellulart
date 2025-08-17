@@ -208,31 +208,16 @@ type GarticStroke = [number, number, [string, number, number], ...[number, numbe
         console.log("[Cellulart] XHR proxified")
     }
     interceptIncoming(data: string): Maybe<string> {
-        // console.log(data)
-        // return data
-        //         // console.log(text)
-        
-        var indexFirstBracket = data.indexOf('[')
+        const indexFirstBracket = data.indexOf('[')
         if (indexFirstBracket < 0 || data.indexOf('{') < indexFirstBracket) { return data }
-        //         // console.log(text)
-        var json = JSON.parse(data.slice(indexFirstBracket)) as [number, object, ...any]
-        //         // console.log(json)
-        var gameDict = json[1]
+        const json = JSON.parse(data.slice(indexFirstBracket)) as [number, object, ...any]
+        const gameDict = json[1]
+
         if ('configs' in gameDict) {
-            Xhr.post('lobbySettings', gameDict/*['configs']*/)
-            // console.log('succ')
-        }
-        // TODO TODO TODO: Blatant overreach!
-        if ('draw' in gameDict) {
-            Socket.setStrokeStack(gameDict.draw as GarticStroke[])
-            // console.log('succ')
+            Xhr.post('lobbySettings', gameDict)
         }
         
         return data
-        //         // return text.replace('"visible":1', '"visible":2')
-        //         // const modifiedText = text && text.replace('"visible":1', '"visible":2');
-        //         // // const modifiedText = text // && text.replace('"visible":1', '"visible":2');
-        //         // return modifiedText
     }
 }
 
