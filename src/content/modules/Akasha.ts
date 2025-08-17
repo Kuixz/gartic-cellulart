@@ -44,10 +44,10 @@ const versionToInterpreterMap: Map<
       const strokes = Object.values(JSON.parse(match2)) as GarticStroke[];
       for (const stroke of strokes) {
         if (stroke[0] == 8) {
-          var endRectangleIndex = 7
+          var endRectangleIndex = 7;
           while (stroke.length >= endRectangleIndex) {
-            stroke.splice(endRectangleIndex, 0, 0)
-            endRectangleIndex += 5
+            stroke.splice(endRectangleIndex, 0, 0);
+            endRectangleIndex += 5;
           }
         }
       }
@@ -63,7 +63,7 @@ const versionToInterpreterMap: Map<
     "1.5.2",
     (match1, match2) => {
       const compressedStrokes: any[][] = JSON.parse(
-        match2.replaceAll("•", "],["),
+        match2.replaceAll("•", "],[")
       );
       const strokes: GarticStroke[] = [];
       let currentColor: [string, number, string | 1] | null = null;
@@ -81,8 +81,8 @@ const versionToInterpreterMap: Map<
               1,
               0,
               ++currentStroke,
-              structuredClone(currentColor),
-            ) as GarticStroke,
+              structuredClone(currentColor)
+            ) as GarticStroke
           );
         }
       }
@@ -96,7 +96,7 @@ const versionToInterpreterMap: Map<
   ],
 ]);
 async function parseRecords(
-  fileList: FileList | null,
+  fileList: FileList | null
 ): Promise<AkashicRecord[]> {
   if (!fileList || fileList.length === 0) {
     // console.log("No files provided.");
@@ -117,19 +117,19 @@ async function parseRecords(
         }
 
         const matchVersion = fileContent.match(
-          /\|version\|:(.*?)\:\|version\|/,
+          /\|version\|:(.*?)\:\|version\|/
         );
         if (!matchVersion) {
           Console.warn(
             `File: ${file.name} - No match found for |1|.`,
-            "Akasha",
+            "Akasha"
           );
           resolve(null);
           return;
         }
         Console.log(
           `File: ${file.name} using encoding version ${matchVersion[1]}`,
-          "Akasha",
+          "Akasha"
         );
 
         // Find portion between "|1|:" and ":|1|"
@@ -137,7 +137,7 @@ async function parseRecords(
         if (!match1) {
           Console.warn(
             `File: ${file.name} - No match found for |1|.`,
-            "Akasha",
+            "Akasha"
           );
           resolve(null);
           return;
@@ -148,7 +148,7 @@ async function parseRecords(
         if (!match2) {
           Console.warn(
             `File: ${file.name} - No match found for |2|.`,
-            "Akasha",
+            "Akasha"
           );
           resolve(null);
           return;
@@ -157,7 +157,7 @@ async function parseRecords(
         let versionInterpreter = versionToInterpreterMap.get(matchVersion[1]);
         if (!versionInterpreter) {
           Console.warn(
-            "Saved record version doesn't match any interpreter. Defaulting to 1.1.0",
+            "Saved record version doesn't match any interpreter. Defaulting to 1.1.0"
           );
           versionInterpreter = versionToInterpreterMap.get("1.1.0")!;
         }
@@ -239,7 +239,7 @@ export class Akasha extends CellulartModule {
 
     document.documentElement.style.setProperty(
       "--akasha-loading-url",
-      `url(${getModuleAsset("akasha-loading.svg")})`,
+      `url(${getModuleAsset("akasha-loading.svg")})`
     );
   }
 
@@ -258,7 +258,7 @@ export class Akasha extends CellulartModule {
     const turnCount = document.querySelector(".step")!;
     const newButton = this.createDownloadButton(
       canvas as HTMLCanvasElement,
-      data.previous.data,
+      data.previous.data
     );
     turnCount.appendChild(newButton);
   }
@@ -271,7 +271,7 @@ export class Akasha extends CellulartModule {
     }
 
     const canvas = element.querySelector(
-      ".drawBalloon canvas",
+      ".drawBalloon canvas"
     ) as HTMLCanvasElement;
     const avatar = element.querySelector(".avatar")!;
     const newButton = this.createDownloadButton(canvas, data);
@@ -283,7 +283,7 @@ export class Akasha extends CellulartModule {
 
     document.documentElement.style.setProperty(
       "--akasha-button-visibility",
-      this.isOn() ? "initial" : "hidden",
+      this.isOn() ? "initial" : "hidden"
     );
   }
 
@@ -340,6 +340,7 @@ export class Akasha extends CellulartModule {
     });
     uploadInput.addEventListener("change", () => {
       this.parseRecords(uploadInput.files);
+      uploadInput.value = "";
     });
     deleteBtn.addEventListener("click", () => {
       this.deleteActiveRecord();
@@ -351,7 +352,7 @@ export class Akasha extends CellulartModule {
   }
   private createDownloadButton(
     canvas: HTMLCanvasElement,
-    data: GarticStroke[],
+    data: GarticStroke[]
   ): HTMLElement {
     const newButton = constructElement({
       type: "div",
@@ -434,7 +435,7 @@ export class Akasha extends CellulartModule {
     const record = this.activeRecord;
     const { buffer } = this.strokeSender.createSendingInwindow(
       record.dataURL,
-      structuredClone(record.strokes), // Deep copy
+      structuredClone(record.strokes) // Deep copy
     );
 
     buffer.addEventListener("setstrokesending", (event: Event) => {
@@ -447,12 +448,12 @@ export class Akasha extends CellulartModule {
     }
 
     const drawContainer = document.body.querySelector(
-      ".drawingContainer",
+      ".drawingContainer"
     ) as HTMLElement;
     if (!drawContainer) {
       Console.log(
         "Couldn't preview drawing: couldn't find container",
-        "Akasha",
+        "Akasha"
       );
       return;
     }

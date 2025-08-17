@@ -32,7 +32,7 @@ function viewFit(
   minx: number,
   miny: number,
   elementx: number,
-  elementy: number,
+  elementy: number
 ) {
   const ratiox = elementx / minx;
   const ratioy = elementy / miny;
@@ -142,7 +142,7 @@ export class Geom extends CellulartModule {
           preventDefaults(e);
           socket.classList.add("highlight");
         },
-        false,
+        false
       );
     });
     ["dragleave", "drop"].forEach((eventName) => {
@@ -152,7 +152,7 @@ export class Geom extends CellulartModule {
           preventDefaults(e);
           socket.classList.remove("highlight");
         },
-        false,
+        false
       );
     });
     socket.addEventListener("click", () => {
@@ -160,6 +160,7 @@ export class Geom extends CellulartModule {
     });
     bridge.addEventListener("change", () => {
       startGeometrize(bridge.files);
+      bridge.value = "";
     });
     socket.addEventListener(
       "drop",
@@ -171,7 +172,7 @@ export class Geom extends CellulartModule {
         const files = dt.files;
         startGeometrize(files);
       },
-      false,
+      false
     );
 
     let sendingInwindow: Inwindow | null = null;
@@ -203,7 +204,7 @@ export class Geom extends CellulartModule {
       const { inwindow, buffer } = this.strokeSender.createSendingInwindow(
         dataURL,
         undefined,
-        { position: sendingInwindowPosition },
+        { position: sendingInwindowPosition }
       );
       buffer.addEventListener("close", () => {
         this.strokeBuffer = null;
@@ -219,7 +220,7 @@ export class Geom extends CellulartModule {
             [string, number, string | 1],
             [number, number],
             [number, number],
-          ],
+          ]
         );
         if (!shapeAsSVG) {
           Console.warn("Failed to create svg from stroke", "Geom");
@@ -254,7 +255,7 @@ export class Geom extends CellulartModule {
       758,
       424,
       img.naturalWidth,
-      img.naturalHeight,
+      img.naturalHeight
     );
     const canvas = document.createElement("canvas");
     canvas.width = resizedDimensions.x;
@@ -266,7 +267,7 @@ export class Geom extends CellulartModule {
       resizedDimensions.margin.x / 2,
       resizedDimensions.margin.y / 2,
       resizedDimensions.x,
-      resizedDimensions.y,
+      resizedDimensions.y
     );
     const imgdata = context.getImageData(0, 0, 758, 424);
 
@@ -278,10 +279,10 @@ export class Geom extends CellulartModule {
         }
         Console.log(
           "Image processed successfully. Beginning Geometrize",
-          "Geom",
+          "Geom"
         );
         step();
-      },
+      }
     );
 
     const step = async () => {
@@ -299,7 +300,7 @@ export class Geom extends CellulartModule {
       if (shape === undefined) {
         Console.warn(
           "Mysterious error, no shape was produced; terminating",
-          "Geom",
+          "Geom"
         );
         return;
       }
@@ -393,7 +394,7 @@ export class Geom extends CellulartModule {
       [string, number, string | 1],
       [number, number],
       [number, number],
-    ],
+    ]
   ): SVGElement | void {
     const raw = [v[3][0], v[3][1], v[4][0], v[4][1]];
     const rawType = v[0];
