@@ -23,12 +23,12 @@ abstract class Interceptor {
             }
         }) 
     }
-    interceptIncoming(str: string): Maybe<string> { return undefined }
-    interceptOutgoing(str: string): Maybe<string> { return undefined }
-    readIncoming(str: string): void {}
-    readOutgoing(str: string): void {}
+    protected interceptIncoming(str: string): Maybe<string> { return undefined }
+    protected interceptOutgoing(str: string): Maybe<string> { return undefined }
+    protected readIncoming(str: string): void {}
+    protected readOutgoing(str: string): void {}
 
-    post(purpose: string, data?: any) {
+    protected post(purpose: string, data?: any) {
         window.postMessage({
             direction: `from${this.name}`,
             purpose: purpose,
@@ -90,13 +90,14 @@ class SocketInterceptor extends Interceptor {
     
         console.log("[Cellulart] WebSocket proxified")
     }
-    roundEnd() {
+    private onroundleave() {
         this.clearStrokes()
     }
-    exitLobby() {
+    private onlobbyleave() {
         this.currentWS = null
     }
-    readIncoming(data: string): void {
+    
+    protected readIncoming(data: string): void {
         // console.log(data)
 
         if (data.slice(0,5) != '42[2,') { return }
@@ -106,7 +107,7 @@ class SocketInterceptor extends Interceptor {
 
         return
     }
-    interceptOutgoing(data: string): Maybe<string> {
+    protected interceptOutgoing(data: string): Maybe<string> {
         // TODO: Bad workaround right here
         if (data.slice(0,8) == '42[2,18,') { this.readIncoming(data); return data }
 
@@ -134,20 +135,18 @@ class SocketInterceptor extends Interceptor {
         }
     }
 
-
-
-    clearStrokes() {
+    private clearStrokes() {
         this.strokes = []
         this.strokeCount = 0
     }
-    setStrokeStack(data: GarticStroke[]) {
+    private setStrokeStack(data: GarticStroke[]) {
         const strokes = data.map((strokeArray) => strokeArray[1])
         this.strokes = strokes
         this.strokeCount = strokes.length > 0 ? strokes.at(-1)! : 0
     }
-    registerWS(ws: WebSocket) {
+    private registerWS(ws: WebSocket) {
         // console.log(this)
-        if (this.currentWSOpen()) { return }
+        // if (this.currentWSOpen()) { return }
         this.currentWS = ws
         ws.addEventListener(
             'message', 
@@ -158,8 +157,8 @@ class SocketInterceptor extends Interceptor {
         )
         this.post("flag", true)
     }
-    currentWSOpen() { return this.currentWS && this.currentWS.readyState === this.currentWS.OPEN }
-    sendStroke(data: OutboundGarticStroke) {
+    private currentWSOpen() { return this.currentWS && this.currentWS.readyState === this.currentWS.OPEN }
+    private sendStroke(data: OutboundGarticStroke) {
         if (!data) { return }
         if (!this.currentWSOpen()) { this.onDisconnect(data); return }
     
@@ -167,13 +166,14 @@ class SocketInterceptor extends Interceptor {
         this.currentWS!.expressSend("42" + JSON.stringify([2,7,data]));
         // this.post('log', "Sent: " + toSend);
     }
-    onDisconnect(data: any) {  // Type alert suppressed
+    private onDisconnect(data: any) {  // Type alert suppressed
         this.currentWS = null
         this.post("flag", false)
     }
 }
 
 const Socket = new SocketInterceptor()
+window.GSHObject = Socket
 
 // [G3]
 
