@@ -59,10 +59,44 @@ export class Scry extends CellulartModule { // [F2]
         })
     }
     protected onroundenter(): void {
+        this.constructIndicators()
+        // globalGame.players.forEach((user) => {
+        //     user
+        // })
+    }
+    protected onphasechange(event: PhaseChangeEvent): void {
+        const { isReconnection, oldPhase, data, newPhase } = event.detail
+
+        if (["book", "start"].includes(newPhase)) { return }
+        if (oldPhase == "memory" && newPhase != "memory") { return }
+
+        if (isReconnection) {
+            for (const user of data.users) {
+                if (!user.ready) { continue }
+                this.updateCompletion(user, true)
+            }
+        } else {
+            this.resetIndicators()
+        }
+    }
+    protected onroundleave(): void {
+        this.clearIndicators()
+    }
+
+    public adjustSettings(): void {
+        if (this.isOff()) {
+            this.scryWIW.setVisibility(false)
+        } else if (this.isOn()) {
+            this.scryWIW.setVisibility(true)
+        }
+    }
+
+    private constructIndicators() {
         Console.log(`Constructing Scry with ${this.globalGame.players.length} players`, "Scry")
         this.indicators = {}
         for (const user of this.globalGame.players) {
             if (!user.id) { continue }
+            if (user.viewer === true) { continue }
 
             const userDiv = document.createElement('div')
             userDiv.classList.add("scry-icon")
@@ -85,37 +119,7 @@ export class Scry extends CellulartModule { // [F2]
 
             this.indicators[user.id] = userDiv
         }
-        // globalGame.players.forEach((user) => {
-        //     user
-        // })
     }
-    protected onphasechange(event: PhaseChangeEvent): void {
-        const { oldPhase, newPhase } = event.detail
-        if (["book", "start"].includes(newPhase)) { return }
-        if (oldPhase == "memory" && newPhase != "memory") { return }
-        this.resetIndicators()
-    }
-    protected onreconnect(data: GarticXHRData): void {
-        for (const user of data.users) {
-            if (!user.id) { continue }
-            if (!user.ready) { continue }
-
-            const indicator = this.indicators[user.id]
-            indicator.style.backgroundColor = "lime"
-        }
-    }
-    protected onroundleave(): void {
-        this.clearIndicators()
-    }
-
-    public adjustSettings(): void {
-        if (this.isOff()) {
-            this.scryWIW.setVisibility(false)
-        } else if (this.isOn()) {
-            this.scryWIW.setVisibility(true)
-        }
-    }
-
     private resetIndicators() {
         for (const indicator of Object.values(this.indicators)) {
             indicator.style.backgroundColor = "red"
@@ -131,8 +135,10 @@ export class Scry extends CellulartModule { // [F2]
         Console.log(`${user.nick} is ${done ? "done" : "not done"}`, "Scry")
 
         if (!user.id) { return }
+        if (user.viewer === true) { return }
        
-        const userDiv = this.indicators[user.id]
-        userDiv.style.backgroundColor = done ? "lime" : "red"
+        const userIndicator = this.indicators[user.id]
+        if (!userIndicator) { return }
+        userIndicator.style.backgroundColor = done ? "lime" : "red"
     }
 }

@@ -49,20 +49,21 @@ export class Timer extends CellulartModule {
         this.parameters = { ...parameters }
     }
     protected onphasechange(event: PhaseChangeEvent): void {
-        const { oldPhase, newPhase } = event.detail
+        const { isReconnection, oldPhase, data, newPhase } = event.detail
         if (newPhase == "book") { return }
-        setTimeout(this.placeTimer.bind(this), DOMUNLOADINGALLOWANCE)
+        this.placeTimer()
 
         // If we changed from a phase that warrants a reset in the timer, reset the timer.
         if (oldPhase == "memory" && newPhase != "memory") { return } 
         this.clearTimer() 
-        setTimeout(this.startTimer.bind(this), DOMUNLOADINGALLOWANCE, newPhase)
-    }
-    protected onreconnect(data: GarticXHRData): void {
-        if (!data.elapsedBase) { return }
-        if (!data.elapsedTime) { return }
-        const elapsed = data.timeStarted ? data.elapsedTime : data.elapsedBase
-        this.elapsed = Math.ceil(elapsed / 1000)
+        this.startTimer(newPhase)
+
+        if (isReconnection) {
+            if (!data.elapsedBase) { return }
+            if (!data.elapsedTime) { return }
+            const elapsed = data.timeStarted ? data.elapsedTime : data.elapsedBase
+            this.elapsed = Math.ceil(elapsed / 1000)
+        }
     }
 
     public adjustSettings(): void {
@@ -114,7 +115,7 @@ export class Timer extends CellulartModule {
         if (!step) { Console.warn("Could not find turn counter", "Timer"); return -1 }
         if (!(step.textContent)) { Console.warn("Could not read turn counter", "Timer"); return -1 }
 
-        var toReturn = 0;
+        let toReturn = 0;
         switch (newPhase) {
             case "draw": 
             case "memory": 
