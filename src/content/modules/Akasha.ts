@@ -239,7 +239,7 @@ export class Akasha extends CellulartModule {
     this.inwindow = this.constructInwindow();
 
     document.documentElement.style.setProperty(
-      "--akasha-loading-url",
+      "--akasha-loading-bg",
       `url(${getModuleAsset("akasha-loading.svg")})`
     );
   }

@@ -1,5 +1,6 @@
 :root {
   --akasha-button-visibility: hidden;
+  /* --akasha-loading-bg: url(); */
 }
 
 /* Multi-module */
@@ -195,7 +196,7 @@ div.window-in-window {
   background-position: center;
   background-repeat: no-repeat;
   background-color: #aaa9;
-  background-image: var(--akasha-loading-url);
+  background-image: var(--akasha-loading-bg);
 }
 
 /* Timer */
