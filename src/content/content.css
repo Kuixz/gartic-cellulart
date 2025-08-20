@@ -3,6 +3,7 @@
   /* --akasha-loading-bg: url(); */
   /* --ref-ul-bg: url(); */
   /* --ref-ss-bg: url(); */
+  /* --geom-ul-bg: url(); */
 }
 
 /* Multi-module */
@@ -333,6 +334,9 @@ svg.geom-svg {
   display: flex;
   width: 100%;
   height: 100%;
+}
+.geom-ul {
+  background-image: var(--geom-ul-bg);
 }
 
 /* Scry */

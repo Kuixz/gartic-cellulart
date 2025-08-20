@@ -83,6 +83,11 @@ export class Geom extends CellulartModule {
       height: "424",
     });
     this.geomPreview = preview;
+
+    document.documentElement.style.setProperty(
+      "--geom-ul-bg",
+      `url(${getModuleAsset("geom-ul.png")})`
+    );
   }
   protected onphasechange(event: PhaseChangeEvent): void {
     const { newPhase } = event.detail;
@@ -125,13 +130,11 @@ export class Geom extends CellulartModule {
     });
     const body = geomInwindow.body;
     body.innerHTML = `
-            <form class="upload-form">
-                <input class="upload-bridge" type="file">
-                <div id="geom-socket" class="theme-border upload-socket hover-button" 
-                    style="background-image:url(${getModuleAsset("geom-ul.png")})">
-                </div>
-            </form>
-        `;
+      <form class="upload-form">
+        <input class="upload-bridge" type="file">
+        <div id="geom-socket" class="theme-border upload-socket hover-button geom-ul"></div>
+      </form>
+    `;
     const bridge = body.querySelector(".upload-bridge")! as HTMLInputElement;
     const socket = body.querySelector("#geom-socket")! as HTMLElement;
 
