@@ -10,6 +10,7 @@ import {
   StrokeData,
   StrokeSender,
   formatTime,
+  TimelineChangeEvent,
 } from "../foundation";
 import { CellulartModule, ModuleArgs } from "./CellulartModule";
 
@@ -270,12 +271,20 @@ export class Akasha extends CellulartModule {
       return;
     }
 
-    const canvas = element.querySelector(
-      ".drawBalloon canvas"
-    ) as HTMLCanvasElement;
-    const avatar = element.querySelector(".avatar")!;
-    const newButton = this.createDownloadButton(canvas, data);
-    avatar.appendChild(newButton);
+    this.createDownloadButtonForTimelineDrawing(element, data);
+  }
+  protected ontimelinechange(event: TimelineChangeEvent): void {
+    const { elements, timeline } = event.detail;
+    for (let i = 0; i < timeline.length; i++) {
+      if (!(timeline[i].data instanceof Array)) {
+        continue;
+      }
+
+      this.createDownloadButtonForTimelineDrawing(
+        elements[i],
+        timeline[i].data as StrokeData[]
+      );
+    }
   }
 
   protected adjustSettings(): void {
@@ -349,6 +358,17 @@ export class Akasha extends CellulartModule {
     this.eta = body.querySelector(".cellulart-skewer")!;
 
     return inwindow;
+  }
+  private createDownloadButtonForTimelineDrawing(
+    element: Element,
+    data: StrokeData[]
+  ) {
+    const canvas = element.querySelector(
+      ".drawBalloon canvas"
+    ) as HTMLCanvasElement;
+    const avatar = element.querySelector(".avatar")!;
+    const newButton = this.createDownloadButton(canvas, data);
+    avatar.appendChild(newButton);
   }
   private createDownloadButton(
     canvas: HTMLCanvasElement,
