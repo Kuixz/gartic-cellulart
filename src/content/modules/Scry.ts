@@ -3,10 +3,8 @@ import {
   WhiteSettingsBelt,
   CellulartEventType,
   PhaseChangeEvent,
-  GarticUser,
-  setParent,
+  PlayerData,
   Inwindow,
-  GarticXHRData,
   EMessagePurpose,
 } from "../foundation";
 import { ModuleArgs, CellulartModule } from "./CellulartModule";
@@ -23,7 +21,7 @@ export class Scry extends CellulartModule {
 
   scryWIW: Inwindow;
   indicatorLabel: HTMLDivElement;
-  indicatorTray: HTMLDivElement;
+  // indicatorTray: HTMLDivElement;
   indicators: Record<number, HTMLElement> = {};
 
   constructor(moduleArgs: ModuleArgs) {
@@ -46,10 +44,9 @@ export class Scry extends CellulartModule {
     indicatorLabel.id = "scry-indicator-label";
     this.indicatorLabel = indicatorLabel;
 
-    const indicatorTray = document.createElement("div");
-    indicatorTray.classList.add("scry-scroll-window");
-    setParent(indicatorTray, scryWIW.body);
-    this.indicatorTray = indicatorTray;
+    scryWIW.body.innerHTML = `
+      <div class="scry-scroll-window"></div>
+    `;
 
     moduleArgs.socket.addEventListener("socketIncoming", (event: Event) => {
       const {
@@ -60,7 +57,7 @@ export class Scry extends CellulartModule {
         return;
       }
       const player = this.globalGame.players.find(
-        (user) => user.id === messageData.user,
+        (user) => user.id === messageData.user
       );
       if (player) {
         this.updateCompletion(player, messageData.ready);
@@ -111,7 +108,7 @@ export class Scry extends CellulartModule {
   private constructIndicators() {
     Console.log(
       `Constructing Scry with ${this.globalGame.players.length} players`,
-      "Scry",
+      "Scry"
     );
     this.indicators = {};
     for (const user of this.globalGame.players) {
@@ -124,14 +121,12 @@ export class Scry extends CellulartModule {
 
       const userDiv = document.createElement("div");
       userDiv.classList.add("scry-icon");
-
-      const userIcon = new Image();
-      userIcon.src = user.avatar;
-      userIcon.classList.add("scry-img");
-      setParent(userIcon, userDiv);
+      userDiv.innerHTML = `
+        <img class="scry-img" src="${user.avatar}">
+      `;
 
       userDiv.addEventListener("mouseenter", () => {
-        setParent(this.indicatorLabel, userDiv);
+        userDiv.appendChild(this.indicatorLabel);
         this.indicatorLabel.style.visibility = "visible";
         this.indicatorLabel.textContent = user.nick.toUpperCase();
       });
@@ -139,7 +134,7 @@ export class Scry extends CellulartModule {
         this.indicatorLabel.style.visibility = "hidden";
       });
 
-      setParent(userDiv, this.indicatorTray);
+      this.scryWIW.body.firstElementChild?.appendChild(userDiv);
 
       this.indicators[user.id] = userDiv;
     }
@@ -155,7 +150,7 @@ export class Scry extends CellulartModule {
     }
     this.indicators = {};
   }
-  private updateCompletion(user: GarticUser, done: boolean) {
+  private updateCompletion(user: PlayerData, done: boolean) {
     Console.log(`${user.nick} is ${done ? "done" : "not done"}`, "Scry");
 
     if (!user.id) {

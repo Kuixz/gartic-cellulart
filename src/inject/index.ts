@@ -1,4 +1,4 @@
-import { OutboundGarticStroke } from "../content/foundation";
+import { OutboundStrokeData } from "../content/foundation";
 import { CrossCommand } from "../shared/Endpoint";
 
 abstract class Interceptor {
@@ -182,7 +182,7 @@ class SocketInterceptor extends Interceptor {
   private currentWSOpen() {
     return this.currentWS && this.currentWS.readyState === this.currentWS.OPEN;
   }
-  private sendStroke(data: OutboundGarticStroke) {
+  private sendStroke(data: OutboundStrokeData) {
     if (!data) {
       return;
     }

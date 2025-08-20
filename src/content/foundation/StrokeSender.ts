@@ -1,6 +1,6 @@
 import { createIconHTML } from "../components";
 import { Console } from "./Console";
-import { Converter, GarticStroke, OutboundGarticStroke } from "./Converter";
+import { Converter, StrokeData, OutboundStrokeData } from "./Converter";
 import {
   BaseGame,
   CellulartEventType,
@@ -12,7 +12,7 @@ import { Socket } from "./Socket";
 import { constructElement } from "./Util";
 
 export class StrokeBuffer extends EventTarget {
-  private queue: GarticStroke[] = [];
+  private queue: StrokeData[] = [];
 
   constructor(private abortController: AbortController) {
     super();
@@ -26,7 +26,7 @@ export class StrokeBuffer extends EventTarget {
     this.dispatchEvent(new Event("close"));
   }
 
-  public enqueueStroke(stroke: GarticStroke) {
+  public enqueueStroke(stroke: StrokeData) {
     this.queue.push(stroke);
     this.dispatchEvent(
       new CustomEvent("enqueuestroke", {
@@ -35,7 +35,7 @@ export class StrokeBuffer extends EventTarget {
     );
   }
 
-  public dequeueStroke(): GarticStroke | undefined {
+  public dequeueStroke(): StrokeData | undefined {
     const stroke = this.queue.shift();
     if (stroke) {
       this.dispatchEvent(
@@ -47,7 +47,7 @@ export class StrokeBuffer extends EventTarget {
     return stroke;
   }
 
-  public setStrokes(strokes: GarticStroke[]) {
+  public setStrokes(strokes: StrokeData[]) {
     this.queue = strokes;
   }
 
@@ -146,7 +146,7 @@ export class StrokeSender extends EventListening() {
 
   public createSendingInwindow(
     dataURL: string,
-    fixedQueue?: GarticStroke[],
+    fixedQueue?: StrokeData[],
     options?: InwindowOptions
   ): {
     inwindow: Inwindow;
@@ -340,7 +340,7 @@ export class StrokeSender extends EventListening() {
         t: this.globalGame.currentTurn - 1,
         d: 1,
         v: stroke,
-      } as OutboundGarticStroke);
+      } as OutboundStrokeData);
       this.throttleReady = false;
 
       setTimeout(() => {

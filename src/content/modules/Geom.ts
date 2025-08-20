@@ -13,7 +13,7 @@ import {
   preventDefaults,
   StrokeSender,
   StrokeBuffer,
-  GarticStroke,
+  StrokeData,
 } from "../foundation";
 import { ModuleArgs, CellulartModule } from "./CellulartModule";
 
@@ -83,6 +83,11 @@ export class Geom extends CellulartModule {
       height: "424",
     });
     this.geomPreview = preview;
+
+    document.documentElement.style.setProperty(
+      "--geom-ul-bg",
+      `url(${getModuleAsset("geom-ul.png")})`
+    );
   }
   protected onphasechange(event: PhaseChangeEvent): void {
     const { newPhase } = event.detail;
@@ -125,13 +130,11 @@ export class Geom extends CellulartModule {
     });
     const body = geomInwindow.body;
     body.innerHTML = `
-            <form class="upload-form">
-                <input class="upload-bridge" type="file">
-                <div id="geom-socket" class="theme-border upload-socket hover-button" 
-                    style="background-image:url(${getModuleAsset("geom-ul.png")})">
-                </div>
-            </form>
-        `;
+      <form class="upload-form">
+        <input class="upload-bridge" type="file">
+        <div id="geom-socket" class="theme-border upload-socket hover-button geom-ul"></div>
+      </form>
+    `;
     const bridge = body.querySelector(".upload-bridge")! as HTMLInputElement;
     const socket = body.querySelector("#geom-socket")! as HTMLElement;
 
@@ -212,7 +215,7 @@ export class Geom extends CellulartModule {
         stopGeometrize();
       });
       buffer.addEventListener("dequeuestroke", (e: Event) => {
-        const stroke = (e as CustomEvent<GarticStroke>).detail;
+        const stroke = (e as CustomEvent<StrokeData>).detail;
         const shapeAsSVG = this.formatShapeSVG(
           stroke as [
             number,
@@ -315,7 +318,7 @@ export class Geom extends CellulartModule {
     };
   }
   private queueShape(shape: WorkerResultShape) {
-    const shapeAsGarticStroke: GarticStroke | void =
+    const shapeAsGarticStroke: StrokeData | void =
       this.formatShapeGartic(shape);
     if (!shapeAsGarticStroke) {
       return;
@@ -341,7 +344,7 @@ export class Geom extends CellulartModule {
     return response;
   }
 
-  private formatShapeGartic(shape: WorkerResultShape): GarticStroke | void {
+  private formatShapeGartic(shape: WorkerResultShape): StrokeData | void {
     const raw = shape.raw;
     const type = ((x: number) => {
       if (x == ShapeTypes.RECTANGLE) {
