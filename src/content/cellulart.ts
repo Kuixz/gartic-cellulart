@@ -2,7 +2,7 @@ import {
   Phase,
   Console,
   Converter,
-  GarticXHRData,
+  LobbyXHRData,
   Keybinder,
   SHAuth,
   Socket,
@@ -12,15 +12,17 @@ import {
   setAttributes,
   setParent,
   configChildTrunk,
-  GarticUser,
+  PlayerData,
   modeParameterDefaults,
   EMessagePurpose,
-  TransitionData,
+  ScreenTransitionData,
   BaseGame,
   AlbumChangeData,
   CellulartEventType,
   StrokeSender,
   PhaseChangeEvent,
+  AlbumChangeEvent,
+  TurnData,
 } from "./foundation";
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry, Akasha } from "./modules";
 import { Red, Debug } from "./metamodules";
@@ -68,7 +70,7 @@ class Controller {
         shelf: shelf,
       },
       modules,
-      metamodules,
+      metamodules
     );
   }
   onlobbyenter() {
@@ -80,23 +82,25 @@ class Controller {
   onphasechange(
     isReconnection: boolean,
     oldPhase: Phase,
-    data: TransitionData | GarticXHRData | null,
-    newPhase: Phase,
+    data: ScreenTransitionData | LobbyXHRData | null,
+    newPhase: Phase
   ) {
     this.game.dispatchEvent(
       new CustomEvent(CellulartEventType.PHASE_CHANGE, {
         detail: { isReconnection, oldPhase, data, newPhase },
-      }) as PhaseChangeEvent,
+      }) as PhaseChangeEvent
     );
   }
   onalbumchange(data: AlbumChangeData) {
     this.game.dispatchEvent(
-      new CustomEvent(CellulartEventType.ALBUM_CHANGE, { detail: data }),
+      new CustomEvent(CellulartEventType.ALBUM_CHANGE, {
+        detail: data,
+      }) as AlbumChangeEvent
     );
   }
   ontimelinechange() {
     this.game.dispatchEvent(
-      new CustomEvent(CellulartEventType.TIMELINE_CHANGE),
+      new CustomEvent(CellulartEventType.TIMELINE_CHANGE)
     );
   }
   onroundleave() {
@@ -123,7 +127,7 @@ class Controller {
     // auxmodules: AuxChamber,
     moduleArgs: ModuleArgs,
     modules: ModuleChamber,
-    metamodules: MetaChamber,
+    metamodules: MetaChamber
   ) {
     // TODO don't initalize all immediately, maybe? because some people will never use the RED mode
     var hiddenButtons: HTMLElement[] = [];
@@ -145,11 +149,11 @@ class Controller {
         // menuShown = !menuShown
         menuItems.classList.toggle("collapsed");
         return undefined;
-      }),
+      })
     );
     modules.forEach((modTemplate: typeof CellulartModule) => {
       const mod = new (modTemplate as new (
-        moduleArgs: ModuleArgs,
+        moduleArgs: ModuleArgs
       ) => CellulartModule)(moduleArgs);
       this.liveModules.push(mod);
 
@@ -165,7 +169,7 @@ class Controller {
     });
     metamodules.forEach((modTemplate: typeof Metamodule) => {
       const mod = new (modTemplate as new (
-        modules: CellulartModule[],
+        modules: CellulartModule[]
       ) => Metamodule)(this.liveModules);
       this.liveMetamodules.push(mod);
 
@@ -214,11 +218,11 @@ class Observer {
     this.controller = controller;
     this.controller.socket.addEventListener(
       "socketIncoming",
-      this.deduceSettingsFromSocket.bind(this),
+      this.deduceSettingsFromSocket.bind(this)
     );
     Xhr.addMessageListener(
       "lobbySettings",
-      this.deduceSettingsFromXHR.bind(this),
+      this.deduceSettingsFromXHR.bind(this)
     );
   }
 
@@ -233,7 +237,7 @@ class Observer {
     if (newPhaseAndTurn === undefined) {
       Console.warn(
         "Failed to determine phase from DOM in transition",
-        "Observer",
+        "Observer"
       );
       return;
     }
@@ -264,11 +268,11 @@ class Observer {
   // TODO create DataExtractor interface?
   // Due to possible instability, "perfect" settings tracking through XHR/Socket should be infeasible.
   // Practically, though, supposing that Gartic doesn't often rearrange their enums, I won't have to either.
-  private deduceSettingsFromXHR(data: GarticXHRData) {
+  private deduceSettingsFromXHR(data: LobbyXHRData) {
     Console.log(`Deducing from XHR ${JSON.stringify(data)}`, "Observer");
 
     this.controller.game.host = data.users.find(
-      (x: GarticUser) => x.owner === true,
+      (x: PlayerData) => x.owner === true
     )!.nick;
     this.controller.game.user = data.user;
     this.controller.game.user.avatar =
@@ -301,7 +305,7 @@ class Observer {
     switch (messageType) {
       case EMessagePurpose.USER_JOIN: {
         // New user joins
-        const newUser = messageData as GarticUser;
+        const newUser = messageData as PlayerData;
         newUser.avatar =
           "https://garticphone.com/images/avatar/" + newUser.avatar + ".svg";
         this.controller.game.players.push(newUser);
@@ -310,12 +314,12 @@ class Observer {
       case EMessagePurpose.USER_LEAVE: {
         // Existing user leaves
         const index = this.controller.game.players.findIndex(
-          (user) => user.id === messageData.userLeft,
+          (user) => user.id === messageData.userLeft
         );
         if (index == -1) {
           Console.warn(
             `Could not remove user: no user with id ${messageData.userLeft} found`,
-            "Observer",
+            "Observer"
           );
           break;
         }
@@ -447,12 +451,12 @@ class Observer {
   }
 
   private observerTransition: [Phase, number] | null = null;
-  private socketTransition: TransitionData | null = null;
+  private socketTransition: ScreenTransitionData | null = null;
   private recordObserverTransition(observerTransition: [Phase, number]) {
     this.observerTransition = observerTransition;
     this.attemptPhaseTransition();
   }
-  private recordSocketTransition(socketTransition: TransitionData) {
+  private recordSocketTransition(socketTransition: ScreenTransitionData) {
     this.socketTransition = socketTransition;
     this.attemptPhaseTransition();
   }
@@ -464,25 +468,25 @@ class Observer {
     ) {
       this.executePhaseTransition(
         this.socketTransition,
-        this.observerTransition[0],
+        this.observerTransition[0]
       );
     }
   }
   private executePhaseTransition(
     transitionData: null,
-    newPhase: "start" | "waiting" | "book",
+    newPhase: "start" | "waiting" | "book"
   ): void;
   private executePhaseTransition(
-    transitionData: GarticXHRData | null,
-    newPhase: "lobby",
+    transitionData: LobbyXHRData | null,
+    newPhase: "lobby"
   ): void;
   private executePhaseTransition(
-    transitionData: TransitionData,
-    newPhase: Phase,
+    transitionData: ScreenTransitionData,
+    newPhase: Phase
   ): void;
   private executePhaseTransition(
-    transitionData: GarticXHRData | TransitionData | null,
-    newPhase: Phase,
+    transitionData: LobbyXHRData | ScreenTransitionData | null,
+    newPhase: Phase
   ): void {
     // Set variables
     const oldPhase = this.controller.game.currentPhase;
@@ -521,17 +525,17 @@ class Observer {
   protected onphasechange(
     isReconnection: boolean,
     oldPhase: Phase,
-    transitionData: TransitionData | GarticXHRData | null,
-    newPhase: Phase,
+    transitionData: ScreenTransitionData | LobbyXHRData | null,
+    newPhase: Phase
   ) {
     this.controller.onphasechange(
       isReconnection,
       oldPhase,
       transitionData,
-      newPhase,
+      newPhase
     );
   }
-  protected onalbumchange(element: HTMLElement, data: any) {
+  protected onalbumchange(element: HTMLElement, data: TurnData) {
     this.controller.onalbumchange({ element, data });
   }
   protected ontimelinechange() {

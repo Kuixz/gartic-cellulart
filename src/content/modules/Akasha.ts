@@ -7,7 +7,7 @@ import {
   CellulartEventType,
   Inwindow,
   constructElement,
-  GarticStroke,
+  StrokeData,
   StrokeSender,
   formatTime,
 } from "../foundation";
@@ -31,7 +31,7 @@ function akashaEntryFromImageSrc(src: string): HTMLImageElement {
 type AkashicRecord = {
   element: HTMLElement;
   dataURL: string;
-  strokes: GarticStroke[];
+  strokes: StrokeData[];
 };
 
 const versionToInterpreterMap: Map<
@@ -41,7 +41,7 @@ const versionToInterpreterMap: Map<
   [
     "1.1.0",
     (match1, match2) => {
-      const strokes = Object.values(JSON.parse(match2)) as GarticStroke[];
+      const strokes = Object.values(JSON.parse(match2)) as StrokeData[];
       for (const stroke of strokes) {
         if (stroke[0] == 8) {
           var endRectangleIndex = 7;
@@ -65,7 +65,7 @@ const versionToInterpreterMap: Map<
       const compressedStrokes: any[][] = JSON.parse(
         match2.replaceAll("•", "],[")
       );
-      const strokes: GarticStroke[] = [];
+      const strokes: StrokeData[] = [];
       let currentColor: [string, number, string | 1] | null = null;
       let currentStroke: number = 0;
       for (const stroke of compressedStrokes) {
@@ -74,7 +74,7 @@ const versionToInterpreterMap: Map<
           continue;
         }
         if (stroke[0] == 2 || stroke[0] == 8) {
-          strokes.push(stroke.toSpliced(1, 0, ++currentStroke) as GarticStroke);
+          strokes.push(stroke.toSpliced(1, 0, ++currentStroke) as StrokeData);
         } else {
           strokes.push(
             stroke.toSpliced(
@@ -82,7 +82,7 @@ const versionToInterpreterMap: Map<
               0,
               ++currentStroke,
               structuredClone(currentColor)
-            ) as GarticStroke
+            ) as StrokeData
           );
         }
       }
@@ -352,7 +352,7 @@ export class Akasha extends CellulartModule {
   }
   private createDownloadButton(
     canvas: HTMLCanvasElement,
-    data: GarticStroke[]
+    data: StrokeData[]
   ): HTMLElement {
     const newButton = constructElement({
       type: "div",
@@ -369,7 +369,7 @@ export class Akasha extends CellulartModule {
 
     return newButton;
   }
-  private downloadCanvas(canvas: HTMLCanvasElement, strokes: GarticStroke[]) {
+  private downloadCanvas(canvas: HTMLCanvasElement, strokes: StrokeData[]) {
     const newCanvas = cloneCanvas(canvas);
     newCanvas.classList.add("akasha-entry", "theme-border", "hover-button");
 

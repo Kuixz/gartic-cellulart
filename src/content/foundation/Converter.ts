@@ -10,16 +10,16 @@ export type Phase =
   | "first"
   | "mod"
   | "waiting";
-export interface TransitionData {
+export interface ScreenTransitionData {
   turnNum: number;
   screen: number;
   previous?: {
-    user: GarticUser;
-    data: GarticData;
+    user: PlayerData;
+    data: TurnData;
   };
 }
 
-export type GarticStroke =
+export type StrokeData =
   | [
       1 | 3 | 4 | 5 | 6 | 7 | 9 | 10,
       number,
@@ -28,8 +28,8 @@ export type GarticStroke =
     ]
   | [2, number, number, ...[number, number][]]
   | [8, number, [string, string | 1], ...number[]];
-export type OutboundGarticStroke = { t: number; d: number; v: GarticStroke };
-export type GarticUser = {
+export type OutboundStrokeData = { t: number; d: number; v: StrokeData };
+export type PlayerData = {
   nick: string;
   avatar: string;
 
@@ -46,9 +46,15 @@ export type GarticUser = {
 
   ready?: boolean;
 };
-export type GarticData = undefined | string | GarticStroke[];
+export type TurnData = undefined | string | StrokeData[];
+export type TimelineData = {
+  id: number;
+  user: PlayerData;
+  type: number;
+  data: TurnData;
+}[];
 
-export interface GarticXHRData {
+export interface LobbyXHRData {
   animationConfigs: { speed: number; loop: number };
   bookAutomatic: boolean;
   bookNum: number;
@@ -76,14 +82,14 @@ export interface GarticXHRData {
   timeStarted: boolean;
   turnMax: number;
   turnNum: number;
-  user: GarticUser;
-  users: GarticUser[];
+  user: PlayerData;
+  users: PlayerData[];
 
   invite?: string;
   modCode?: string;
 
   active?: boolean;
-  draw?: GarticStroke[];
+  draw?: StrokeData[];
   elapsedBase?: number;
   elapsedTime?: number;
   previous?: any;
@@ -472,7 +478,7 @@ export const Converter = {
     return true;
   },
 
-  tryToUser(elem: HTMLElement): GarticUser | undefined {
+  tryToUser(elem: HTMLElement): PlayerData | undefined {
     if (elem.classList.contains("empty")) {
       return;
     }

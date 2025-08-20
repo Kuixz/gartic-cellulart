@@ -3,7 +3,7 @@ import {
   WhiteSettingsBelt,
   Phase,
   CellulartEventType,
-  GarticXHRData,
+  LobbyXHRData,
   PhaseChangeEvent,
   Converter,
   SpeedParameters,

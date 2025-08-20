@@ -13,7 +13,7 @@ import {
   preventDefaults,
   StrokeSender,
   StrokeBuffer,
-  GarticStroke,
+  StrokeData,
 } from "../foundation";
 import { ModuleArgs, CellulartModule } from "./CellulartModule";
 
@@ -212,7 +212,7 @@ export class Geom extends CellulartModule {
         stopGeometrize();
       });
       buffer.addEventListener("dequeuestroke", (e: Event) => {
-        const stroke = (e as CustomEvent<GarticStroke>).detail;
+        const stroke = (e as CustomEvent<StrokeData>).detail;
         const shapeAsSVG = this.formatShapeSVG(
           stroke as [
             number,
@@ -315,7 +315,7 @@ export class Geom extends CellulartModule {
     };
   }
   private queueShape(shape: WorkerResultShape) {
-    const shapeAsGarticStroke: GarticStroke | void =
+    const shapeAsGarticStroke: StrokeData | void =
       this.formatShapeGartic(shape);
     if (!shapeAsGarticStroke) {
       return;
@@ -341,7 +341,7 @@ export class Geom extends CellulartModule {
     return response;
   }
 
-  private formatShapeGartic(shape: WorkerResultShape): GarticStroke | void {
+  private formatShapeGartic(shape: WorkerResultShape): StrokeData | void {
     const raw = shape.raw;
     const type = ((x: number) => {
       if (x == ShapeTypes.RECTANGLE) {

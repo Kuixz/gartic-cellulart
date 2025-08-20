@@ -5,11 +5,11 @@ import {
   EKeep,
   ESpeed,
   ETurns,
-  GarticXHRData,
-  TransitionData,
-  GarticData,
+  LobbyXHRData,
+  ScreenTransitionData,
+  TurnData,
 } from "./Converter";
-import { GarticUser } from "./Converter";
+import { PlayerData } from "./Converter";
 
 export enum CellulartEventType {
   ENTER_LOBBY = "lobbyenter",
@@ -25,18 +25,18 @@ export type PhaseChangeData =
   | {
       isReconnection: false;
       oldPhase: Phase;
-      data: TransitionData;
+      data: ScreenTransitionData;
       newPhase: Phase;
     }
   | {
       isReconnection: true;
       oldPhase: Phase;
-      data: GarticXHRData;
+      data: LobbyXHRData;
       newPhase: Phase;
     };
 export interface AlbumChangeData {
   element: Element;
-  data: GarticData;
+  data: TurnData;
 }
 export interface PhaseChangeEvent extends CustomEvent {
   detail: PhaseChangeData;
@@ -48,11 +48,11 @@ export interface AlbumChangeEvent extends CustomEvent {
 export class BaseGame extends EventTarget {
   // Lobby (players and settings tracking)
   public host: string = "unknown host";
-  public user: GarticUser = {
+  public user: PlayerData = {
     nick: "unknown user",
     avatar: "none",
   };
-  public players: GarticUser[] = [];
+  public players: PlayerData[] = [];
   public flowIndex: EFlow = EFlow.WRITING_DRAWING;
   public speedIndex: ESpeed = ESpeed.NORMAL;
   public turnsIndex: ETurns = ETurns.ALL;
@@ -68,7 +68,7 @@ export class BaseGame extends EventTarget {
     super();
     this.addEventListener("roundenter", () => {
       this.turnCount = Converter.turnsIndexToFunction(this.turnsIndex)(
-        this.players.length,
+        this.players.length
       );
     });
     this.addEventListener("lobbyleave", () => {
@@ -82,14 +82,14 @@ class None {}
 // type EventListenable = EventTarget | EventEmitter;
 
 export function EventListening<TBase extends new (...args: any[]) => {}>(
-  BaseClass: TBase = None as TBase,
+  BaseClass: TBase = None as TBase
 ) {
   return class extends BaseClass {
     handleEvent(event: Event): void {
       const fnName = "on" + event.type;
       if (fnName in this) {
         (this as unknown as Record<string, (event: Event) => void>)[fnName](
-          event,
+          event
         );
       } else {
         console.warn(`EventBinder has no method on${event.type}`);

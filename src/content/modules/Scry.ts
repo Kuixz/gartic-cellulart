@@ -3,7 +3,7 @@ import {
   WhiteSettingsBelt,
   CellulartEventType,
   PhaseChangeEvent,
-  GarticUser,
+  PlayerData,
   Inwindow,
   EMessagePurpose,
 } from "../foundation";
@@ -150,7 +150,7 @@ export class Scry extends CellulartModule {
     }
     this.indicators = {};
   }
-  private updateCompletion(user: GarticUser, done: boolean) {
+  private updateCompletion(user: PlayerData, done: boolean) {
     Console.log(`${user.nick} is ${done ? "done" : "not done"}`, "Scry");
 
     if (!user.id) {
