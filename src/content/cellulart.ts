@@ -17,12 +17,16 @@ import {
   EMessagePurpose,
   ScreenTransitionData,
   BaseGame,
-  AlbumChangeData,
   CellulartEventType,
   StrokeSender,
-  PhaseChangeEvent,
-  AlbumChangeEvent,
   TurnData,
+  PhaseChangeEvent,
+  AlbumChangeDetail,
+  AlbumChangeEvent,
+  TimelineData,
+  TimelineChangeDetail,
+  TimelineChangeEvent,
+  PhaseChangeDetail,
 } from "./foundation";
 import { Timer, Koss, Refdrop, Spotlight, Geom, Scry, Akasha } from "./modules";
 import { Red, Debug } from "./metamodules";
@@ -79,28 +83,25 @@ class Controller {
   onroundenter() {
     this.game.dispatchEvent(new CustomEvent(CellulartEventType.ENTER_ROUND));
   }
-  onphasechange(
-    isReconnection: boolean,
-    oldPhase: Phase,
-    data: ScreenTransitionData | LobbyXHRData | null,
-    newPhase: Phase
-  ) {
+  onphasechange(data: PhaseChangeDetail) {
     this.game.dispatchEvent(
       new CustomEvent(CellulartEventType.PHASE_CHANGE, {
-        detail: { isReconnection, oldPhase, data, newPhase },
+        detail: data,
       }) as PhaseChangeEvent
     );
   }
-  onalbumchange(data: AlbumChangeData) {
+  onalbumchange(data: AlbumChangeDetail) {
     this.game.dispatchEvent(
       new CustomEvent(CellulartEventType.ALBUM_CHANGE, {
         detail: data,
       }) as AlbumChangeEvent
     );
   }
-  ontimelinechange() {
+  ontimelinechange(data: TimelineChangeDetail) {
     this.game.dispatchEvent(
-      new CustomEvent(CellulartEventType.TIMELINE_CHANGE)
+      new CustomEvent(CellulartEventType.TIMELINE_CHANGE, {
+        detail: data,
+      }) as TimelineChangeEvent
     );
   }
   onroundleave() {
@@ -344,7 +345,7 @@ class Observer {
         break;
       }
       case EMessagePurpose.GALLERY_CHANGE_TIMELINE: {
-        this.ontimelinechange();
+        this.ontimelinechange(this.getExhibits(), messageData.timeline);
         break;
       }
       case EMessagePurpose.CHANGE_SETTINGS_CUSTOM: {
@@ -528,18 +529,18 @@ class Observer {
     transitionData: ScreenTransitionData | LobbyXHRData | null,
     newPhase: Phase
   ) {
-    this.controller.onphasechange(
+    this.controller.onphasechange({
       isReconnection,
       oldPhase,
-      transitionData,
-      newPhase
-    );
+      data: transitionData,
+      newPhase,
+    } as PhaseChangeDetail); // Warning: Suppressed type error here
   }
   protected onalbumchange(element: HTMLElement, data: TurnData) {
     this.controller.onalbumchange({ element, data });
   }
-  protected ontimelinechange() {
-    this.controller.ontimelinechange();
+  protected ontimelinechange(elements: HTMLCollection, timeline: TimelineData) {
+    this.controller.ontimelinechange({ elements, timeline });
   }
   protected onroundleave() {
     this.targetBook = null;
@@ -549,12 +550,17 @@ class Observer {
     this.controller.onlobbyleave();
   }
 
-  private getMostRecentExhibit(): HTMLElement {
+  private getExhibits(): HTMLCollection {
     if (this.targetBook === null) {
       this.targetBook = document.querySelector(".timeline .scrollElements");
     }
 
-    const children = this.targetBook!.children;
+    return this.targetBook!.children;
+  }
+
+  private getMostRecentExhibit(): HTMLElement {
+    const children = this.getExhibits();
+
     return children[children.length - 1] as HTMLElement;
   }
 }

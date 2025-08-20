@@ -8,6 +8,7 @@ import {
   LobbyXHRData,
   ScreenTransitionData,
   TurnData,
+  TimelineData,
 } from "./Converter";
 import { PlayerData } from "./Converter";
 
@@ -21,7 +22,7 @@ export enum CellulartEventType {
   LEAVE_LOBBY = "lobbyleave",
 }
 
-export type PhaseChangeData =
+export type PhaseChangeDetail =
   | {
       isReconnection: false;
       oldPhase: Phase;
@@ -34,15 +35,22 @@ export type PhaseChangeData =
       data: LobbyXHRData;
       newPhase: Phase;
     };
-export interface AlbumChangeData {
+export interface AlbumChangeDetail {
   element: Element;
   data: TurnData;
 }
+export interface TimelineChangeDetail {
+  elements: HTMLCollection;
+  timeline: TimelineData;
+}
 export interface PhaseChangeEvent extends CustomEvent {
-  detail: PhaseChangeData;
+  detail: PhaseChangeDetail;
 }
 export interface AlbumChangeEvent extends CustomEvent {
-  detail: AlbumChangeData;
+  detail: AlbumChangeDetail;
+}
+export interface TimelineChangeEvent extends CustomEvent {
+  detail: TimelineChangeDetail;
 }
 
 export class BaseGame extends EventTarget {
