@@ -1,6 +1,8 @@
 :root {
   --akasha-button-visibility: hidden;
   /* --akasha-loading-bg: url(); */
+  /* --ref-ul-bg: url(); */
+  /* --ref-ss-bg: url(); */
 }
 
 /* Multi-module */
@@ -247,6 +249,12 @@ div.ref-square {
 div#ref-se {
   bottom: 15px;
   right: 15px;
+}
+.ref-ul {
+  background-image: var(--ref-ul-bg);
+}
+.ref-ss {
+  background-image: var(--ref-ss-bg);
 }
 div#ref-sw {
   bottom: 15px;

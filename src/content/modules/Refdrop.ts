@@ -29,35 +29,33 @@ export class Refdrop extends CellulartModule {
       (e) => {
         this.refImage.style.left =
           parseInt(this.refImage.style.left) - (e.shiftKey ? 0.5 : 2) + "px";
-      },
+      }
     ),
     new Keybind(
       (e) => e.code == "ArrowUp",
       (e) => {
         this.refImage.style.top =
           parseInt(this.refImage.style.top) - (e.shiftKey ? 0.5 : 2) + "px";
-      },
+      }
     ),
     new Keybind(
       (e) => e.code == "ArrowRight",
       (e) => {
         this.refImage.style.left =
           parseInt(this.refImage.style.left) + (e.shiftKey ? 0.5 : 2) + "px";
-      },
+      }
     ),
     new Keybind(
       (e) => e.code == "ArrowDown",
       (e) => {
         this.refImage.style.top =
           parseInt(this.refImage.style.top) + (e.shiftKey ? 0.5 : 2) + "px";
-      },
+      }
     ),
   ];
   // Refdrop variables
   refUpload: HTMLDivElement; // HTMLDivElement
   refImage: HTMLImageElement; // HTMLImageElement
-  refBridge: HTMLInputElement; //
-  refSocket: HTMLDivElement; // HTMLDivElement
   refCtrl: HTMLDivElement | undefined; // HTMLDivElement
   refFloating: Inwindow[] = [];
 
@@ -80,40 +78,29 @@ export class Refdrop extends CellulartModule {
       class: "ref-square",
       id: "ref-se",
     });
-    setParent(refUpload, document.body);
+    refUpload.innerHTML = `
+      <form class="upload-form">
+        <input class="upload-bridge" type="file"></input>
+        <div class="ref-border upload-socket hover-button ref-ul"></div>
+      </form>
+    `;
     this.refUpload = refUpload;
 
-    const refForm = document.createElement("form");
-    setAttributes(refForm, { class: "upload-form" });
-    setParent(refForm, refUpload);
-
-    const refBridge = document.createElement("input");
-    setAttributes(refBridge, { class: "upload-bridge", type: "file" });
-    setParent(refBridge, refForm);
-    this.refBridge = refBridge;
-
-    const refSocket = document.createElement("div");
-    setAttributes(refSocket, {
-      class: "ref-border upload-socket hover-button",
-      style: "background-image:url(" + getModuleAsset("ref-ul.png") + ")",
-    });
-    setParent(refSocket, refForm);
-    this.refSocket = refSocket;
+    const refBridge = refUpload.querySelector("input")!;
+    const refSocket = refUpload.querySelector("div")!;
 
     window.addEventListener("dragenter", (e) => {
-      // Console.log("dragenter", Refdrop); Console.log(e.relatedTarget, Refdrop)
-      refSocket.style.backgroundImage =
-        "url(" + getModuleAsset("ref-ul.png") + ")";
+      refSocket.classList.add("ref-ul");
+      refSocket.classList.remove("ref-ss");
     });
     window.addEventListener("dragleave", (e: any) => {
-      // Console.log("dragleave", Refdrop); Console.log(e.relatedTarget, Refdrop)
       if (e.fromElement || e.relatedTarget !== null) {
         return;
       }
       Console.log("Dragging back to OS", "Refdrop");
       if (this.isRed()) {
-        refSocket.style.backgroundImage =
-          "url(" + getModuleAsset("ref-ss.png") + ")";
+        refSocket.classList.remove("ref-ul");
+        refSocket.classList.add("ref-ss");
       }
     });
     window.addEventListener(
@@ -121,11 +108,11 @@ export class Refdrop extends CellulartModule {
       (e) => {
         Console.log("drop", "Refdrop");
         if (this.isRed()) {
-          refSocket.style.backgroundImage =
-            "url(" + getModuleAsset("ref-ss.png") + ")";
+          refSocket.classList.remove("ref-ul");
+          refSocket.classList.add("ref-ss");
         }
       },
-      true,
+      true
     );
     window.addEventListener("dragover", (e) => {
       e.preventDefault();
@@ -136,7 +123,7 @@ export class Refdrop extends CellulartModule {
         preventDefaults(e);
         refSocket.classList.add("highlight");
       },
-      false,
+      false
     );
     ["dragleave", "drop"].forEach((eventName) => {
       refSocket.addEventListener(
@@ -145,7 +132,7 @@ export class Refdrop extends CellulartModule {
           preventDefaults(e);
           refSocket.classList.remove("highlight");
         },
-        false,
+        false
       );
     });
     refSocket.addEventListener("click", () => {
@@ -165,10 +152,18 @@ export class Refdrop extends CellulartModule {
         let files = dt.files;
         this.handleFiles(files);
       },
-      false,
+      false
     );
 
     // this.refCtrl = this.initRefctrl()
+    document.documentElement.style.setProperty(
+      "--ref-ul-bg",
+      `url(${getModuleAsset("ref-ul.png")})`
+    );
+    document.documentElement.style.setProperty(
+      "--ref-ss-bg",
+      `url(${getModuleAsset("ref-ss.png")})`
+    );
   }
   protected onphasechange(_: PhaseChangeEvent): void {
     this.refImage.style.visibility = "hidden";
@@ -188,11 +183,13 @@ export class Refdrop extends CellulartModule {
       // document.querySelectorAll(".wiw-close").forEach(v => v.parentNode.parentNode.remove()) // This closes all references, forcing you to drag them in again.
       this.refImage.src = "";
     } else if (this.isOn()) {
-      this.refSocket.style.backgroundImage =
-        "url(" + getModuleAsset("ref-ul.png") + ")";
+      const refSocket = this.refUpload.querySelector("div");
+      refSocket?.classList.add("ref-ul");
+      refSocket?.classList.remove("ref-ss");
     } else if (this.isRed()) {
-      this.refSocket.style.backgroundImage =
-        "url(" + getModuleAsset("ref-ss.png") + ")";
+      const refSocket = this.refUpload.querySelector("div");
+      refSocket?.classList.remove("ref-ul");
+      refSocket?.classList.add("ref-ss");
     }
     this.tryPlace();
   }
@@ -332,12 +329,12 @@ export class Refdrop extends CellulartModule {
         const left = clamp(
           0,
           e.clientX - parentCoords.left,
-          smallParent.offsetWidth,
+          smallParent.offsetWidth
         );
         const top = clamp(
           0,
           e.clientY - parentCoords.top,
-          smallParent.offsetHeight,
+          smallParent.offsetHeight
         );
         small.style.left = left + "px";
         small.style.top = top + "px";
@@ -378,11 +375,9 @@ export class Refdrop extends CellulartModule {
         if (large.style.zIndex == "1") {
           large.style.zIndex = "0";
           z.textContent = "↓";
-          // z.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/downz.png") + ")"
         } else {
           large.style.zIndex = "1";
           z.textContent = "↑";
-          // z.style.backgroundImage = "url(" + chrome.runtime.getURL("assets/upz.png") + ")"
         }
       });
     }
@@ -406,12 +401,12 @@ export class Refdrop extends CellulartModule {
   } // [R6]
   private onSocketClick() {
     if (this.isOn()) {
-      this.refBridge.click();
+      this.refUpload.querySelector("input")?.click();
     } else if (this.isRed()) {
       this.screenshot();
     } else {
       Console.warn(
-        `No behaviour is defined for onSocketClick in setting ${this.setting.current.internalName}`,
+        `No behaviour is defined for onSocketClick in setting ${this.setting.current.internalName}`
       );
     }
   }
@@ -432,7 +427,7 @@ export class Refdrop extends CellulartModule {
     if (files === null || files.length < 1) {
       Console.warn(
         "handleFiles was triggered but no files were passed",
-        "Refdrop",
+        "Refdrop"
       );
       return;
     }
@@ -457,7 +452,7 @@ export class Refdrop extends CellulartModule {
     } else {
       Console.warn(
         `No behaviour is defined for handleFiles in setting ${this.setting.current.internalName}`,
-        "Refdrop",
+        "Refdrop"
       );
     }
   }
