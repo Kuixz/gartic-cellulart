@@ -11,6 +11,7 @@ import {
   EventListening,
   PhaseChangeEvent,
   IShelf,
+  TimelineChangeEvent,
 } from "../foundation";
 
 export class ModuleLike {
@@ -80,7 +81,7 @@ export class CellulartModule extends EventListening(ModuleLike) {
   protected onroundenter() {}
   protected onphasechange(event: PhaseChangeEvent) {}
   protected onalbumchange(event: AlbumChangeEvent) {}
-  protected ontimelinechange() {}
+  protected ontimelinechange(event: TimelineChangeEvent) {}
   protected onroundleave() {}
   protected onlobbyleave() {}
   // The calling order is as follows.
