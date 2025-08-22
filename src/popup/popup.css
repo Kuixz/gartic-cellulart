@@ -1,28 +1,23 @@
 * {
-    font-family: 'Anja Eliane', 'Lexend', 'Gill Sans', 'Lucida Grande', 'Lucida Sans Unicode', sans-serif;
-    text-align: center;
-    color: #ffffff;
-    text-transform: uppercase;
+  font-family:
+    "Anja Eliane", "Lexend", "Gill Sans", "Lucida Grande",
+    "Lucida Sans Unicode", sans-serif;
+  text-align: center;
+  color: #ffffff;
+  text-transform: uppercase;
 }
 body {
-    background: linear-gradient(200deg,#481d92ff 0%,#d9d9d9ff 100%);
-    width: 360px;
-    /* background-image: url(w3s.png); */
+  background: linear-gradient(200deg, #481d92ff 0%, #d9d9d9ff 100%);
+  width: 360px;
+  /* background-image: url(w3s.png); */
 }
 h1 {
-    padding: 5px 0 0 0;
+  padding: 5px 0 0 0;
 }
-img.bg{
-    position: absolute;
-    left: 0px;
-    top: 20px;
-    width: 100%;
-    z-index: -1;
-}
-input{
-    font-weight: bold;
-    color: #420069;
+input {
+  font-weight: bold;
+  color: #420069;
 }
 #main {
-    margin-left: 10px;
+  margin-left: 10px;
 }

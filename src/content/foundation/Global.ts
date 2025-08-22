@@ -1,0 +1,107 @@
+import {
+  Phase,
+  Converter,
+  EFlow,
+  EKeep,
+  ESpeed,
+  ETurns,
+  LobbyXHRData,
+  ScreenTransitionData,
+  TurnData,
+  TimelineData,
+} from "./Converter";
+import { PlayerData } from "./Converter";
+
+export enum CellulartEventType {
+  ENTER_LOBBY = "lobbyenter",
+  ENTER_ROUND = "roundenter",
+  PHASE_CHANGE = "phasechange",
+  ALBUM_CHANGE = "albumchange",
+  TIMELINE_CHANGE = "timelinechange",
+  LEAVE_ROUND = "roundleave",
+  LEAVE_LOBBY = "lobbyleave",
+}
+
+export type PhaseChangeDetail =
+  | {
+      isReconnection: false;
+      oldPhase: Phase;
+      data: ScreenTransitionData;
+      newPhase: Phase;
+    }
+  | {
+      isReconnection: true;
+      oldPhase: Phase;
+      data: LobbyXHRData;
+      newPhase: Phase;
+    };
+export interface AlbumChangeDetail {
+  element: Element;
+  data: TurnData;
+}
+export interface TimelineChangeDetail {
+  elements: HTMLCollection;
+  timeline: TimelineData;
+}
+export interface PhaseChangeEvent extends CustomEvent {
+  detail: PhaseChangeDetail;
+}
+export interface AlbumChangeEvent extends CustomEvent {
+  detail: AlbumChangeDetail;
+}
+export interface TimelineChangeEvent extends CustomEvent {
+  detail: TimelineChangeDetail;
+}
+
+export class BaseGame extends EventTarget {
+  // Lobby (players and settings tracking)
+  public host: string = "unknown host";
+  public user: PlayerData = {
+    nick: "unknown user",
+    avatar: "none",
+  };
+  public players: PlayerData[] = [];
+  public flowIndex: EFlow = EFlow.WRITING_DRAWING;
+  public speedIndex: ESpeed = ESpeed.NORMAL;
+  public turnsIndex: ETurns = ETurns.ALL;
+  public keepIndex: EKeep = EKeep.NONE;
+
+  // Round (turn and phase tracking)
+  public turnCount: number = 0;
+  public currentTurn: number = 0;
+  public currentPhase: Phase = "start";
+
+  // Events
+  constructor() {
+    super();
+    this.addEventListener("roundenter", () => {
+      this.turnCount = Converter.turnsIndexToFunction(this.turnsIndex)(
+        this.players.length
+      );
+    });
+    this.addEventListener("lobbyleave", () => {
+      this.players = [];
+    });
+  }
+}
+
+class None {}
+
+// type EventListenable = EventTarget | EventEmitter;
+
+export function EventListening<TBase extends new (...args: any[]) => {}>(
+  BaseClass: TBase = None as TBase
+) {
+  return class extends BaseClass {
+    handleEvent(event: Event): void {
+      const fnName = "on" + event.type;
+      if (fnName in this) {
+        (this as unknown as Record<string, (event: Event) => void>)[fnName](
+          event
+        );
+      } else {
+        console.warn(`EventBinder has no method on${event.type}`);
+      }
+    }
+  };
+}
