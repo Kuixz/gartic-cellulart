@@ -12,7 +12,10 @@
     "preinstall": "npx only-allow pnpm",
     "test": "node_modules/vitest/vitest.mjs --passWithNoTests",
     "build": "node_modules/webpack/bin/webpack.js --config webpack.config.cjs --env manifest=${manifest:-chrome} --env mode=${mode:-development}",
-    "build:watch": "node_modules/webpack/bin/webpack.js --watch --config webpack.config.cjs --env manifest=${manifest:-chrome} --env mode=${mode:-development}"
+    "build:watch": "node_modules/webpack/bin/webpack.js --watch --config webpack.config.cjs --env manifest=${manifest:-chrome} --env mode=${mode:-development}",
+    "package": "pnpm package:dev && pnpm package:prod",
+    "package:prod": "make package-both",
+    "package:dev": "zip -r source_code.zip icons/ src/ README.md tsconfig.json webpack.config.cjs"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.28.0",
