@@ -459,7 +459,11 @@ export class Akasha extends CellulartModule {
     );
 
     buffer.addEventListener("setstrokesending", (event: Event) => {
-      this.showUploadingRecordPreview(record);
+      const isSending = (event as CustomEvent<boolean>).detail;
+
+      if (isSending) {
+        this.showUploadingRecordPreview(record);
+      }
     });
   }
   private showUploadingRecordPreview(record: AkashicRecord) {

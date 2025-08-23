@@ -311,7 +311,7 @@ export class StrokeSender extends EventListening() {
     if (!this.paused && this.currentQueue == buffer) {
       return;
     }
-    if (this.currentQueue != buffer) {
+    if (!this.paused && this.currentQueue != buffer) {
       this.currentQueue?.setStrokeSendingPaused(true);
     }
     this.currentQueue = buffer;
