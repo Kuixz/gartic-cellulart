@@ -105,7 +105,7 @@ class SocketInterceptor extends Interceptor {
     this.clearStrokes();
   }
   private onlobbyleave() {
-    this.currentWS = null;
+    this.onDisconnect();
   }
 
   protected readIncoming(data: string): void {
@@ -187,7 +187,7 @@ class SocketInterceptor extends Interceptor {
       return;
     }
     if (!this.currentWSOpen()) {
-      this.onDisconnect(data);
+      this.onDisconnect();
       return;
     }
 
@@ -195,8 +195,7 @@ class SocketInterceptor extends Interceptor {
     this.currentWS!.expressSend("42" + JSON.stringify([2, 7, data]));
     // this.post('log', "Sent: " + toSend);
   }
-  private onDisconnect(data: any) {
-    // Type alert suppressed
+  private onDisconnect() {
     this.currentWS = null;
     this.post("flag", false);
   }
