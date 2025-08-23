@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Gartic Cellulart for Gartic Phone",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Level up your Gart.",
   "icons": {
     "48": "ico48.png",
