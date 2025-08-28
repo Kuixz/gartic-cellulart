@@ -1,4 +1,4 @@
-# gartic-cellulart
+# gartic-cellulart has moved to [Codeberg](https://codeberg.org/Kuixz/gartic-cellulart)
 
 'Gartic Cellulart. Level up your Gart.'
 
